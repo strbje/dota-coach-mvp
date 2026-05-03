@@ -63,8 +63,10 @@ curl.exe https://api.opendota.com/api/matches/8781054570
 ```
 
 ```bash
-node -e "fetch('https://api.opendota.com/api/matches/8781054570').then(async r=>{console.log(r.status); const t = await r.text(); console.log(t.length)}).catch(e=>console.error(e))"
+node -e "const s=Date.now(); fetch('https://api.opendota.com/api/matches/8781054570').then(async r=>{const t=await r.text(); console.log({status:r.status,length:t.length,durationMs:Date.now()-s})}).catch(e=>console.error(e))"
 ```
+
+`curl` может успешно вернуть JSON, а встроенный Node `fetch` (undici) в некоторых сетевых окружениях падать с `ECONNRESET`/`terminated`. В этом случае проект автоматически использует `https` fallback без дополнительных зависимостей.
 
 Then open:
 
