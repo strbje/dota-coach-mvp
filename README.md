@@ -54,3 +54,20 @@ Debug URLs:
 - No database/auth/realtime overlay in v1.
 - STRATZ token is used only server-side in `src/lib/dota/clients/stratz.ts`.
 - If provider fields change, adapters isolate the uncertainty and preserve stable response shapes.
+
+## OpenDota debug diagnostics
+Use these checks when `/api/debug/match/:id` fails locally:
+
+```bash
+curl.exe https://api.opendota.com/api/matches/8781054570
+```
+
+```bash
+node -e "fetch('https://api.opendota.com/api/matches/8781054570').then(async r=>{console.log(r.status); const t = await r.text(); console.log(t.length)}).catch(e=>console.error(e))"
+```
+
+Then open:
+
+- `/api/debug/match/8781054570`
+
+If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
