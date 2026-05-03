@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { analyzePostMatch } from '@/lib/dota/engine/postMatchEngine';
 import type { PostMatchAnalyzeRequest } from '@/lib/dota/types/api';

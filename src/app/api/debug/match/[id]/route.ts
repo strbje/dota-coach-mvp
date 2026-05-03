@@ -1,8 +1,11 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMatch';
 
 type Stage = 'fetch' | 'normalize' | 'unknown';
+type Transport = 'fetch' | 'https-fallback' | 'unknown';
 
 function logDebugError(matchId: string | number, stage: Stage, error: unknown) {
   const parsed = error instanceof Error ? error : new Error(String(error));
@@ -47,6 +50,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   } catch (error) {
     const parsed = error instanceof Error ? error : new Error(String(error));
     const cause = parsed.cause as { message?: string } | undefined;
+    const transport = ((parsed as { transport?: Transport }).transport ?? 'unknown') as Transport;
 
     logDebugError(matchId, 'fetch', parsed);
 
@@ -57,6 +61,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         matchId,
         hasApiKey,
         stage: 'fetch',
+        transport,
         error: parsed.message,
         errorName: parsed.name,
         errorCause: cause?.message ?? null,
