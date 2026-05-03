@@ -1,0 +1,69 @@
+:root {
+  --bg: #0b1220;
+  --card: #131d31;
+  --muted: #93a4c3;
+  --text: #e9efff;
+  --accent: #6da8ff;
+  --danger: #ff7b7b;
+  --ok: #69d59d;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: linear-gradient(180deg, #0b1220 0%, #0d1628 100%);
+  color: var(--text);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  width: min(1040px, 94%);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.grid { display: grid; gap: 1rem; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+.card {
+  background: rgba(19, 29, 49, 0.8);
+  border: 1px solid #2a3b60;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+h1,h2,h3,p { margin-top: 0; }
+label { display: block; margin-bottom: 0.5rem; font-size: 0.95rem; }
+input, select, textarea, button {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #3d4c70;
+  background: #0f1930;
+  color: var(--text);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+}
+button {
+  background: #244176;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:hover { background: #2b4f91; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error { color: var(--danger); }
+.muted { color: var(--muted); }
+.badge {
+  display: inline-block;
+  background: #1b2e51;
+  border: 1px solid #314c7e;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .container { padding-top: 1rem; }
+}
