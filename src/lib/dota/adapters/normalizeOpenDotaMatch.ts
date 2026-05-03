@@ -8,37 +8,50 @@ function toClock(sec?: number): string {
   return `${min}:${rem}`;
 }
 
-export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): NormalizedOpenDotaMatch {
-  const playerRaw = payload.players?.find((p) => p.hero_id === 54) as Record<string, unknown> | undefined;
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
 
-  const timingsRaw = (playerRaw?.benchmarks as Record<string, { raw?: number }> | undefined) ?? {};
+function toBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): NormalizedOpenDotaMatch {
+  const players = Array.isArray(payload.players) ? payload.players : [];
+  const playerRaw = players.find((p) => toNumber((p as Record<string, unknown>).hero_id, -1) === 54) as
+    | Record<string, unknown>
+    | undefined;
+
+  if (!playerRaw) {
+    throw new Error('Target hero/player not found in OpenDota payload');
+  }
+
+  const timingsRaw = (playerRaw.benchmarks as Record<string, { raw?: number }> | undefined) ?? {};
 
   return {
-    matchId: payload.match_id,
-    didRadiantWin: payload.radiant_win,
-    durationSeconds: payload.duration,
-    player: playerRaw
-      ? {
-          heroName,
-          isRadiant: Boolean(playerRaw.isRadiant),
-          kills: Number(playerRaw.kills ?? 0),
-          deaths: Number(playerRaw.deaths ?? 0),
-          assists: Number(playerRaw.assists ?? 0),
-          lastHits: Number(playerRaw.last_hits ?? 0),
-          heroDamage: Number(playerRaw.hero_damage ?? 0),
-          gpm: Number(playerRaw.gold_per_min ?? 0),
-          xpm: Number(playerRaw.xp_per_min ?? 0),
-          item0: Number(playerRaw.item_0 ?? 0),
-          item1: Number(playerRaw.item_1 ?? 0),
-          item2: Number(playerRaw.item_2 ?? 0),
-          item3: Number(playerRaw.item_3 ?? 0),
-          item4: Number(playerRaw.item_4 ?? 0),
-          item5: Number(playerRaw.item_5 ?? 0),
-          itemTimings: [
-            { item: 'Phase Boots', time: toClock(timingsRaw.gold_per_min?.raw) },
-            { item: 'Armlet', time: toClock(timingsRaw.last_hits_per_min?.raw) }
-          ]
-        }
-      : undefined
+    matchId: toNumber(payload.match_id),
+    didRadiantWin: toBoolean(payload.radiant_win),
+    durationSeconds: toNumber(payload.duration),
+    player: {
+      heroName,
+      isRadiant: toBoolean(playerRaw.isRadiant),
+      kills: toNumber(playerRaw.kills),
+      deaths: toNumber(playerRaw.deaths),
+      assists: toNumber(playerRaw.assists),
+      lastHits: toNumber(playerRaw.last_hits),
+      heroDamage: toNumber(playerRaw.hero_damage),
+      gpm: toNumber(playerRaw.gold_per_min),
+      xpm: toNumber(playerRaw.xp_per_min),
+      item0: toNumber(playerRaw.item_0),
+      item1: toNumber(playerRaw.item_1),
+      item2: toNumber(playerRaw.item_2),
+      item3: toNumber(playerRaw.item_3),
+      item4: toNumber(playerRaw.item_4),
+      item5: toNumber(playerRaw.item_5),
+      itemTimings: [
+        { item: 'Phase Boots', time: toClock(timingsRaw.gold_per_min?.raw) },
+        { item: 'Armlet', time: toClock(timingsRaw.last_hits_per_min?.raw) }
+      ]
+    }
   };
 }
