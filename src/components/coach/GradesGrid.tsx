@@ -9,7 +9,14 @@ export function GradesGrid({ grades }: { grades: PostMatchAnalysis['grades'] }) 
         {entries.map(([label, grade]) => (
           <article key={label} className="card">
             <h4 style={{ textTransform: 'capitalize', marginBottom: '0.4rem' }}>{label}: {grade.score}</h4>
-            <ul>{grade.findings.map((f) => <li key={f}>{f}</li>)}</ul>
+            <ul>
+              {grade.findings.map((f) => (
+                <li key={`${f.text}-${f.severity}`}>
+                  <strong>[{f.severity}]</strong> {f.text}
+                  {f.evidence.length ? <div style={{ opacity: 0.8 }}>Evidence: {f.evidence.join(' · ')}</div> : null}
+                </li>
+              ))}
+            </ul>
           </article>
         ))}
       </div>
