@@ -1,4 +1,4 @@
-import { formatGameTime, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
+import { formatGameTime, getItemIconUrlByKey, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
 
@@ -61,9 +61,44 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
         item: getItemNameByKey(entry.key as string),
         time: formatGameTime(timeSeconds),
         timeSeconds,
+        iconUrl: getItemIconUrlByKey(entry.key as string) ?? undefined,
         source: 'purchase_log' as const
       };
     });
+
+
+
+  const rawDeathLog = Array.isArray(playerRaw.deaths_log)
+    ? (playerRaw.deaths_log as Array<Record<string, unknown>>)
+    : Array.isArray(playerRaw.death_log)
+      ? (playerRaw.death_log as Array<Record<string, unknown>>)
+      : null;
+
+  const deathTimings = (rawDeathLog ?? [])
+    .filter((entry) => typeof entry.time === 'number')
+    .map((entry) => {
+      const timeSeconds = toNumber(entry.time);
+      const phase =
+        timeSeconds < 600
+          ? 'laning'
+          : timeSeconds < 1200
+            ? 'earlyMid'
+            : timeSeconds < 2100
+              ? 'midGame'
+              : 'lateGame';
+
+      return { timeSeconds, time: formatGameTime(timeSeconds), phase } as const;
+    });
+
+  const deathsByPhase = deathTimings.reduce(
+    (acc, timing) => {
+      acc[timing.phase] += 1;
+      return acc;
+    },
+    { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 }
+  );
+
+  const deathDataSource = rawDeathLog ? 'death_log' : 'unavailable';
 
   const teamKey = toBoolean(playerRaw.isRadiant) ? 'radiant_score' : 'dire_score';
   const teamKillsRaw = payload[teamKey as keyof OpenDotaMatchResponse];
@@ -105,7 +140,10 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
         .slice(0, 30)
         .map((entry) => ({ key: entry.key as string, time: toNumber(entry.time) })),
       rawItemIds,
-      unknownItemIds
+      unknownItemIds,
+      deathTimings,
+      deathsByPhase,
+      deathDataSource
     }
   };
 }

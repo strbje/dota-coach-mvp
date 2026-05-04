@@ -65,12 +65,24 @@ export type NormalizedOpenDotaMatch = {
     item3?: number;
     item4?: number;
     item5?: number;
-    itemTimings?: Array<{ key: string; item: string; time: string; timeSeconds: number; source: 'purchase_log' }>;
+    itemTimings?: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
     itemTimingSource?: 'purchase_log' | 'unavailable';
     rawPurchaseLogPreview?: Array<{ key: string; time: number }>;
     rawItemIds?: number[];
     unknownItemIds?: number[];
     buildPlayed?: string[];
+    deathTimings?: Array<{
+      timeSeconds: number;
+      time: string;
+      phase: 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
+    }>;
+    deathsByPhase?: {
+      laning: number;
+      earlyMid: number;
+      midGame: number;
+      lateGame: number;
+    };
+    deathDataSource?: 'death_log' | 'unavailable';
   };
 };
 
@@ -81,6 +93,7 @@ export type PostMatchAnalysis = {
   result: 'win' | 'loss';
   buildPlayed: string[];
   timings: Record<string, string>;
+  itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
   grades: {
     lane: { score: number; findings: AnalysisFinding[] };
     items: { score: number; findings: AnalysisFinding[] };

@@ -17,8 +17,8 @@ const ITEM_KEY_BY_ID: Record<number, string> = {
   603: 'assault'
 };
 
-const DOTA_CONSTANTS_ITEMS_BY_KEY: Record<string, { dname?: string }> = Object.fromEntries(
-  Object.values(ITEM_KEY_BY_ID).map((key) => [key, { dname: TRACKED_ITEM_ALIASES[key] ?? humanizeItemKey(key) }])
+const DOTA_CONSTANTS_ITEMS_BY_KEY: Record<string, { dname?: string; img?: string; icon?: string }> = Object.fromEntries(
+  Object.values(ITEM_KEY_BY_ID).map((key) => [key, { dname: TRACKED_ITEM_ALIASES[key] ?? humanizeItemKey(key), img: `/apps/dota2/images/dota_react/items/${key}.png` }])
 );
 
 export function humanizeItemKey(key: string): string {
@@ -34,6 +34,17 @@ export function getItemNameByKey(key: string): string {
   if (!normalizedKey) return 'Unknown Item';
 
   return DOTA_CONSTANTS_ITEMS_BY_KEY[normalizedKey]?.dname ?? TRACKED_ITEM_ALIASES[normalizedKey] ?? humanizeItemKey(normalizedKey);
+}
+
+export function getItemIconUrlByKey(key: string): string | null {
+  const normalizedKey = key?.trim();
+  if (!normalizedKey) return null;
+
+  const fromConstants = DOTA_CONSTANTS_ITEMS_BY_KEY[normalizedKey];
+  const path = fromConstants?.img ?? fromConstants?.icon;
+  if (path) return `https://cdn.cloudflare.steamstatic.com${path}`;
+
+  return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/${normalizedKey}.png`;
 }
 
 export function getItemNameById(itemId: number): string | null {
