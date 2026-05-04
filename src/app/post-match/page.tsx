@@ -36,32 +36,32 @@ export default function PostMatchPage() {
 
   return (
     <main className="container">
-      <h1>Post-Match Coach</h1>
+      <h1>Пост-матч тренер</h1>
       <div className="card grid">
         <MatchIdForm matchId={matchId} onChange={setMatchId} />
-        <button disabled={loading} onClick={submit}>{loading ? 'Analyzing...' : 'Analyze match'}</button>
+        <button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>
         {error ? <p className="error">{error}</p> : null}
       </div>
 
       {data ? (
         <div className="grid" style={{ marginTop: '1rem' }}>
           <section className="card">
-            <h3>Match Snapshot</h3>
-            <p><strong>Match ID:</strong> {data.analysis.matchId}</p>
-            <p><strong>Hero:</strong> {data.analysis.hero}</p>
-            <p><strong>Result:</strong> {data.analysis.result}</p>
-            <p><strong>Build:</strong> {data.analysis.buildPlayed.join(' → ')}</p>
+            <h3>Сводка матча</h3>
+            <p><strong>ID матча:</strong> {data.analysis.matchId}</p>
+            <p><strong>Герой:</strong> {data.analysis.hero}</p>
+            <p><strong>Результат:</strong> {data.analysis.result}</p>
+            <p><strong>Финальный инвентарь:</strong> {data.analysis.buildPlayed.length >= 2 ? data.analysis.buildPlayed.join(' → ') : 'данные пока не распознаны'}</p>
           </section>
           <GradesGrid grades={data.analysis.grades} />
           <section className="card">
-            <h3>Final Coach Verdict</h3>
-            <p><strong>Main reason:</strong> {data.analysis.finalVerdict.mainReason}</p>
-            <p><strong>Biggest risk:</strong> {data.analysis.finalVerdict.biggestRisk}</p>
-            <p><strong>Next match focus:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p>
+            <h3>Итог тренера</h3>
+            <p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p>
+            <p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p>
+            <p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p>
           </section>
-          <CoachSummaryCard title="Top Mistakes" lines={data.analysis.topMistakes} />
-          <CoachSummaryCard title="Next-Game Adjustments" lines={data.analysis.nextGameAdjustments} />
-          <DebugPanel data={data.debug} title="Provider payload summary" />
+          <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
+          <CoachSummaryCard title="План на следующий матч" lines={data.analysis.nextGameAdjustments} />
+          <DebugPanel data={data.debug} title="Сводка provider payload" />
         </div>
       ) : null}
     </main>
