@@ -75,6 +75,7 @@ export type NormalizedOpenDotaMatch = {
       timeSeconds: number;
       time: string;
       phase: 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
+      phaseLabel: string;
     }>;
     deathsByPhase?: {
       laning: number;
@@ -82,7 +83,37 @@ export type NormalizedOpenDotaMatch = {
       midGame: number;
       lateGame: number;
     };
-    deathDataSource?: 'death_log' | 'unavailable';
+    deathDataSource?: 'death_log' | 'deaths_log' | 'unavailable';
+    fightParticipationByPhaseSource?: 'teamfights' | 'kills_log' | 'unavailable';
+    fightParticipationByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
+      playerKillsPlusAssists: number;
+      teamKills: number;
+      participation: number;
+    }>;
+    deathsAfterItemTimings?: Array<{
+      itemKey: string;
+      item: string;
+      itemTime: string;
+      deathsWithin5Min: number;
+      deathsWithin10Min: number;
+    }>;
+    objectiveEvents?: Array<{
+      timeSeconds: number;
+      time: string;
+      type: string;
+      phase: 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
+    }>;
+    itemObjectiveWindows?: Array<{
+      itemKey: string;
+      item: string;
+      itemTime: string;
+      objectivesWithin10Min: number;
+      objectiveTypes: string[];
+    }>;
+    economyByPhaseSource?: 'gold_t/lh_t' | 'unavailable';
+    economyByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
+      goldStart?: number; goldEnd?: number; goldDelta?: number; lhStart?: number; lhEnd?: number; lhDelta?: number;
+    }>;
   };
 };
 
