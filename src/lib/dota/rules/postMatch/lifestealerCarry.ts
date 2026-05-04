@@ -1,134 +1,67 @@
+import { getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis } from '@/lib/dota/types/domain';
 
-function score(base: number, delta: number): number {
-  return Math.max(1, Math.min(99, base + delta));
-}
-
-function fmt(value: number, digits = 1): string {
-  return value.toFixed(digits).replace(/\.0$/, '');
-}
+function score(base: number, delta: number): number { return Math.max(1, Math.min(99, base + delta)); }
+function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
 
 export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch): PostMatchAnalysis {
-  const p = match.player;
-  const result: 'win' | 'loss' = p && p.isRadiant === match.didRadiantWin ? 'win' : 'loss';
+  const p = match.player; const result: 'win' | 'loss' = p && p.isRadiant === match.didRadiantWin ? 'win' : 'loss';
+  const gpm = p?.gpm ?? 0; const xpm = p?.xpm ?? 0; const deaths = p?.deaths ?? 0; const durationMinutes = p?.durationMinutes ?? 0;
+  const heroDamage = p?.heroDamage ?? 0; const heroDamagePerMin = p?.heroDamagePerMin ?? 0; const lastHits = p?.lastHits ?? 0; const lastHitsPerMin = p?.lastHitsPerMin ?? 0;
 
-  const gpm = p?.gpm ?? 0;
-  const xpm = p?.xpm ?? 0;
-  const deaths = p?.deaths ?? 0;
-  const durationMinutes = p?.durationMinutes ?? 0;
-  const heroDamage = p?.heroDamage ?? 0;
-  const heroDamagePerMin = p?.heroDamagePerMin ?? 0;
-  const lastHits = p?.lastHits ?? 0;
-  const lastHitsPerMin = p?.lastHitsPerMin ?? 0;
+  const trackedTimings = p?.itemTimings ?? []; const itemsFindings: AnalysisFinding[] = [];
+  const getItemTiming = (key: string) => trackedTimings.find((it) => it.key === key);
 
-  const laneFindings: AnalysisFinding[] = [
-    lastHitsPerMin >= 7
-      ? { text: `${lastHits} LH за ${fmt(durationMinutes)} мин — высокий farming output.`, evidence: [`${fmt(lastHitsPerMin)} LH/min`], severity: 'good' }
-      : { text: `${lastHits} LH за ${fmt(durationMinutes)} мин — ниже желаемого темпа для carry.`, evidence: [`${fmt(lastHitsPerMin)} LH/min`], severity: 'warning' }
+  const timingChecks: Array<[string, string, number]> = [
+    ['phase_boots', 'Phase Boots', 480], ['armlet', 'Armlet', 900], ['desolator', 'Desolator', 1320], ['black_king_bar', 'Black King Bar', 1500], ['sange_and_yasha', 'Sange and Yasha', 1500]
   ];
-
-  const trackedTimings = p?.itemTimings ?? [];
-  const purchaseLogUnavailable = p?.itemTimingSource === 'unavailable';
-  const hasTracked = trackedTimings.length > 0;
-  const itemsFindings: AnalysisFinding[] = [];
-
-  if (purchaseLogUnavailable) {
-    itemsFindings.push({ text: 'OpenDota не дал purchase_log, поэтому выводы по таймингам отключены.', evidence: ['purchase_log unavailable'], severity: 'info' });
-  } else if (!hasTracked) {
-    itemsFindings.push({ text: 'purchase_log есть, но ключевые предметы Lifestealer не найдены.', evidence: [`purchase_log entries: ${p?.rawPurchaseLogPreview?.length ?? 0}`], severity: 'info' });
-  } else {
-    const topEvidences = trackedTimings.slice(0, 3).map((it) => `${it.item} — ${it.time}`);
-    itemsFindings.push({ text: 'Ключевые покупки найдены в purchase_log.', evidence: topEvidences, severity: 'good' });
-
-    const phaseBoots = trackedTimings.find((it) => it.key === 'phase_boots');
-    if (phaseBoots) {
-      itemsFindings.push({
-        text: phaseBoots.timeSeconds <= 480 ? 'Phase Boots вышли в хорошем темпе для линии.' : 'Phase Boots вышли поздно — проверь темп фарма и смерти до покупки.',
-        evidence: [`Phase Boots — ${phaseBoots.time}`],
-        severity: phaseBoots.timeSeconds <= 480 ? 'good' : 'warning'
-      });
-    }
-
-    const armlet = trackedTimings.find((it) => it.key === 'armlet');
-    if (armlet) {
-      itemsFindings.push({
-        text: armlet.timeSeconds <= 900 ? 'Armlet вышел в нормальный core timing.' : 'Armlet вышел поздно — проверь темп фарма и смерти до покупки.',
-        evidence: [`Armlet — ${armlet.time}`],
-        severity: armlet.timeSeconds <= 900 ? 'good' : 'warning'
-      });
-    }
+  for (const [key, label, threshold] of timingChecks) {
+    const it = getItemTiming(key);
+    if (!it) itemsFindings.push({ text: `Тайминг ${label} не найден в purchase_log, вывод по этому предмету отключён.`, evidence: [`${label}: missing in purchase_log`], severity: 'info' });
+    else itemsFindings.push({ text: `${label} на ${it.time} — ${it.timeSeconds <= threshold ? 'хороший' : 'более поздний'} timing для MVP-оценки Lifestealer.`, evidence: [`${label} — ${it.time}`], severity: it.timeSeconds <= threshold ? 'good' : 'warning' });
   }
 
+  if (p?.deathDataSource === 'unavailable') itemsFindings.push({ text: 'Конвертация предметов через deaths window не рассчитана: нет death_log.', evidence: ['death_log unavailable'], severity: 'info' });
+  else (p?.deathsAfterItemTimings ?? []).forEach((w) => {
+    if (w.itemKey === 'armlet' && w.deathsWithin10Min >= 2) itemsFindings.push({ text: `После Armlet было ${w.deathsWithin10Min} смертей за 10 минут — тайминг мог не конвертироваться в давление.`, evidence: [`Armlet: ${w.deathsWithin10Min} смертей за 10 мин`], severity: 'warning' });
+    if (w.itemKey === 'desolator' && w.deathsWithin10Min === 0 && heroDamagePerMin >= 700) itemsFindings.push({ text: 'После Desolator ты сохранил темп и мог давить карту.', evidence: ['Desolator: 0 смертей за 10 мин', `${fmt(heroDamagePerMin)} урон/мин`], severity: 'good' });
+  });
+
+  if (!(p?.objectiveEvents?.length)) itemsFindings.push({ text: 'Конвертация в объекты не рассчитана: в текущем payload нет надёжных objective events.', evidence: ['objectives unavailable or empty'], severity: 'info' });
+  else (p?.itemObjectiveWindows ?? []).forEach((w) => itemsFindings.push({ text: w.objectivesWithin10Min > 0 ? `Тайминг ${w.item} был конвертирован в объект в течение 10 минут.` : `По доступным данным после ${w.item} объекты в течение 10 минут не найдены.`, evidence: [`${w.item}: ${w.objectivesWithin10Min}`, w.objectiveTypes.join(', ') || 'types: none'], severity: w.objectivesWithin10Min > 0 ? 'good' : 'info' }));
+
   const fightsFindings: AnalysisFinding[] = [
-    heroDamagePerMin >= 700
-      ? { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — высокий вклад в драки.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'good' }
-      : { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — вклад в драки можно усилить.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'warning' },
+    heroDamagePerMin >= 700 ? { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — высокий вклад в драки.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'good' } : { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — вклад в драки можно усилить.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'warning' },
     { text: `Общее число смертей: ${deaths}.`, evidence: [`${deaths} deaths`], severity: deaths >= 8 ? 'bad' : 'info' }
   ];
 
-  if (p?.deathDataSource === 'death_log' && p.deathsByPhase) {
-    const byPhase = p.deathsByPhase;
-    fightsFindings.push({
-      text: `Смерти по фазам: линия ${byPhase.laning}, 10–20 ${byPhase.earlyMid}, 20–35 ${byPhase.midGame}, 35+ ${byPhase.lateGame}.`,
-      evidence: ['источник: death_log OpenDota'],
-      severity: 'info'
-    });
-
-    if (byPhase.laning > 1) fightsFindings.push({ text: `${byPhase.laning} смертей на линии — это могло замедлить первый слот.`, evidence: ['фаза: 0–10'], severity: 'warning' });
-    if (byPhase.midGame >= 3) fightsFindings.push({ text: `${byPhase.midGame} смертей в мидгейме — проверь входы в драки до/после ключевого предмета.`, evidence: ['фаза: 20–35'], severity: 'warning' });
-    if (byPhase.lateGame >= 2) fightsFindings.push({ text: `${byPhase.lateGame} смертей после 35-й минуты — высокий риск потери Roshan/стороны карты.`, evidence: ['фаза: 35+'], severity: 'bad' });
-  } else {
-    fightsFindings.push({ text: 'OpenDota не дал death_log, поэтому нельзя разложить смерти по фазам.', evidence: ['death_log unavailable'], severity: 'info' });
+  if (!p || p.deathDataSource === 'unavailable' || !p.deathsByPhase) fightsFindings.push({ text: 'OpenDota не дал надёжный death_log, поэтому нельзя разложить смерти по фазам.', evidence: ['death_log unavailable'], severity: 'info' });
+  else {
+    const d = p.deathsByPhase;
+    fightsFindings.push({ text: `Смерти по фазам: Лайнинг — ${d.laning}, Ранняя середина — ${d.earlyMid}, Мидгейм — ${d.midGame}, Лейт — ${d.lateGame}.`, evidence: [`Лайнинг: ${d.laning}`, `10–20: ${d.earlyMid}`, `20–35: ${d.midGame}`, `35+: ${d.lateGame}`], severity: 'info' });
+    if (d.laning >= 2) fightsFindings.push({ text: '2+ смерти на линии могли замедлить первый ключевой предмет.', evidence: [`Лайнинг: ${d.laning}`], severity: 'warning' });
+    if (d.earlyMid >= 2) fightsFindings.push({ text: '2+ смерти в 10–20 минут могли сбить темп Armlet/Desolator/BKB.', evidence: [`10–20: ${d.earlyMid}`], severity: 'warning' });
+    if (d.midGame >= 3) fightsFindings.push({ text: '3+ смерти в мидгейме — риск потери карты и Roshan.', evidence: [`20–35: ${d.midGame}`], severity: 'bad' });
+    if (d.lateGame >= 2) fightsFindings.push({ text: '2+ смерти после 35-й минуты — высокий риск потери Roshan, buyback или стороны карты.', evidence: [`35+: ${d.lateGame}`], severity: 'bad' });
   }
 
-  fightsFindings.push({ text: 'Участие в убийствах по фазам не рассчитано: в текущем OpenDota payload нет достаточной структуры событий.', evidence: ['phase KP unavailable'], severity: 'info' });
+  fightsFindings.push({ text: 'Участие в убийствах по фазам не рассчитано: в OpenDota payload нет достаточной структуры событий по ассистам/убийствам.', evidence: ['phase kill participation unavailable'], severity: 'info' });
 
   const mapFindings: AnalysisFinding[] = [
-    gpm >= 650
-      ? { text: `${Math.round(gpm)} GPM — сильная экономика для carry.`, evidence: [`${Math.round(gpm)} GPM`, `${Math.round(xpm)} XPM`], severity: 'good' }
-      : { text: `${Math.round(gpm)} GPM — экономика ниже целевого уровня для carry.`, evidence: [`${Math.round(gpm)} GPM`, `${Math.round(xpm)} XPM`], severity: 'warning' },
+    { text: `${Math.round(gpm)} GPM / ${Math.round(xpm)} XPM.`, evidence: [`${Math.round(gpm)} GPM`, `${Math.round(xpm)} XPM`], severity: gpm >= 650 ? 'good' : 'warning' },
     { text: `${lastHits} LH за ${fmt(durationMinutes)} мин.`, evidence: [`${fmt(lastHitsPerMin)} LH/min`], severity: lastHitsPerMin >= 7 ? 'good' : 'info' }
   ];
+  if (p?.economyByPhaseSource === 'gold_t/lh_t' && p.economyByPhase) {
+    const best = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhDelta?: number }]>).sort((a, b) => (b[1].lhDelta ?? 0) - (a[1].lhDelta ?? 0))[0];
+    mapFindings.push({ text: `Основной прирост LH пришёлся на фазу: ${getPhaseLabel(best[0])}.`, evidence: [`+${best[1].lhDelta ?? 0} LH`, 'lh_t from OpenDota'], severity: 'info' });
+  } else mapFindings.push({ text: 'Фазовый темп экономики не рассчитан: OpenDota не дал gold_t/lh_t.', evidence: ['economy time-series unavailable'], severity: 'info' });
 
-  if (typeof p?.killParticipation === 'number') {
-    mapFindings.push({ text: `Участие в убийствах команды: ${fmt(p.killParticipation * 100)}%.`, evidence: ['расчёт по team kills из OpenDota'], severity: 'info' });
-  } else {
-    mapFindings.push({ text: 'Участие в убийствах не рассчитано: нет надёжных team kills данных.', evidence: ['team kills unavailable'], severity: 'info' });
-  }
-
-  // TODO: Gold source breakdown requires reliable source fields; not implemented in MVP.
-  return {
-    matchId: match.matchId,
-    hero: 'Lifestealer',
-    role: 'carry',
-    result,
-    buildPlayed: p?.buildPlayed ?? [],
-    timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}),
-    itemTimings: trackedTimings,
-    grades: {
-      lane: { score: score(62, lastHitsPerMin >= 7 ? 10 : -6), findings: laneFindings },
-      items: { score: purchaseLogUnavailable ? 60 : hasTracked ? score(63, 6) : 62, findings: itemsFindings },
-      fights: { score: score(58, heroDamagePerMin >= 700 ? 8 : -4), findings: fightsFindings },
-      map: { score: score(60, gpm >= 650 ? 8 : -5), findings: mapFindings }
-    },
-    topMistakes: [
-      deaths >= 8 ? `${deaths} смертей: снизить риск до ключевого defensive timing.` : 'Критичных ошибок по смертям не обнаружено.',
-      hasTracked ? 'После core-тайминга чаще конвертируй силу в objectives: tower/Roshan.' : 'Без подтверждённых таймингов предметов не делаем выводы о темпе сборки.',
-      gpm < 650 ? `Экономика ${Math.round(gpm)} GPM: усили цикл фарма между объектами.` : 'Сохрани текущий темп экономики в следующем матче.'
-    ],
-    nextGameAdjustments: [
-      'Цель: 4–6 смертей, особенно до defensive timing.',
-      'После первого сильного предмета играй ближе к Roshan, towers и enemy jungle, но входи в драку вторым номером при наличии вижена.',
-      'Если death_log доступен, после матча отдельно разбирай фазы с пиками смертей.'
-    ],
-    finalVerdict: {
-      mainReason:
-        result === 'win'
-          ? `Ты выиграл за счёт сильной экономики и высокого урона: ${Math.round(gpm)} GPM, ${Math.round(xpm)} XPM, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям.`
-          : `Ты удерживал игру за счёт экономики и урона: ${Math.round(gpm)} GPM, ${Math.round(xpm)} XPM, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям, но этого не хватило для победы.`,
-      biggestRisk: `${deaths} смертей для carry — главный риск. В следующей игре цель: 4–6 смертей, особенно до defensive timing.`,
-      nextMatchFocus: 'После первого сильного предмета играй ближе к Roshan, towers и enemy jungle, но входи в драку вторым номером при наличии вижена.'
-    },
-    meta: { source: ['opendota', 'rules'], confidence: hasTracked ? 0.82 : 0.74 }
+  const topPhase = p?.deathsByPhase ? (Object.entries(p.deathsByPhase).sort((a,b)=>b[1]-a[1])[0] as [MatchPhase,number]) : null;
+  return { matchId: match.matchId, hero: 'Lifestealer', role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings,
+    grades: { lane: { score: score(62, lastHitsPerMin >= 7 ? 10 : -6), findings: [] }, items: { score: 64, findings: itemsFindings }, fights: { score: score(58, heroDamagePerMin >= 700 ? 8 : -4), findings: fightsFindings }, map: { score: score(60, gpm >= 650 ? 8 : -5), findings: mapFindings } },
+    topMistakes: [ deaths >= 8 ? `${deaths} смертей — главный риск. Проверь смерти в фазе, где их было больше всего.` : 'Критичных ошибок по смертям не обнаружено.', topPhase ? `Больше всего смертей в фазе: ${getPhaseLabel(topPhase[0])} — ${topPhase[1]}. После 35-й минуты каждая смерть может стоить Roshan/стороны карты.` : 'OpenDota не дал death_log, поэтому причины смертей ограничены общим числом смертей.', p?.deathsAfterItemTimings?.find((x)=>x.itemKey==='armlet') ? `После Armlet было ${p.deathsAfterItemTimings.find((x)=>x.itemKey==='armlet')?.deathsWithin10Min} смертей за 10 минут — тайминг мог не дать давления.` : 'Окно после Armlet не рассчитано из-за нехватки данных.' ],
+    nextGameAdjustments: [ 'Цель на следующий матч: удержать смерти в диапазоне 4–6.', getItemTiming('armlet') ? 'Если Armlet выходит до 15 минуты, следующие 5–10 минут играй вокруг safe objectives вместе с командой.' : 'Без подтверждённого Armlet-тайминга не даём совет по этому окну.', (p?.deathsByPhase?.lateGame ?? 0) > 0 ? 'Если смертей больше всего после 35 минуты, не заходи первым в тёмные зоны без вижена и байбека.' : 'Фокус: стабильный темп фарма и безопасные подключения к дракам в mid game.' ],
+    finalVerdict: { mainReason: result === 'win' ? `Победа на базе экономики и драк: ${Math.round(gpm)} GPM, ${Math.round(heroDamage).toLocaleString('ru-RU')} hero damage.` : `Поражение при ${Math.round(gpm)} GPM и ${Math.round(heroDamage).toLocaleString('ru-RU')} hero damage: не хватило конвертации темпа.`, biggestRisk: `${deaths} смертей для carry — главный риск матча.`, nextMatchFocus: 'Держи темп ключевых предметов и контролируй deaths-окна 5–10 минут после них.' },
+    meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75 }
   };
 }
