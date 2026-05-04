@@ -1,13 +1,23 @@
-import { getLifestealerMvpItemName } from '@/lib/dota/constants/items';
+import { formatGameTime, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
 
-function toClock(sec?: number): string {
-  if (typeof sec !== 'number' || Number.isNaN(sec)) return 'n/a';
-  const min = Math.floor(sec / 60);
-  const rem = Math.floor(sec % 60).toString().padStart(2, '0');
-  return `${min}:${rem}`;
-}
+const TRACKED_ITEM_KEYS = new Set([
+  'phase_boots',
+  'armlet',
+  'desolator',
+  'basher',
+  'black_king_bar',
+  'sange_and_yasha',
+  'assault',
+  'abyssal_blade',
+  'satanic',
+  'mjollnir',
+  'radiance',
+  'monkey_king_bar',
+  'butterfly',
+  'heart'
+]);
 
 function toNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -23,9 +33,7 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
     | Record<string, unknown>
     | undefined;
 
-  if (!playerRaw) {
-    throw new Error('Target hero/player not found in OpenDota payload');
-  }
+  if (!playerRaw) throw new Error('Target hero/player not found in OpenDota payload');
 
   const durationSeconds = toNumber(payload.duration);
   const durationMinutes = durationSeconds > 0 ? durationSeconds / 60 : 0;
@@ -35,30 +43,35 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
   const heroDamage = toNumber(playerRaw.hero_damage);
   const deaths = toNumber(playerRaw.deaths);
 
-  const purchaseLog = Array.isArray(playerRaw.purchase_log)
-    ? (playerRaw.purchase_log as Array<Record<string, unknown>>)
-    : null;
+  const rawPurchaseLog = Array.isArray(playerRaw.purchase_log) ? (playerRaw.purchase_log as Array<Record<string, unknown>>) : null;
+  const itemTimingSource = rawPurchaseLog ? 'purchase_log' : 'unavailable';
 
-  const itemTimings = purchaseLog
-    ? purchaseLog
-        .filter((entry) => typeof entry.key === 'string' && typeof entry.time === 'number')
-        .map((entry) => ({ item: entry.key as string, time: toClock(toNumber(entry.time)), source: 'purchase_log' as const }))
-    : [{ item: 'purchase_log', time: 'n/a', source: 'unavailable' as const }];
+  const seen = new Set<string>();
+  const itemTimings = (rawPurchaseLog ?? [])
+    .filter((entry) => typeof entry.key === 'string' && TRACKED_ITEM_KEYS.has(entry.key) && typeof entry.time === 'number')
+    .filter((entry) => {
+      if (seen.has(entry.key as string)) return false;
+      seen.add(entry.key as string);
+      return true;
+    })
+    .map((entry) => {
+      const timeSeconds = toNumber(entry.time);
+      return {
+        key: entry.key as string,
+        item: getItemNameByKey(entry.key as string),
+        time: formatGameTime(timeSeconds),
+        timeSeconds,
+        source: 'purchase_log' as const
+      };
+    });
 
   const teamKey = toBoolean(playerRaw.isRadiant) ? 'radiant_score' : 'dire_score';
   const teamKillsRaw = payload[teamKey as keyof OpenDotaMatchResponse];
   const teamKills = typeof teamKillsRaw === 'number' && teamKillsRaw > 0 ? teamKillsRaw : null;
 
-  const item0 = toNumber(playerRaw.item_0);
-  const item1 = toNumber(playerRaw.item_1);
-  const item2 = toNumber(playerRaw.item_2);
-  const item3 = toNumber(playerRaw.item_3);
-  const item4 = toNumber(playerRaw.item_4);
-  const item5 = toNumber(playerRaw.item_5);
-
-  const normalizedBuild = [item0, item1, item2, item3, item4, item5]
-    .map((id) => getLifestealerMvpItemName(id))
-    .filter((name): name is string => Boolean(name));
+  const rawItemIds = [0, 1, 2, 3, 4, 5].map((slot) => toNumber(playerRaw[`item_${slot}`]));
+  const unknownItemIds = rawItemIds.filter((id) => id > 0 && !getItemNameById(id));
+  const buildPlayed = rawItemIds.map((id) => getItemNameById(id)).filter((name): name is string => Boolean(name));
 
   return {
     matchId: toNumber(payload.match_id),
@@ -78,14 +91,21 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
       gpm: toNumber(playerRaw.gold_per_min),
       xpm: toNumber(playerRaw.xp_per_min),
       killParticipation: teamKills ? (kills + assists) / teamKills : undefined,
-      item0,
-      item1,
-      item2,
-      item3,
-      item4,
-      item5,
+      item0: rawItemIds[0],
+      item1: rawItemIds[1],
+      item2: rawItemIds[2],
+      item3: rawItemIds[3],
+      item4: rawItemIds[4],
+      item5: rawItemIds[5],
       itemTimings,
-      buildPlayed: normalizedBuild
+      itemTimingSource,
+      buildPlayed,
+      rawPurchaseLogPreview: (rawPurchaseLog ?? [])
+        .filter((entry) => typeof entry.key === 'string' && typeof entry.time === 'number')
+        .slice(0, 30)
+        .map((entry) => ({ key: entry.key as string, time: toNumber(entry.time) })),
+      rawItemIds,
+      unknownItemIds
     }
   };
 }

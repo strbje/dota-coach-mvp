@@ -4,7 +4,7 @@ export function GradesGrid({ grades }: { grades: PostMatchAnalysis['grades'] }) 
   const entries = Object.entries(grades);
   return (
     <section className="card">
-      <h3>Grades</h3>
+      <h3>Оценки</h3>
       <div className="grid grid-2">
         {entries.map(([label, grade]) => (
           <article key={label} className="card">
@@ -13,7 +13,7 @@ export function GradesGrid({ grades }: { grades: PostMatchAnalysis['grades'] }) 
               {grade.findings.map((f) => (
                 <li key={`${f.text}-${f.severity}`}>
                   <strong>[{f.severity}]</strong> {f.text}
-                  {f.evidence.length ? <div style={{ opacity: 0.8 }}>Evidence: {f.evidence.join(' · ')}</div> : null}
+                  {f.evidence.length ? <div style={{ opacity: 0.8 }}>Основание: {f.evidence.join(' · ')}</div> : null}
                 </li>
               ))}
             </ul>

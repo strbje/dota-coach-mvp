@@ -65,7 +65,11 @@ export type NormalizedOpenDotaMatch = {
     item3?: number;
     item4?: number;
     item5?: number;
-    itemTimings?: Array<{ item: string; time: string; source: 'purchase_log' | 'unavailable' }>;
+    itemTimings?: Array<{ key: string; item: string; time: string; timeSeconds: number; source: 'purchase_log' }>;
+    itemTimingSource?: 'purchase_log' | 'unavailable';
+    rawPurchaseLogPreview?: Array<{ key: string; time: number }>;
+    rawItemIds?: number[];
+    unknownItemIds?: number[];
     buildPlayed?: string[];
   };
 };

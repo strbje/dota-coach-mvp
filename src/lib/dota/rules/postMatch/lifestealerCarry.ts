@@ -1,4 +1,3 @@
-import { getLifestealerMvpItemName } from '@/lib/dota/constants/items';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis } from '@/lib/dota/types/domain';
 
 function score(base: number, delta: number): number {
@@ -22,109 +21,74 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
   const lastHits = p?.lastHits ?? 0;
   const lastHitsPerMin = p?.lastHitsPerMin ?? 0;
 
-  const laneFindings: AnalysisFinding[] = [];
-  laneFindings.push(
+  const laneFindings: AnalysisFinding[] = [
     lastHitsPerMin >= 7
       ? { text: `${lastHits} LH за ${fmt(durationMinutes)} мин — высокий farming output.`, evidence: [`${fmt(lastHitsPerMin)} LH/min`], severity: 'good' }
       : { text: `${lastHits} LH за ${fmt(durationMinutes)} мин — ниже желаемого темпа для carry.`, evidence: [`${fmt(lastHitsPerMin)} LH/min`], severity: 'warning' }
-  );
+  ];
 
+  const trackedTimings = p?.itemTimings ?? [];
+  const purchaseLogUnavailable = p?.itemTimingSource === 'unavailable';
+  const hasTracked = trackedTimings.length > 0;
   const itemsFindings: AnalysisFinding[] = [];
-  const timingsUnavailable = !p?.itemTimings?.length || p.itemTimings.some((it) => it.source === 'unavailable');
-  if (timingsUnavailable) {
-    itemsFindings.push({
-      text: 'OpenDota не дал надёжных purchase_log данных, поэтому точные выводы по таймингам предметов отключены.',
-      evidence: ['purchase_log unavailable'],
-      severity: 'info'
-    });
+
+  if (purchaseLogUnavailable) {
+    itemsFindings.push({ text: 'OpenDota не дал purchase_log, поэтому выводы по таймингам предметов отключены.', evidence: ['purchase_log unavailable'], severity: 'info' });
+  } else if (!hasTracked) {
+    itemsFindings.push({ text: 'purchase_log есть, но ключевые предметы Lifestealer не найдены.', evidence: [`purchase_log entries: ${p?.rawPurchaseLogPreview?.length ?? 0}`], severity: 'info' });
   } else {
-    itemsFindings.push({
-      text: 'Тайминги предметов показаны только из purchase_log без догадок.',
-      evidence: [`${p.itemTimings.length} purchase_log entries`],
-      severity: 'good'
-    });
+    const evidence = trackedTimings.map((it) => `${it.item} — ${it.time}`);
+    itemsFindings.push({ text: `Тайминги ключевых предметов взяты из purchase_log: ${evidence.join(', ')}.`, evidence, severity: 'good' });
   }
 
-  const fightsFindings: AnalysisFinding[] = [];
-  fightsFindings.push(
+  const fightsFindings: AnalysisFinding[] = [
     heroDamagePerMin >= 700
-      ? {
-          text: `${Math.round(heroDamage)} hero damage за ${fmt(durationMinutes)} мин — высокий вклад в драки, но его нужно сопоставлять со смертями.`,
-          evidence: [`${fmt(heroDamagePerMin)} damage/min`],
-          severity: 'good'
-        }
-      : {
-          text: `${Math.round(heroDamage)} hero damage за ${fmt(durationMinutes)} мин — вклад в драки можно усилить.`,
-          evidence: [`${fmt(heroDamagePerMin)} damage/min`],
-          severity: 'warning'
-        }
-  );
-  fightsFindings.push(
+      ? { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — высокий вклад в драки, но его нужно сопоставлять со смертями.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'good' }
+      : { text: `${Math.round(heroDamage)} урона по героям за ${fmt(durationMinutes)} мин — вклад в драки можно усилить.`, evidence: [`${fmt(heroDamagePerMin)} урон/мин`], severity: 'warning' },
     deaths >= 8
       ? { text: `${deaths} смертей — высокий риск для carry и возможная потеря темпа/объектов.`, evidence: [`${deaths} deaths`], severity: 'bad' }
       : { text: `${deaths} смертей — приемлемый уровень риска для carry.`, evidence: [`${deaths} deaths`], severity: 'good' }
-  );
+  ];
 
-  const mapFindings: AnalysisFinding[] = [];
-  mapFindings.push(
+  const mapFindings: AnalysisFinding[] = [
     gpm >= 650
       ? { text: `${Math.round(gpm)} GPM — сильная экономика для carry.`, evidence: [`${Math.round(gpm)} GPM`, `${Math.round(xpm)} XPM`], severity: 'good' }
       : { text: `${Math.round(gpm)} GPM — экономика ниже целевого уровня для carry.`, evidence: [`${Math.round(gpm)} GPM`, `${Math.round(xpm)} XPM`], severity: 'warning' }
-  );
-  if (typeof p?.killParticipation === 'number') {
-    mapFindings.push({
-      text: `Участие в убийствах команды: ${fmt(p.killParticipation * 100)}%.`,
-      evidence: ['расчёт по team kills из OpenDota'],
-      severity: 'info'
-    });
-  } else {
-    mapFindings.push({
-      text: 'Участие в убийствах не рассчитано: в матче нет надёжных team kills данных.',
-      evidence: ['team kills unavailable'],
-      severity: 'info'
-    });
-  }
+  ];
 
-  const buildPlayed = [p?.item0, p?.item1, p?.item2, p?.item3, p?.item4, p?.item5]
-    .map((id) => getLifestealerMvpItemName(id))
-    .filter((name): name is string => Boolean(name));
+  if (typeof p?.killParticipation === 'number') mapFindings.push({ text: `Участие в убийствах команды: ${fmt(p.killParticipation * 100)}%.`, evidence: ['расчёт по team kills из OpenDota'], severity: 'info' });
 
   return {
     matchId: match.matchId,
     hero: 'Lifestealer',
     role: 'carry',
     result,
-    buildPlayed,
-    timings: (p?.itemTimings ?? []).reduce<Record<string, string>>((acc, t) => {
-      acc[t.item] = t.time;
-      return acc;
-    }, {}),
+    buildPlayed: p?.buildPlayed ?? [],
+    timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}),
     grades: {
       lane: { score: score(62, lastHitsPerMin >= 7 ? 10 : -6), findings: laneFindings },
-      items: { score: score(68, timingsUnavailable ? -4 : 6), findings: itemsFindings },
+      items: { score: hasTracked ? score(63, 8) : 62, findings: itemsFindings },
       fights: { score: score(58, heroDamagePerMin >= 700 ? 8 : -4), findings: fightsFindings },
       map: { score: score(60, gpm >= 650 ? 8 : -5), findings: mapFindings }
     },
     topMistakes: [
       deaths >= 8 ? `${deaths} смертей: снизить риск после выхода на линию и перед заходом на хайграунд.` : 'Критичных ошибок по смертям не обнаружено.',
-      timingsUnavailable
-        ? 'Нет purchase_log: не делаем выводы по темпам слотов, нужна повторная проверка данных OpenDota.'
-        : 'Проверь, конвертировались ли ключевые покупки в цели (tower/Roshan) сразу после тайминга.',
+      hasTracked ? 'Конвертируй ключевые предметные тайминги в objectives: tower/Roshan.' : 'Без подтверждённых таймингов предметов не делаем выводы о темпе сборки.',
       gpm < 650 ? `Экономика ${Math.round(gpm)} GPM: усилить цикл фарма между объектами.` : 'Сохрани текущий темп экономики в следующем матче.'
     ],
     nextGameAdjustments: [
-      deaths >= 8 ? 'Цель на следующий матч: удержать смерти в диапазоне 4–6 до ключевого defensive item.' : 'Удерживай текущий контроль смертей и позиционку в драках.',
-      gpm < 650 ? 'Добавь 1–2 безопасных фарм-паттерна через стаки и возврат в зону вижена.' : 'После первого сильного слота смещайся к Roshan/tower, когда команда рядом.',
+      'Цель: 4–6 смертей, особенно до defensive timing.',
+      'После первого сильного предмета играй ближе к Roshan, towers и enemy jungle, но входи в драку вторым номером при наличии вижена.',
       'Не заходи первым без вижена и контроля ключевых кнопок врага.'
     ],
     finalVerdict: {
-      mainReason: `Ты выиграл/держал игру за счёт экономики и урона: ${Math.round(gpm)} GPM, ${Math.round(xpm)} XPM, ${Math.round(heroDamage)} hero damage.`,
-      biggestRisk: `${deaths} смертей для carry — главный риск. В следующей игре цель: 4–6 смертей, особенно до defensive тайминга.`,
-      nextMatchFocus: 'После первого сильного предмета играй ближе к Roshan, towers и enemy jungle, входи в драку вторым номером при наличии вижена.'
+      mainReason:
+        result === 'win'
+          ? `Ты выиграл за счёт сильной экономики и высокого урона: ${Math.round(gpm)} GPM, ${Math.round(xpm)} XPM, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям.`
+          : `Ты удерживал игру за счёт экономики и урона: ${Math.round(gpm)} GPM, ${Math.round(xpm)} XPM, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям, но этого не хватило для победы.`,
+      biggestRisk: `${deaths} смертей для carry — главный риск. В следующей игре цель: 4–6 смертей, особенно до defensive timing.`,
+      nextMatchFocus: 'После первого сильного предмета играй ближе к Roshan, towers и enemy jungle, но входи в драку вторым номером при наличии вижена.'
     },
-    meta: {
-      source: ['opendota', 'rules'],
-      confidence: timingsUnavailable ? 0.74 : 0.81
-    }
+    meta: { source: ['opendota', 'rules'], confidence: hasTracked ? 0.82 : 0.74 }
   };
 }
