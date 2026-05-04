@@ -53,6 +53,12 @@ export default function PostMatchPage() {
             <p><strong>Build:</strong> {data.analysis.buildPlayed.join(' → ')}</p>
           </section>
           <GradesGrid grades={data.analysis.grades} />
+          <section className="card">
+            <h3>Final Coach Verdict</h3>
+            <p><strong>Main reason:</strong> {data.analysis.finalVerdict.mainReason}</p>
+            <p><strong>Biggest risk:</strong> {data.analysis.finalVerdict.biggestRisk}</p>
+            <p><strong>Next match focus:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p>
+          </section>
           <CoachSummaryCard title="Top Mistakes" lines={data.analysis.topMistakes} />
           <CoachSummaryCard title="Next-Game Adjustments" lines={data.analysis.nextGameAdjustments} />
           <DebugPanel data={data.debug} title="Provider payload summary" />
