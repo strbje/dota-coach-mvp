@@ -32,6 +32,7 @@ export default function PostMatchPage() {
       <GradesGrid grades={data.analysis.grades} />
       <ItemTimeline items={data.analysis.itemTimings} />
       <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={data.analysis.deathsByPhase} itemTimings={data.analysis.itemTimings} />
+      {data.analysis.farmProfile ? <section className="card"><h3>Профиль фарма</h3><ul><li>Лейн-крипы: {data.analysis.farmProfile.laneKills ?? 0}</li><li>Нейтралы: {data.analysis.farmProfile.neutralKills ?? 0}</li><li>Древние: {data.analysis.farmProfile.ancientKills ?? 0}</li><li>Убийства героев: {data.analysis.farmProfile.heroKills ?? 0}</li></ul></section> : null}
       <section className="card"><h3>Итог тренера</h3><p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p><p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p><p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p></section>
       <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
       <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />

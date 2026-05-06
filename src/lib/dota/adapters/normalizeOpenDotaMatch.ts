@@ -79,7 +79,8 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
 
   const goldT = Array.isArray(playerRaw.gold_t) ? playerRaw.gold_t.map((v) => toNumber(v, NaN)) : null;
   const lhT = Array.isArray(playerRaw.lh_t) ? playerRaw.lh_t.map((v) => toNumber(v, NaN)) : null;
-  const economyByPhaseSource = goldT && lhT && goldT.length > 5 && lhT.length > 5 ? 'gold_t/lh_t' : 'unavailable';
+  const xpT = Array.isArray(playerRaw.xp_t) ? playerRaw.xp_t.map((v) => toNumber(v, NaN)) : null;
+  const economyByPhaseSource = goldT && lhT && xpT && goldT.length > 5 && lhT.length > 5 && xpT.length > 5 ? 'gold_t/lh_t' : 'unavailable';
 
   const laneEfficiency = typeof playerRaw.lane_efficiency === 'number' ? toNumber(playerRaw.lane_efficiency) : undefined;
   const laneEfficiencyPct = typeof playerRaw.lane_efficiency_pct === 'number' ? toNumber(playerRaw.lane_efficiency_pct) : undefined;
@@ -90,10 +91,27 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
   const phaseRanges: Array<[MatchPhase, number, number | null]> = [['laning', 0, 10], ['earlyMid', 10, 20], ['midGame', 20, 35], ['lateGame', 35, null]];
   const economyByPhase = economyByPhaseSource === 'gold_t/lh_t' ? Object.fromEntries(phaseRanges.map(([phase, start, end]) => {
     const startIdx = Math.min(start, goldT!.length - 1);
-    const endIdx = Math.min((end ?? Math.floor(durationSeconds / 60)), goldT!.length - 1);
+    const endMinute = end ?? Math.max(start + 1, Math.floor(durationSeconds / 60));
+    const endIdx = Math.min(endMinute, goldT!.length - 1);
     const goldStart = goldT![startIdx]; const goldEnd = goldT![endIdx]; const lhStart = lhT![startIdx]; const lhEnd = lhT![endIdx];
-    return [phase, { goldStart, goldEnd, goldDelta: goldEnd - goldStart, lhStart, lhEnd, lhDelta: lhEnd - lhStart }];
-  })) as Record<MatchPhase, { goldStart?: number; goldEnd?: number; goldDelta?: number; lhStart?: number; lhEnd?: number; lhDelta?: number; }> : undefined;
+    const xpStart = xpT![startIdx]; const xpEnd = xpT![endIdx];
+    const duration = Math.max(1, endIdx - startIdx);
+    return [phase, {
+      startMinute: startIdx, endMinute: endIdx, durationMinutes: duration,
+      goldStart, goldEnd, goldDelta: goldEnd - goldStart, goldPerMinuteInPhase: (goldEnd - goldStart) / duration,
+      lhStart, lhEnd, lhDelta: lhEnd - lhStart, lhPerMinuteInPhase: (lhEnd - lhStart) / duration,
+      xpStart, xpEnd, xpDelta: xpEnd - xpStart, xpPerMinuteInPhase: (xpEnd - xpStart) / duration,
+      deaths: deathsByPhase?.[phase] ?? undefined
+    }];
+  })) : undefined;
+  const farmProfile = {
+    laneKills: toNumber(playerRaw.lane_kills, 0),
+    neutralKills: toNumber(playerRaw.neutral_kills, 0),
+    ancientKills: toNumber(playerRaw.ancient_kills, 0),
+    heroKills: toNumber(playerRaw.hero_kills, 0),
+    roshanKills: toNumber(playerRaw.roshan_kills, 0),
+    towerKills: toNumber(playerRaw.tower_kills, 0)
+  };
 
   const rawItemIds = [0, 1, 2, 3, 4, 5].map((slot) => toNumber(playerRaw[`item_${slot}`]));
   const unknownItemIds = rawItemIds.filter((id) => id > 0 && !getItemNameById(id));
@@ -116,7 +134,7 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
     objectiveEvents,
     itemObjectiveWindows,
     economyByPhaseSource,
-    economyByPhase,
-    lane: { lane: typeof playerRaw.lane === 'number' ? toNumber(playerRaw.lane) : undefined, laneRole: typeof playerRaw.lane_role === 'number' ? toNumber(playerRaw.lane_role) : undefined, laneEfficiency, laneEfficiencyPct, lhAt10, goldAt10, deathsBefore10, source: laneSource }
+    economyByPhase, farmProfile,
+    laneReview: { lane: typeof playerRaw.lane === 'number' ? toNumber(playerRaw.lane) : undefined, laneRole: typeof playerRaw.lane_role === 'number' ? toNumber(playerRaw.lane_role) : undefined, laneEfficiency, laneEfficiencyPct, lhAt10, goldAt10, deathsBefore10, source: laneSource }
   }};
 }
