@@ -6,6 +6,7 @@ import { DebugPanel } from '@/components/coach/DebugPanel';
 import { GradesGrid } from '@/components/coach/GradesGrid';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { ItemTimeline } from '@/components/coach/ItemTimeline';
+import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 
 type Payload = { analysis: PostMatchAnalysis; debug: unknown };
@@ -17,62 +18,24 @@ export default function PostMatchPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      const response = await fetch('/api/post-match/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' })
-      });
+      const response = await fetch('/api/post-match/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Post-match analyze failed');
       setData(payload as Payload);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Unknown error'); } finally { setLoading(false); }
   }
 
-  return (
-    <main className="container">
-      <h1>Пост-матч тренер</h1>
-      <div className="card grid">
-        <MatchIdForm matchId={matchId} onChange={setMatchId} />
-        <button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>
-        {error ? <p className="error">{error}</p> : null}
-      </div>
-
-      {data ? (
-        <div className="grid" style={{ marginTop: '1rem' }}>
-          <section className="card">
-            <h3>Match Snapshot</h3>
-            <p><strong>ID матча:</strong> {data.analysis.matchId}</p>
-            <p><strong>Герой:</strong> {data.analysis.hero}</p>
-            <p><strong>Результат:</strong> {data.analysis.result}</p>
-            <p><strong>Финальный инвентарь:</strong> {data.analysis.buildPlayed.length >= 2 ? data.analysis.buildPlayed.join(' → ') : 'данные пока не распознаны'}</p>
-          </section>
-          <GradesGrid grades={data.analysis.grades} />
-                    {data.analysis.itemTimings.length > 0 ? (
-            <ItemTimeline items={data.analysis.itemTimings} />
-          ) : (
-            <section className="card">
-              <h3>Тайминг предметов</h3>
-              <p className="muted">OpenDota не дал надёжных данных о ключевых покупках.</p>
-            </section>
-          )}
-<section className="card">
-            <h3>Итог тренера</h3>
-            <p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p>
-            <p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p>
-            <p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p>
-          </section>
-          <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
-          <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />
-          <DebugPanel data={data.debug} title="Provider payload summary" />
-        </div>
-      ) : null}
-    </main>
-  );
+  return <main className="container"><h1>Пост-матч тренер</h1><div className="card grid"><MatchIdForm matchId={matchId} onChange={setMatchId} /><button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>{error ? <p className="error">{error}</p> : null}</div>
+    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Результат:</strong> {data.analysis.result}</p><p><strong>Финальный инвентарь:</strong> {data.analysis.buildPlayed.length >= 2 ? data.analysis.buildPlayed.join(' → ') : 'данные пока не распознаны'}</p></section>
+      <GradesGrid grades={data.analysis.grades} />
+      <ItemTimeline items={data.analysis.itemTimings} />
+      <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={data.analysis.deathsByPhase} itemTimings={data.analysis.itemTimings} />
+      <section className="card"><h3>Итог тренера</h3><p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p><p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p><p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p></section>
+      <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
+      <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />
+      <DebugPanel data={data.debug} title="Provider payload summary / Debug" />
+    </div> : null}
+  </main>;
 }

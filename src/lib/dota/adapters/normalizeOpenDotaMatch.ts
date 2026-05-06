@@ -1,5 +1,6 @@
 import { formatGameTime, getItemIconUrlByKey, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
 import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
+import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
 
@@ -64,19 +65,28 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
     .filter((o) => typeof o.time === 'number' && typeof o.type === 'string')
     .map((o) => {
       const timeSeconds = toNumber(o.time);
-      return { timeSeconds, time: formatGameTime(timeSeconds), type: String(o.type), phase: getMatchPhase(timeSeconds) };
+      const isPlayerTeam = (typeof o.team === 'number') ? (toNumber(o.team) === (toBoolean(playerRaw.isRadiant) ? 2 : 3)) : undefined;
+      return { timeSeconds, time: formatGameTime(timeSeconds), type: String(o.type), phase: getMatchPhase(timeSeconds), isPlayerTeam };
     });
 
   const itemObjectiveWindows = objectiveEvents.length
     ? itemTimings.filter((t) => ['armlet', 'desolator'].includes(t.key)).map((it) => {
         const inside = objectiveEvents.filter((o) => o.timeSeconds >= it.timeSeconds && o.timeSeconds <= it.timeSeconds + 600);
-        return { itemKey: it.key, item: it.item, itemTime: it.time, objectivesWithin10Min: inside.length, objectiveTypes: [...new Set(inside.map((x) => x.type))] };
+        const teamAttributed = inside.length > 0 && inside.every((o) => o.isPlayerTeam === true);
+        return { itemKey: it.key, item: it.item, itemTime: it.time, objectivesWithin10Min: inside.length, objectiveTypes: [...new Set(inside.map((x) => normalizeObjectiveType(x.type)))], attributedToPlayerTeam: teamAttributed };
       })
     : [];
 
   const goldT = Array.isArray(playerRaw.gold_t) ? playerRaw.gold_t.map((v) => toNumber(v, NaN)) : null;
   const lhT = Array.isArray(playerRaw.lh_t) ? playerRaw.lh_t.map((v) => toNumber(v, NaN)) : null;
   const economyByPhaseSource = goldT && lhT && goldT.length > 5 && lhT.length > 5 ? 'gold_t/lh_t' : 'unavailable';
+
+  const laneEfficiency = typeof playerRaw.lane_efficiency === 'number' ? toNumber(playerRaw.lane_efficiency) : undefined;
+  const laneEfficiencyPct = typeof playerRaw.lane_efficiency_pct === 'number' ? toNumber(playerRaw.lane_efficiency_pct) : undefined;
+  const lhAt10 = lhT && lhT.length ? lhT[Math.min(10, lhT.length - 1)] : undefined;
+  const goldAt10 = goldT && goldT.length ? goldT[Math.min(10, goldT.length - 1)] : undefined;
+  const deathsBefore10 = deathTimings.length ? deathTimings.filter((d) => d.timeSeconds <= 600).length : undefined;
+  const laneSource = laneEfficiencyPct !== undefined || (lhAt10 !== undefined && goldAt10 !== undefined) ? 'opendota' : (laneEfficiency !== undefined || lhAt10 !== undefined || goldAt10 !== undefined || deathsBefore10 !== undefined ? 'partial' : 'unavailable');
   const phaseRanges: Array<[MatchPhase, number, number | null]> = [['laning', 0, 10], ['earlyMid', 10, 20], ['midGame', 20, 35], ['lateGame', 35, null]];
   const economyByPhase = economyByPhaseSource === 'gold_t/lh_t' ? Object.fromEntries(phaseRanges.map(([phase, start, end]) => {
     const startIdx = Math.min(start, goldT!.length - 1);
@@ -106,6 +116,7 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
     objectiveEvents,
     itemObjectiveWindows,
     economyByPhaseSource,
-    economyByPhase
+    economyByPhase,
+    lane: { lane: typeof playerRaw.lane === 'number' ? toNumber(playerRaw.lane) : undefined, laneRole: typeof playerRaw.lane_role === 'number' ? toNumber(playerRaw.lane_role) : undefined, laneEfficiency, laneEfficiencyPct, lhAt10, goldAt10, deathsBefore10, source: laneSource }
   }};
 }
