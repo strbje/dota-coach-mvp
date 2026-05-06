@@ -1,5 +1,6 @@
 export type HeroName = 'Lifestealer';
 export type RoleName = 'carry';
+export type MatchPhase = 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
 
 export type PreGameDraftInput = {
   hero: string;
@@ -74,7 +75,7 @@ export type NormalizedOpenDotaMatch = {
     deathTimings?: Array<{
       timeSeconds: number;
       time: string;
-      phase: 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
+      phase: MatchPhase;
       phaseLabel: string;
     }>;
     deathsByPhase?: {
@@ -85,7 +86,7 @@ export type NormalizedOpenDotaMatch = {
     };
     deathDataSource?: 'death_log' | 'deaths_log' | 'unavailable';
     fightParticipationByPhaseSource?: 'teamfights' | 'kills_log' | 'unavailable';
-    fightParticipationByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
+    fightParticipationByPhase?: Record<MatchPhase, {
       playerKillsPlusAssists: number;
       teamKills: number;
       participation: number;
@@ -101,7 +102,8 @@ export type NormalizedOpenDotaMatch = {
       timeSeconds: number;
       time: string;
       type: string;
-      phase: 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
+      phase: MatchPhase;
+      isPlayerTeam?: boolean;
     }>;
     itemObjectiveWindows?: Array<{
       itemKey: string;
@@ -109,7 +111,18 @@ export type NormalizedOpenDotaMatch = {
       itemTime: string;
       objectivesWithin10Min: number;
       objectiveTypes: string[];
+      attributedToPlayerTeam?: boolean;
     }>;
+    lane?: {
+      lane?: number;
+      laneRole?: number;
+      laneEfficiency?: number;
+      laneEfficiencyPct?: number;
+      lhAt10?: number;
+      goldAt10?: number;
+      deathsBefore10?: number;
+      source: 'opendota' | 'partial' | 'unavailable';
+    };
     economyByPhaseSource?: 'gold_t/lh_t' | 'unavailable';
     economyByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
       goldStart?: number; goldEnd?: number; goldDelta?: number; lhStart?: number; lhEnd?: number; lhDelta?: number;
@@ -125,6 +138,8 @@ export type PostMatchAnalysis = {
   buildPlayed: string[];
   timings: Record<string, string>;
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
+  economyByPhase?: NormalizedOpenDotaMatch['player']['economyByPhase'];
+  deathsByPhase?: NormalizedOpenDotaMatch['player']['deathsByPhase'];
   grades: {
     lane: { score: number; findings: AnalysisFinding[] };
     items: { score: number; findings: AnalysisFinding[] };

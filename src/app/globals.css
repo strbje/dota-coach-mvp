@@ -82,3 +82,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .item-timeline-card { display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem; border: 1px solid #2a3b60; border-radius: 10px; background: rgba(11,18,32,.55); }
 .item-icon, .item-fallback { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #334c7b; }
 .item-fallback { display: grid; place-items: center; font-weight: 700; color: #b7c9ef; background: #15223b; }
+.grade-ok { border-color: #5b9fe7; color: #bdddff; }
+.grade-bar { height: 6px; background: #1a2946; border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem; }
+.grade-bar span { display: block; height: 100%; background: currentColor; }
+.grade-average { border-color: #b59c4e; color: #ffe7a6; }
+.grade-good { border-color: #4f9a79; color: #b8f0d7; }
+.grade-card .badge { font-weight: 600; }

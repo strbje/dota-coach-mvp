@@ -73,3 +73,8 @@ Then open:
 - `/api/debug/match/8781054570`
 
 If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
+
+## MVP TODO (Data quality)
+- Next step: replace manual item ID subset with OpenDota `/constants/items` (or dotaconstants mirror), keeping local overrides only for display-name aliases.
+- Item timing benchmark labels in MVP are **manual_mvp_threshold** only; later wire OpenDota scenarios (`/scenarios/itemTimings`) and hero item popularity.
+- STRATZ integration is planned only for advanced post-match features (death location, solo deaths, first death in fight, pathing/replay context). Current OpenDota-only MVP should avoid those claims when data is missing.
