@@ -75,6 +75,24 @@ Then open:
 If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
 
 ## MVP TODO (Data quality)
-- Next step: replace manual item ID subset with OpenDota `/constants/items` (or dotaconstants mirror), keeping local overrides only for display-name aliases.
-- Item timing benchmark labels in MVP are **manual_mvp_threshold** only; later wire OpenDota scenarios (`/scenarios/itemTimings`) and hero item popularity.
-- STRATZ integration is planned only for advanced post-match features (death location, solo deaths, first death in fight, pathing/replay context). Current OpenDota-only MVP should avoid those claims when data is missing.
+### Immediate
+- Replace raw provider field names in product UI with user-facing copy.
+- Keep grade cards short; move detailed timings and phase data to dedicated sections.
+- Show lane review from lane_efficiency/lh@10/early deaths instead of whole-match LH/min.
+- Add phase rates: LH/min, gold/min, XP/min by phase.
+- Add farm profile from lane_kills, neutral_kills, ancient_kills, hero_kills.
+- Hide unavailable technical metrics from product UI.
+
+### Next
+- Replace manual item ID subset with OpenDota `/constants/items` (or dotaconstants mirror).
+- Add OpenDota `/scenarios/itemTimings` for item timing benchmarks.
+- Add `/heroes/{hero_id}/itemPopularity` for item phase expectations.
+- Decode gold_reasons into user-facing gold source categories if stable.
+
+### Future / STRATZ
+- Death locations.
+- Solo deaths.
+- First death in fight.
+- Deaths far from allies.
+- Replay-backed pathing and fight entry analysis.
+- Map heatmap / minimap death review.

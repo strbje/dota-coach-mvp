@@ -113,7 +113,7 @@ export type NormalizedOpenDotaMatch = {
       objectiveTypes: string[];
       attributedToPlayerTeam?: boolean;
     }>;
-    lane?: {
+    laneReview?: {
       lane?: number;
       laneRole?: number;
       laneEfficiency?: number;
@@ -125,8 +125,15 @@ export type NormalizedOpenDotaMatch = {
     };
     economyByPhaseSource?: 'gold_t/lh_t' | 'unavailable';
     economyByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
-      goldStart?: number; goldEnd?: number; goldDelta?: number; lhStart?: number; lhEnd?: number; lhDelta?: number;
+      startMinute: number; endMinute: number; durationMinutes: number;
+      goldStart?: number; goldEnd?: number; goldDelta?: number; goldPerMinuteInPhase?: number;
+      lhStart?: number; lhEnd?: number; lhDelta?: number; lhPerMinuteInPhase?: number;
+      xpStart?: number; xpEnd?: number; xpDelta?: number; xpPerMinuteInPhase?: number;
+      deaths?: number;
     }>;
+    farmProfile?: {
+      laneKills?: number; neutralKills?: number; ancientKills?: number; heroKills?: number; roshanKills?: number; towerKills?: number;
+    };
   };
 };
 
@@ -140,6 +147,7 @@ export type PostMatchAnalysis = {
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
   economyByPhase?: NormalizedOpenDotaMatch['player']['economyByPhase'];
   deathsByPhase?: NormalizedOpenDotaMatch['player']['deathsByPhase'];
+  farmProfile?: NormalizedOpenDotaMatch['player']['farmProfile'];
   grades: {
     lane: { score: number; findings: AnalysisFinding[] };
     items: { score: number; findings: AnalysisFinding[] };

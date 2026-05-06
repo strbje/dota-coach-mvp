@@ -68,23 +68,22 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   .container { padding-top: 1rem; }
 }
 
-.grade-card { border-left: 4px solid #4d648f; }
+.grade-card { border-left: 6px solid #4d648f; background: rgba(19, 29, 49, 0.92); }
 .grade-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .grade-head h4 { margin: 0; }
 .grade-score { font-size: 2rem; font-weight: 700; margin: 0.35rem 0; }
-.grade-critical { border-color: #b85b64; color: #ffb1b7; }
-.grade-weak { border-color: #b18658; color: #ffd2a7; }
-.grade-average { border-color: #5d7ea8; color: #b7d4ff; }
-.grade-good { border-color: #4f9a79; color: #b8f0d7; }
-.grade-excellent { border-color: #65b56d; color: #d0ffd2; }
+.grade-critical { border-color: #b85b64; color: #ffb1b7; background: rgba(120, 36, 44, 0.12); }
+.grade-weak { border-color: #b18658; color: #ffd2a7; background: rgba(122, 78, 36, 0.13); }
+.grade-average { border-color: #b59c4e; color: #ffe7a6; background: rgba(111, 91, 27, 0.12); }
+.grade-ok { border-color: #5b9fe7; color: #bdddff; background: rgba(36, 78, 136, 0.14); }
+.grade-good { border-color: #4f9a79; color: #b8f0d7; background: rgba(35, 95, 72, 0.14); }
+.grade-excellent { border-color: #65b56d; color: #d0ffd2; background: rgba(45, 110, 53, 0.16); }
 
 .item-timeline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; }
 .item-timeline-card { display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem; border: 1px solid #2a3b60; border-radius: 10px; background: rgba(11,18,32,.55); }
 .item-icon, .item-fallback { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #334c7b; }
 .item-fallback { display: grid; place-items: center; font-weight: 700; color: #b7c9ef; background: #15223b; }
-.grade-ok { border-color: #5b9fe7; color: #bdddff; }
-.grade-bar { height: 6px; background: #1a2946; border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem; }
+.grade-bar { height: 10px; background: #1a2946; border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem; }
 .grade-bar span { display: block; height: 100%; background: currentColor; }
-.grade-average { border-color: #b59c4e; color: #ffe7a6; }
 .grade-good { border-color: #4f9a79; color: #b8f0d7; }
 .grade-card .badge { font-weight: 600; }
