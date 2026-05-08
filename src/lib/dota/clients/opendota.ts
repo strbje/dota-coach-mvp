@@ -164,6 +164,25 @@ function parseOpenDotaMatch(text: string): OpenDotaMatchResponse {
   }
 }
 
+async function fetchOpenDotaJson(path: string): Promise<unknown> {
+  const key = process.env.OPENDOTA_API_KEY;
+  const url = new URL(`${OPENDOTA_BASE}${path}`);
+  if (key) url.searchParams.set('api_key', key);
+
+  const text = await requestOpenDotaWithFetch(url);
+  return JSON.parse(text);
+}
+
+export async function fetchOpenDotaConstants(resource: string): Promise<Record<string, string> | null> {
+  try {
+    const payload = await fetchOpenDotaJson(`/constants/${resource}`);
+    if (!payload || typeof payload !== 'object') return null;
+    return payload as Record<string, string>;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchOpenDotaMatch(matchId: number): Promise<OpenDotaMatchResponse> {
   const key = process.env.OPENDOTA_API_KEY;
   const url = new URL(`${OPENDOTA_BASE}/matches/${matchId}`);
