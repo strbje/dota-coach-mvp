@@ -1,26 +1,44 @@
 # OPENDOTA_FIELDS
 
-| Поле | Где используется | Надёжность | Можно показывать пользователю? | Комментарий |
-|---|---|---|---|---|
-| purchase_log | item timings | Высокая (если присутствует) | Да, в нормализованном виде | UI: «тайминги покупок», не `purchase_log`. |
-| item_0..item_5 | финальный билд | Высокая | Да | Показывать как названия предметов, не raw IDs. |
-| benchmarks | percentile для матчевых метрик | Средняя/высокая | Да | Не использовать для item timings. |
-| gold_reasons | разбор источников золота | Средняя (только после decode) | Ограниченно | Raw keys только debug. |
-| gold_t | gold по минутам | Высокая | Да | UI: «минутные срезы золота». |
-| xp_t | xp по минутам | Высокая | Да | UI: «минутные срезы опыта». |
-| lh_t | lh по минутам | Высокая | Да | UI: «минутные срезы ластхитов». |
-| lane_efficiency | lane оценка | Средняя | Да | Как часть lane review. |
-| lane_efficiency_pct | lane оценка в % | Средняя/высокая | Да | Показывать как процент эффективности линии. |
-| lane | lane код | Средняя | Да (после маппинга) | Не показывать raw number. |
-| lane_role | role код | Средняя | Да (после маппинга) | Не показывать raw number. |
-| lane_pos | позиция в lane | Низкая/вариативная | Обычно нет | Использовать только после проверки. |
-| kills_log | kill события | Средняя | Ограниченно | Нужна валидация полноты. |
-| killed_by | причина смерти | Средняя | Ограниченно | Только после нормализации текста. |
-| objectives | objective timeline | Средняя/высокая | Да | Нормализовать типы: строение/Roshan/объект. |
-| teamfights | fight блоки | Средняя | Ограниченно | Нужна проверка, прежде чем делать уверенные выводы. |
-| lane_kills | farm profile | Высокая | Да | UI: «крипы линии: N». |
-| neutral_kills | farm profile | Высокая | Да | UI: «нейтралы: N», не «золото с нейтралов». |
-| ancient_kills | farm profile | Высокая | Да | UI: «эншенты: N». |
-| hero_kills | farm profile | Высокая | Да | UI: «герои: N». |
-| tower_kills | objective profile | Высокая | Да | UI: «добивания строений: N». |
-| roshan_kills | objective profile | Высокая | Да | UI: «Roshan: N». |
+## Product-ready normalized fields
+
+1. **itemTimings**
+- source: `purchase_log`
+- example: Phase Boots 6:29, Armlet 13:22, Desolator 18:26
+- reliable when `purchase_log` exists.
+
+2. **economyByPhase**
+- source: `gold_t` / `lh_t` / `xp_t`
+- fields:
+  - `goldPerMinuteInPhase`
+  - `lhPerMinuteInPhase`
+  - `xpPerMinuteInPhase`
+- product use: phase economy and farm tempo.
+
+3. **laneReview**
+- source: `lane_efficiency` / `lane_efficiency_pct` / `lh_t` / `gold_t`
+- fields:
+  - `laneEfficiencyPct`
+  - `lhAt10`
+  - `goldAt10`
+- product use: lane review.
+
+4. **farmProfile**
+- source: `lane_kills`, `neutral_kills`, `ancient_kills`, `hero_kills`, `tower_kills`, `roshan_kills`
+- important: kill-count profile, not gold-source breakdown.
+
+5. **objectiveEvents**
+- source: `objectives`
+- product use only after type translation and cautious team attribution.
+- raw objective types must not be shown in product UI.
+
+## Research/debug only
+
+1. **gold_reasons**
+- current `constantsAvailable = false`;
+- observed raw keys: `0,1,6,11,12,13,14,15,16,17,21`;
+- do not productize gold source breakdown until constants are decoded.
+
+2. **death timings**
+- unavailable in current match snapshot;
+- product UI can only show total deaths when timing/event arrays are absent.

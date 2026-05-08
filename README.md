@@ -54,12 +54,16 @@ Open `http://localhost:3000`.
 - `GET /api/heroes`
 - `GET /api/debug/env`
 - `GET /api/debug/match/:id`
-- `GET /api/debug/stratz/match/:id`
+- `GET /api/debug/stratz/match/:id?query=basic|playerDeep|teamfightsProbe`
+- `GET /api/debug/stratz/schema?type=MatchType`
 
 Debug URLs:
 - `/api/debug/env`
 - `/api/debug/match/8781054570`
-- `/api/debug/stratz/match/8781054570`
+- `/api/debug/stratz/match/8781054570?query=basic`
+- `/api/debug/stratz/match/8781054570?query=playerDeep`
+- `/api/debug/stratz/match/8781054570?query=teamfightsProbe`
+- `/api/debug/stratz/schema?type=MatchType`
 
 ## Notes
 - No database/auth/realtime overlay in v1.
@@ -82,26 +86,32 @@ node -e "const s=Date.now(); fetch('https://api.opendota.com/api/matches/8781054
 Then open:
 
 - `/api/debug/match/8781054570`
-- `/api/debug/stratz/match/8781054570`
+- `/api/debug/stratz/match/8781054570?query=basic`
+- `/api/debug/stratz/match/8781054570?query=playerDeep`
+- `/api/debug/stratz/match/8781054570?query=teamfightsProbe`
+- `/api/debug/stratz/schema?type=MatchType`
 
 If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
 
 ## MVP TODO (Data quality)
 ### Immediate
-- Decode `gold_reasons` through OpenDota constants/dotaconstants fallback.
-- Create STRATZ research debug route.
-- Document source + benchmark methodology in `docs/`.
+- STRATZ debug route with safe response parsing.
+- STRATZ query modes: basic/playerDeep/teamfightsProbe.
+- STRATZ schema discovery via introspection route or GraphQL Explorer fallback.
+- Document OpenDota enriched fields in product vs research buckets.
+- Decode `gold_reasons` constants.
 - Keep product UI free of raw provider fields.
 
 ### Next
-- Implement OpenDota `/scenarios/itemTimings`.
-- Implement `/heroes/{hero_id}/itemPopularity` phase expectations.
-- Replace manual item constants with OpenDota constants/dotaconstants.
-- Implement gold source breakdown after verified decoding.
+- Build product UI from confirmed OpenDota enriched data: `laneReview`, `economyByPhase`, `farmProfile`, `itemTimings`.
+- Add OpenDota constants/dotaconstants decoding for `gold_reasons` and item IDs.
+- Add OpenDota item timing scenarios.
+- Add item popularity phase expectations.
 
 ### Future / STRATZ
-- STRATZ-based death locations.
-- First death in fight.
+- STRATZ death locations.
+- STRATZ fight/death order (if schema supports it).
 - Solo deaths.
-- Pathing.
+- First death in fight.
+- Replay-backed pathing.
 - Minimap death review.

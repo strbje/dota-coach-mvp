@@ -1,17 +1,13 @@
 # BENCHMARKS
 
-1. **manual_mvp_threshold**  
-   Временные ручные пороги. В UI: «по MVP-ориентиру».
+## Current benchmark status
+- lane LH@10 and item timings currently use `manual_mvp_threshold`;
+- STRATZ benchmarks are not confirmed;
+- OpenDota `/scenarios/itemTimings` is not implemented yet;
+- OpenDota `/heroes/{hero_id}/itemPopularity` is not implemented yet;
+- per-match benchmarks must not be used for item timings.
 
-2. **opendota_match_benchmarks**  
-   Для GPM, XPM, kills/min, last_hits/min, hero_damage/min, tower damage и похожих матчевых метрик.  
-   Не использовать для item timings.
-
-3. **opendota_scenarios_item_timings** (future)  
-   Endpoint: `/scenarios/itemTimings` для hero-specific timing windows.
-
-4. **opendota_item_popularity** (future)  
-   Endpoint: `/heroes/{hero_id}/itemPopularity` для ожиданий по фазам start/early/mid/late.
-
-5. **stratz** (future)  
-   Для richer role/hero/player benchmarks после валидации полей.
+## Future benchmark plan
+1. OpenDota `/scenarios/itemTimings` for item timing windows.
+2. OpenDota `/heroes/{hero_id}/itemPopularity` for phase expectations.
+3. STRATZ benchmark fields only after schema research confirms exact fields.
