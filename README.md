@@ -38,6 +38,15 @@ npm run dev
 ```
 Open `http://localhost:3000`.
 
+
+## Documentation
+- `docs/DATA_SOURCES.md`
+- `docs/OPENDOTA_FIELDS.md`
+- `docs/BENCHMARKS.md`
+- `docs/ANALYTICS_METHODOLOGY.md`
+- `docs/STRATZ_RESEARCH.md`
+- `docs/UI_COPY_RULES.md`
+
 ## API endpoints
 - `POST /api/pre-game/analyze`
 - `POST /api/post-match/analyze`
@@ -45,10 +54,12 @@ Open `http://localhost:3000`.
 - `GET /api/heroes`
 - `GET /api/debug/env`
 - `GET /api/debug/match/:id`
+- `GET /api/debug/stratz/match/:id`
 
 Debug URLs:
 - `/api/debug/env`
 - `/api/debug/match/8781054570`
+- `/api/debug/stratz/match/8781054570`
 
 ## Notes
 - No database/auth/realtime overlay in v1.
@@ -71,28 +82,26 @@ node -e "const s=Date.now(); fetch('https://api.opendota.com/api/matches/8781054
 Then open:
 
 - `/api/debug/match/8781054570`
+- `/api/debug/stratz/match/8781054570`
 
 If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
 
 ## MVP TODO (Data quality)
 ### Immediate
-- Replace raw provider field names in product UI with user-facing copy.
-- Keep grade cards short; move detailed timings and phase data to dedicated sections.
-- Show lane review from lane_efficiency/lh@10/early deaths instead of whole-match LH/min.
-- Add phase rates: LH/min, gold/min, XP/min by phase.
-- Add farm profile from lane_kills, neutral_kills, ancient_kills, hero_kills.
-- Hide unavailable technical metrics from product UI.
+- Decode `gold_reasons` through OpenDota constants/dotaconstants fallback.
+- Create STRATZ research debug route.
+- Document source + benchmark methodology in `docs/`.
+- Keep product UI free of raw provider fields.
 
 ### Next
-- Replace manual item ID subset with OpenDota `/constants/items` (or dotaconstants mirror).
-- Add OpenDota `/scenarios/itemTimings` for item timing benchmarks.
-- Add `/heroes/{hero_id}/itemPopularity` for item phase expectations.
-- Decode gold_reasons into user-facing gold source categories if stable.
+- Implement OpenDota `/scenarios/itemTimings`.
+- Implement `/heroes/{hero_id}/itemPopularity` phase expectations.
+- Replace manual item constants with OpenDota constants/dotaconstants.
+- Implement gold source breakdown after verified decoding.
 
 ### Future / STRATZ
-- Death locations.
-- Solo deaths.
+- STRATZ-based death locations.
 - First death in fight.
-- Deaths far from allies.
-- Replay-backed pathing and fight entry analysis.
-- Map heatmap / minimap death review.
+- Solo deaths.
+- Pathing.
+- Minimap death review.
