@@ -4,39 +4,257 @@ import { NextResponse } from 'next/server';
 
 const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
 
-type QueryMode = 'basic' | 'playerDeep' | 'teamfightsProbe';
+const SUPPORTED_QUERY_MODES = ['basic', 'playerDeep', 'teamfightsProbe', 'eventsProbe', 'playbackProbe', 'heroAverageProbe'] as const;
+type QueryMode = (typeof SUPPORTED_QUERY_MODES)[number];
 
-const QUERY_BY_MODE: Record<QueryMode, { name: string; query: string; availableFields: string[] }> = {
+type QueryConfig = { name: string; query: string; availableFields: string[] };
+
+const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
   basic: {
     name: 'DebugStratz',
-    query: 'query DebugStratz($id: Long!) { match(id: $id) { id players { steamAccountId heroId } } }',
+    query: `query DebugStratz($id: Long!) {
+      match(id: $id) {
+        id
+        players {
+          steamAccountId
+          heroId
+        }
+      }
+    }`,
     availableFields: ['match.id', 'match.players[].steamAccountId', 'match.players[].heroId']
   },
   playerDeep: {
     name: 'DebugStratzPlayerDeep',
-    query: 'query DebugStratzPlayerDeep($id: Long!) { match(id: $id) { id durationSeconds players { steamAccountId heroId kills deaths assists goldPerMinute experiencePerMinute networth level item0Id item1Id item2Id item3Id item4Id item5Id } } }',
+    query: `query DebugStratzPlayerDeep($id: Long!) {
+      match(id: $id) {
+        id
+        durationSeconds
+        didRadiantWin
+        averageImp
+        players {
+          steamAccountId
+          playerSlot
+          isRadiant
+          isVictory
+          heroId
+          kills
+          deaths
+          assists
+          numLastHits
+          numDenies
+          goldPerMinute
+          experiencePerMinute
+          networth
+          level
+          gold
+          goldSpent
+          heroDamage
+          towerDamage
+          heroHealing
+          lane
+          position
+          role
+          roleBasic
+          imp
+          award
+          item0Id
+          item1Id
+          item2Id
+          item3Id
+          item4Id
+          item5Id
+          backpack0Id
+          backpack1Id
+          backpack2Id
+          neutral0Id
+        }
+      }
+    }`,
     availableFields: [
-      'match.id', 'match.durationSeconds', 'match.players[].steamAccountId', 'match.players[].heroId', 'match.players[].kills', 'match.players[].deaths', 'match.players[].assists',
-      'match.players[].goldPerMinute', 'match.players[].experiencePerMinute', 'match.players[].networth', 'match.players[].level', 'match.players[].item0Id..item5Id'
+      'match.id', 'match.durationSeconds', 'match.didRadiantWin', 'match.averageImp',
+      'match.players[].steamAccountId', 'match.players[].playerSlot', 'match.players[].isRadiant', 'match.players[].isVictory',
+      'match.players[].heroId', 'match.players[].kills', 'match.players[].deaths', 'match.players[].assists',
+      'match.players[].numLastHits', 'match.players[].numDenies',
+      'match.players[].goldPerMinute', 'match.players[].experiencePerMinute', 'match.players[].networth', 'match.players[].level',
+      'match.players[].gold', 'match.players[].goldSpent', 'match.players[].heroDamage', 'match.players[].towerDamage', 'match.players[].heroHealing',
+      'match.players[].lane', 'match.players[].position', 'match.players[].role', 'match.players[].roleBasic', 'match.players[].imp', 'match.players[].award',
+      'match.players[].item0Id..item5Id', 'match.players[].backpack0Id..backpack2Id', 'match.players[].neutral0Id'
     ]
   },
   teamfightsProbe: {
     name: 'DebugStratzTeamfights',
-    query: 'query DebugStratzTeamfights($id: Long!) { match(id: $id) { id teamfights { start end lastDeath deaths } } }',
+    query: `query DebugStratzTeamfights($id: Long!) {
+      match(id: $id) {
+        id
+        teamfights {
+          start
+          end
+          lastDeath
+          deaths
+        }
+      }
+    }`,
     availableFields: ['match.id', 'match.teamfights[].start', 'match.teamfights[].end', 'match.teamfights[].lastDeath', 'match.teamfights[].deaths']
+  },
+  eventsProbe: {
+    name: 'DebugStratzEvents',
+    query: `query DebugStratzEvents($id: Long!) {
+      match(id: $id) {
+        id
+        durationSeconds
+        chatEvents {
+          time
+          type
+          fromHeroId
+          toHeroId
+          value
+          isRadiant
+        }
+        players {
+          steamAccountId
+          heroId
+          isRadiant
+          stats {
+            killEvents {
+              time
+            }
+            deathEvents {
+              time
+            }
+            assistEvents {
+              time
+            }
+          }
+        }
+      }
+    }`,
+    availableFields: ['match.chatEvents[]', 'match.players[].stats.killEvents[]', 'match.players[].stats.deathEvents[]', 'match.players[].stats.assistEvents[]']
+  },
+  playbackProbe: {
+    name: 'DebugStratzPlayback',
+    query: `query DebugStratzPlayback($id: Long!) {
+      match(id: $id) {
+        id
+        playbackData {
+          roshanEvents {
+            time
+            x
+            y
+            totalDamageTaken
+            item0
+            item1
+            item2
+            item3
+            item4
+            item5
+          }
+          buildingEvents {
+            time
+            type
+            positionX
+            positionY
+            isRadiant
+            npcId
+          }
+          towerDeathEvents {
+            time
+            radiant
+            dire
+          }
+          wardEvents {
+            time
+            positionX
+            positionY
+            fromPlayer
+            wardType
+            action
+            playerDestroyed
+          }
+        }
+        players {
+          steamAccountId
+          heroId
+          playbackData {
+            playerUpdatePositionEvents {
+              time
+            }
+            killEvents {
+              time
+            }
+            deathEvents {
+              time
+            }
+            purchaseEvents {
+              time
+            }
+            goldEvents {
+              time
+            }
+          }
+        }
+      }
+    }`,
+    availableFields: ['match.playbackData.roshanEvents[]', 'match.playbackData.buildingEvents[]', 'match.playbackData.towerDeathEvents[]', 'match.playbackData.wardEvents[]', 'match.players[].playbackData.*Events[]']
+  },
+  heroAverageProbe: {
+    name: 'DebugStratzHeroAverage',
+    query: `query DebugStratzHeroAverage($id: Long!) {
+      match(id: $id) {
+        id
+        players {
+          steamAccountId
+          heroId
+          position
+          role
+          roleBasic
+          heroAverage {
+            heroId
+            time
+            position
+            matchCount
+            winCount
+            kills
+            deaths
+            assists
+            networth
+            xp
+            cs
+            neutrals
+            heroDamage
+            towerDamage
+            goldPerMinute
+            teamKills
+            goldLost
+            goldFed
+            buybackCount
+            ancients
+            kDAAverage
+            killContributionAverage
+          }
+        }
+      }
+    }`,
+    availableFields: ['match.players[].heroAverage.heroId', 'match.players[].heroAverage.time', 'match.players[].heroAverage.matchCount', 'match.players[].heroAverage.kDAAverage']
   }
 };
 
-function toMode(raw: string | null): QueryMode {
-  return raw === 'playerDeep' || raw === 'teamfightsProbe' ? raw : 'basic';
+function parseQueryMode(raw: string | null): QueryMode | null {
+  if (!raw) return 'basic';
+  return (SUPPORTED_QUERY_MODES as readonly string[]).includes(raw) ? (raw as QueryMode) : null;
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const matchId = Number(id);
   const token = process.env.STRATZ_API_TOKEN;
-  const mode = toMode(new URL(request.url).searchParams.get('query'));
-  const selected = QUERY_BY_MODE[mode];
+  const { searchParams } = new URL(request.url);
+  const queryMode = parseQueryMode(searchParams.get('query'));
+
+  if (!queryMode) {
+    return NextResponse.json({ ok: false, error: 'Unknown STRATZ debug query mode', supportedModes: SUPPORTED_QUERY_MODES }, { status: 400 });
+  }
+
+  const selected = QUERY_BY_MODE[queryMode];
 
   if (!Number.isFinite(matchId)) {
     return NextResponse.json({ ok: false, hasToken: Boolean(token), matchId: id, error: 'id must be numeric' }, { status: 400 });
@@ -72,6 +290,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       hasToken: true,
       matchId,
       endpoint: STRATZ_GRAPHQL_URL,
+      queryMode,
       queryName: selected.name,
       status: response.status,
       statusText: response.statusText,
@@ -84,11 +303,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       notes: [
         'Research/debug output only; do not wire this route into product UI.',
         'If a field fails in GraphQL, treat it as unconfirmed and validate via schema discovery.',
-        mode === 'teamfightsProbe' ? 'teamfights on MatchType is currently not confirmed and may return GraphQL field errors.' : 'Use query=teamfightsProbe to verify current schema support for teamfight data.'
+        queryMode === 'teamfightsProbe'
+          ? 'teamfights on MatchType is currently not confirmed and may return GraphQL field errors.'
+          : 'Probe modes can return GraphQL errors while schema discovery is in progress; this is expected research output.'
       ]
     });
   } catch (error) {
     const parsed = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ ok: false, hasToken: true, matchId, endpoint: STRATZ_GRAPHQL_URL, queryName: selected.name, errors: [parsed], notes: ['Transport or parse failure while probing STRATZ debug endpoint.'] }, { status: 502 });
+    return NextResponse.json({ ok: false, hasToken: true, matchId, endpoint: STRATZ_GRAPHQL_URL, queryMode, queryName: selected.name, errors: [parsed], notes: ['Transport or parse failure while probing STRATZ debug endpoint.'] }, { status: 502 });
   }
 }

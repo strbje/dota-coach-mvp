@@ -27,12 +27,24 @@
 - Scope: hero IDs, item IDs, `gold_reasons`, and enum mappings.
 
 ## STRATZ status
-- research/debug provider confirmed;
-- basic match + player stats confirmed;
-- final item slot IDs confirmed;
-- advanced fight/death/map fields not confirmed;
-- `teamfights` on `MatchType` rejected by schema validation;
-- next step: GraphQL Explorer or introspection route.
+
+### STRATZ confirmed
+- GraphQL endpoint works.
+- Auth works.
+- Basic player stats work.
+- Final item slots work.
+- MatchPlayerStatsType exposes kill/death/assist events and per-minute arrays.
+- MatchPlayerPlaybackDataType exposes position/gold/health/battle updates and kill/death/assist/purchase events.
+- MatchPlaybackDataType exposes Roshan/building/tower/ward events.
+- HeroPositionTimeDetailType exposes potential hero/position benchmark data.
+
+### STRATZ not yet productized
+- first death in fight
+- solo death
+- death location
+- pathing
+- farm source breakdown
+- heroAverage benchmarks
 
 ## Manual MVP thresholds
 - Temporary fallback only when OpenDota/STRATZ benchmark data is not confirmed.
