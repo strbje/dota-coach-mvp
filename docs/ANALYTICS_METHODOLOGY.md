@@ -1,20 +1,31 @@
 # ANALYTICS_METHODOLOGY
 
-1. Каждый вывод должен иметь: **metric**, **source**, **confidence**, **limitation** (если есть).
-2. Raw provider fields не показываем в product UI.
-3. Типы источников: `opendota_match`, `opendota_constants`, `opendota_benchmarks`, `opendota_scenarios`, `stratz_graphql`, `manual_mvp_threshold`.
+## Required structure for every finding
+Every finding must include:
+- metric;
+- source;
+- confidence;
+- limitation.
 
-## Что можно утверждать
-- «Armlet куплен на 13:22» — если есть `purchase_log`.
-- «760 GPM» — если есть `gold_per_min`.
-- «45 LH на 10:00» — если есть `lh_t`.
-- «Умер первым в драке» — только при наличии teamfight/death-order data.
-- «Умер в опасной зоне карты» — только при наличии death coordinates/position data.
-- «Золото с нейтралов» — только после decoded `gold_reasons`.
+## Source types
+- `opendota_purchase_log`
+- `opendota_phase_timeseries`
+- `opendota_lane_fields`
+- `opendota_farm_profile`
+- `opendota_objectives`
+- `opendota_gold_reasons_debug`
+- `stratz_basic_player_stats`
+- `stratz_schema_research`
+- `manual_mvp_threshold`
 
-## Что нельзя утверждать
-- solo death без событийного контекста;
-- first death без порядка смертей в fight;
-- death location без координат;
-- плохой вижен без ward/map context;
-- источники золота без decode `gold_reasons`.
+## Rules
+- STRATZ basic player stats can validate OpenDota KDA/GPM/XPM/networth.
+- STRATZ cannot yet be used for first death, death location, or teamfight death order.
+- OpenDota `farmProfile` represents kill counts, not gold-source distribution.
+- `gold_reasons` cannot be productized until constants are decoded.
+- Objective conversion must be cautious when team attribution is not confirmed.
+- Death phase analysis must not be shown when death timings are unavailable.
+
+## Product copy discipline
+- Raw provider field names do not belong in product UI.
+- Debug/research payloads are allowed only in debug routes/docs.

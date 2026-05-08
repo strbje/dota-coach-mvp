@@ -1,21 +1,39 @@
 # DATA_SOURCES
 
-## OpenDota (основной источник MVP)
-- Основной provider для post-match payload.
-- Используем: `purchase_log`, item slots/timings, `lane_efficiency`, `lane_efficiency_pct`, `lh_t`, `gold_t`, `xp_t`, `gold_reasons`, `lane_kills`, `neutral_kills`, `ancient_kills`, `hero_kills`, `objectives`, `teamfights` (если есть), match `benchmarks`.
-- Match benchmarks применять для GPM/XPM/LH-per-min/hero-damage-per-min и похожих метрик.
-- Не использовать per-match benchmarks для item timings.
+## OpenDota (primary MVP source)
+
+### Product-ready data (confirmed)
+- item timings from `purchase_log`;
+- phase economy from `gold_t` / `lh_t` / `xp_t`;
+- lane review from `lane_efficiency` / `lane_efficiency_pct` / `lh_t`;
+- farm profile from `lane_kills` / `neutral_kills` / `ancient_kills` / `hero_kills` / `tower_kills` / `roshan_kills`;
+- objective events with cautious attribution;
+- kill participation from team kills.
+
+### Research/debug data
+- `gold_reasons` exists, but constants decoding is currently unresolved;
+- raw objective types;
+- possible `teamfights` payload if present in raw response.
+
+### Unavailable for current match snapshot
+- death timings;
+- deaths by phase;
+- phase fight participation;
+- first death in fight.
 
 ## OpenDota constants
 - Endpoint: `/constants/{resource}`.
 - Fallback: dotaconstants mirror.
-- Применение: hero IDs, item IDs, `gold_reasons` и другие enum/lookup значения.
+- Scope: hero IDs, item IDs, `gold_reasons`, and enum mappings.
 
-## STRATZ (future/advanced)
-- GraphQL API.
-- Потенциальные данные: replay/playback, fight, death location, pathing, richer farm context.
-- Точные поля валидируем через GraphQL Explorer + token.
+## STRATZ status
+- research/debug provider confirmed;
+- basic match + player stats confirmed;
+- final item slot IDs confirmed;
+- advanced fight/death/map fields not confirmed;
+- `teamfights` on `MatchType` rejected by schema validation;
+- next step: GraphQL Explorer or introspection route.
 
 ## Manual MVP thresholds
-- Временные пороги, только когда нет benchmark из OpenDota/STRATZ.
-- В UI использовать формулировку: **«по MVP-ориентиру»**, не «официальный benchmark».
+- Temporary fallback only when OpenDota/STRATZ benchmark data is not confirmed.
+- UI phrasing: **«по MVP-ориентиру»**.
