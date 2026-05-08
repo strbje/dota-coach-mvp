@@ -7,6 +7,91 @@
 - PowerShell inline JSON can break `curl.exe` arguments.
 - Reliable local test uses `ConvertTo-Json` + `Set-Content` + `--data-binary @file`.
 
+## Confirmed schema snapshot
+
+### MatchPlayerStatsType confirms
+- killEvents
+- deathEvents
+- assistEvents
+- lastHitsPerMinute
+- goldPerMinute
+- experiencePerMinute
+- heroDamagePerMinute
+- towerDamagePerMinute
+- itemPurchases
+- itemUsed
+- actionReport
+- locationReport
+- farmDistributionReport
+- heroDamageReport
+- inventoryReport
+- networthPerMinute
+- campStack
+- impPerMinute
+- heroDamageReceivedPerMinute
+- wardDestruction
+
+### MatchPlayerPlaybackDataType confirms
+- playerUpdatePositionEvents
+- playerUpdateGoldEvents
+- playerUpdateHealthEvents
+- playerUpdateBattleEvents
+- killEvents
+- deathEvents
+- assistEvents
+- csEvents
+- goldEvents
+- experienceEvents
+- heroDamageEvents
+- towerDamageEvents
+- inventoryEvents
+- purchaseEvents
+- buyBackEvents
+- runeEvents
+
+### HeroPositionTimeDetailType confirms potential benchmarks
+- matchCount
+- winCount
+- kills/deaths/assists
+- networth
+- xp
+- cs
+- neutrals
+- heroDamage
+- towerDamage
+- goldPerMinute
+- teamKills
+- goldLost/goldFed
+- buybackCount
+- ancients
+- kDAAverage
+- killContributionAverage
+
+## Current conclusions
+- STRATZ is now a strong candidate for enriched post-match analytics.
+- STRATZ likely can provide death timings through player stats/playback events.
+- STRATZ likely can provide position/map context through playerUpdatePositionEvents and locationReport.
+- STRATZ likely can provide farm distribution through farmDistributionReport.
+- STRATZ likely can provide benchmarks through heroAverage.
+- All of these still require data probes and field-level validation before product use.
+
+## Product readiness
+Ready for debug:
+- basic player stats
+- playerDeep stats
+- schema introspection
+- eventsProbe
+- playbackProbe
+- heroAverageProbe
+
+Not ready for product UI:
+- first death in fight
+- solo death
+- death location
+- farm source breakdown from STRATZ
+- STRATZ benchmarks
+until actual query data is validated.
+
 ## Confirmed working query: basic
 ```graphql
 query DebugStratz($id: Long!) {
@@ -26,22 +111,44 @@ query DebugStratzPlayerDeep($id: Long!) {
   match(id: $id) {
     id
     durationSeconds
+    didRadiantWin
+    averageImp
     players {
       steamAccountId
+      playerSlot
+      isRadiant
+      isVictory
       heroId
       kills
       deaths
       assists
+      numLastHits
+      numDenies
       goldPerMinute
       experiencePerMinute
       networth
       level
+      gold
+      goldSpent
+      heroDamage
+      towerDamage
+      heroHealing
+      lane
+      position
+      role
+      roleBasic
+      imp
+      award
       item0Id
       item1Id
       item2Id
       item3Id
       item4Id
       item5Id
+      backpack0Id
+      backpack1Id
+      backpack2Id
+      neutral0Id
     }
   }
 }
@@ -64,42 +171,24 @@ query DebugStratzPlayerDeep($id: Long!) {
 - `GET /api/debug/stratz/match/:id?query=basic`
 - `GET /api/debug/stratz/match/:id?query=playerDeep`
 - `GET /api/debug/stratz/match/:id?query=teamfightsProbe`
+- `GET /api/debug/stratz/match/:id?query=eventsProbe`
+- `GET /api/debug/stratz/match/:id?query=playbackProbe`
+- `GET /api/debug/stratz/match/:id?query=heroAverageProbe`
 - `GET /api/debug/stratz/schema?type=MatchType`
 
 ## Schema discovery instruction
 1. Try introspection route first: `/api/debug/stratz/schema?type=MatchType`.
-2. If introspection is blocked/denied, use STRATZ GraphQL Explorer.
-3. Manually inspect `MatchType` and connected player/event types.
-4. Only after field confirmation, promote findings from research/debug to product-ready.
+2. Probe detail types through `/api/debug/stratz/schema?type=...`:
+   - MatchPlayerStatsKillEventType / MatchPlayerStatsDeathEventType / MatchPlayerStatsAssistEventType
+   - KillDetailType / DeathDetailType / AssistDetailType
+   - MatchPlayerItemPurchaseEventType / ItemPurchaseType
+   - GoldDetailType / LastHitDetailType / ExperienceDetailType
+   - MatchPlayerStatsFarmDistributionReportType / MatchPlayerStatsLocationReportType
+   - PlayerUpdatePositionDetailType / PlayerUpdateBattleDetailType / PlayerUpdateHealthDetailType / PlayerUpdateGoldDetailType / PlayerUpdateAttributeDetailType
+   - HeroDamageDetailType / TowerDamageDetailType / MatchPlayerStatsHeroDamageReportType
+   - MatchPlayerStatsActionReportType / MatchPlayerInventoryType
+   - MatchPlaybackDataRoshanEventType / MatchPlaybackDataBuildingEventType / MatchPlaybackDataTowerDeathEventType / MatchPlaybackDataWardEventType
+3. If introspection is blocked/denied, use STRATZ GraphQL Explorer.
+4. Only after field confirmation + data confirmation, promote findings from research/debug to product-ready.
 
-Do not build product conclusions like **first death in fight**, **solo death**, or **death location** until schema fields are confirmed.
-
-## Research questions
-1. Where does STRATZ expose fight events, if at all?
-2. Does `MatchType` expose playback/replay fields?
-3. Are death events available directly on players?
-4. Are death coordinates available?
-5. Is order of deaths in fights available?
-6. Are item purchases/timings available, or only final item slots?
-7. Is farm breakdown available beyond basic stats?
-8. Is IMP available through API?
-
-## PowerShell: confirmed curl flow
-```powershell
-$body = @{
-  query = 'query DebugStratz($id: Long!) { match(id: $id) { id players { steamAccountId heroId } } }'
-  variables = @{
-    id = 8781054570
-  }
-} | ConvertTo-Json -Depth 10 -Compress
-
-$body | Set-Content -Encoding UTF8 stratz-body.json
-
-curl.exe -i https://api.stratz.com/graphql `
-  -H "Authorization: Bearer $env:STRATZ_API_TOKEN" `
-  -H "Content-Type: application/json" `
-  -H "User-Agent: dota-coach-mvp/0.1 local-dev" `
-  --data-binary "@stratz-body.json"
-```
-
-Do not use inline unescaped JSON with `curl.exe` in PowerShell; it can split JSON into invalid arguments.
+Do not build product conclusions like **first death in fight**, **solo death**, or **death location** until schema fields and data payloads are confirmed.

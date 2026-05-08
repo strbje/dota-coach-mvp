@@ -54,7 +54,7 @@ Open `http://localhost:3000`.
 - `GET /api/heroes`
 - `GET /api/debug/env`
 - `GET /api/debug/match/:id`
-- `GET /api/debug/stratz/match/:id?query=basic|playerDeep|teamfightsProbe`
+- `GET /api/debug/stratz/match/:id?query=basic|playerDeep|teamfightsProbe|eventsProbe|playbackProbe|heroAverageProbe`
 - `GET /api/debug/stratz/schema?type=MatchType`
 
 Debug URLs:
@@ -63,6 +63,9 @@ Debug URLs:
 - `/api/debug/stratz/match/8781054570?query=basic`
 - `/api/debug/stratz/match/8781054570?query=playerDeep`
 - `/api/debug/stratz/match/8781054570?query=teamfightsProbe`
+- `/api/debug/stratz/match/8781054570?query=eventsProbe`
+- `/api/debug/stratz/match/8781054570?query=playbackProbe`
+- `/api/debug/stratz/match/8781054570?query=heroAverageProbe`
 - `/api/debug/stratz/schema?type=MatchType`
 
 ## Notes
@@ -89,29 +92,31 @@ Then open:
 - `/api/debug/stratz/match/8781054570?query=basic`
 - `/api/debug/stratz/match/8781054570?query=playerDeep`
 - `/api/debug/stratz/match/8781054570?query=teamfightsProbe`
+- `/api/debug/stratz/match/8781054570?query=eventsProbe`
+- `/api/debug/stratz/match/8781054570?query=playbackProbe`
+- `/api/debug/stratz/match/8781054570?query=heroAverageProbe`
 - `/api/debug/stratz/schema?type=MatchType`
 
 If there is an error, the response now includes `stage: "fetch"` or `stage: "normalize"` so you can see exactly where it failed.
 
 ## MVP TODO (Data quality)
 ### Immediate
-- STRATZ debug route with safe response parsing.
-- STRATZ query modes: basic/playerDeep/teamfightsProbe.
-- STRATZ schema discovery via introspection route or GraphQL Explorer fallback.
-- Document OpenDota enriched fields in product vs research buckets.
-- Decode `gold_reasons` constants.
-- Keep product UI free of raw provider fields.
+- Fix STRATZ query mode selection.
+- Add eventsProbe/playbackProbe/heroAverageProbe.
+- Introspect STRATZ detail event types.
+- Document STRATZ confirmed schema fields.
+- Keep STRATZ data in debug until normalized.
 
 ### Next
-- Build product UI from confirmed OpenDota enriched data: `laneReview`, `economyByPhase`, `farmProfile`, `itemTimings`.
-- Add OpenDota constants/dotaconstants decoding for `gold_reasons` and item IDs.
-- Add OpenDota item timing scenarios.
-- Add item popularity phase expectations.
+- Normalize STRATZ death events.
+- Normalize STRATZ position events.
+- Normalize STRATZ farm distribution.
+- Normalize STRATZ objective playback events.
+- Decide whether heroAverage can replace manual MVP thresholds.
 
-### Future / STRATZ
-- STRATZ death locations.
-- STRATZ fight/death order (if schema supports it).
-- Solo deaths.
-- First death in fight.
-- Replay-backed pathing.
-- Minimap death review.
+### Future
+- First death in fight via kill/death event clusters.
+- Death location map.
+- Solo death / far from allies.
+- Pathing review.
+- Replay-backed fight entry analysis.
