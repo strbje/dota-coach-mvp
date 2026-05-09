@@ -14,6 +14,11 @@ function toBoolean(value: unknown, fallback = false): boolean { return typeof va
 
 function initPhaseCounts() { return { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 }; }
 
+
+type EconomyByPhase = NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase']>;
+type EconomyPhaseValue = EconomyByPhase[MatchPhase];
+
+
 export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): NormalizedOpenDotaMatch {
   const players = Array.isArray(payload.players) ? payload.players : [];
   const playerRaw = players.find((p) => toNumber((p as Record<string, unknown>).hero_id, -1) === 54) as Record<string, unknown> | undefined;
@@ -88,22 +93,31 @@ export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName 
   const goldAt10 = goldT && goldT.length ? goldT[Math.min(10, goldT.length - 1)] : undefined;
   const deathsBefore10 = deathTimings.length ? deathTimings.filter((d) => d.timeSeconds <= 600).length : undefined;
   const laneSource = laneEfficiencyPct !== undefined || (lhAt10 !== undefined && goldAt10 !== undefined) ? 'opendota' : (laneEfficiency !== undefined || lhAt10 !== undefined || goldAt10 !== undefined || deathsBefore10 !== undefined ? 'partial' : 'unavailable');
-  const phaseRanges: Array<[MatchPhase, number, number | null]> = [['laning', 0, 10], ['earlyMid', 10, 20], ['midGame', 20, 35], ['lateGame', 35, null]];
-  const economyByPhase = economyByPhaseSource === 'gold_t/lh_t' ? Object.fromEntries(phaseRanges.map(([phase, start, end]) => {
+  function buildEconomyPhase(phase: MatchPhase, start: number, end: number | null): EconomyPhaseValue {
     const startIdx = Math.min(start, goldT!.length - 1);
     const endMinute = end ?? Math.max(start + 1, Math.floor(durationSeconds / 60));
     const endIdx = Math.min(endMinute, goldT!.length - 1);
     const goldStart = goldT![startIdx]; const goldEnd = goldT![endIdx]; const lhStart = lhT![startIdx]; const lhEnd = lhT![endIdx];
     const xpStart = xpT![startIdx]; const xpEnd = xpT![endIdx];
     const duration = Math.max(1, endIdx - startIdx);
-    return [phase, {
+
+    return {
       startMinute: startIdx, endMinute: endIdx, durationMinutes: duration,
       goldStart, goldEnd, goldDelta: goldEnd - goldStart, goldPerMinuteInPhase: (goldEnd - goldStart) / duration,
       lhStart, lhEnd, lhDelta: lhEnd - lhStart, lhPerMinuteInPhase: (lhEnd - lhStart) / duration,
       xpStart, xpEnd, xpDelta: xpEnd - xpStart, xpPerMinuteInPhase: (xpEnd - xpStart) / duration,
       deaths: deathsByPhase?.[phase] ?? undefined
-    }];
-  })) : undefined;
+    };
+  }
+
+  const economyByPhase: EconomyByPhase | undefined = economyByPhaseSource === 'gold_t/lh_t'
+    ? {
+      laning: buildEconomyPhase('laning', 0, 10),
+      earlyMid: buildEconomyPhase('earlyMid', 10, 20),
+      midGame: buildEconomyPhase('midGame', 20, 35),
+      lateGame: buildEconomyPhase('lateGame', 35, null)
+    }
+    : undefined;
   const farmProfile = {
     laneKills: toNumber(playerRaw.lane_kills, 0),
     neutralKills: toNumber(playerRaw.neutral_kills, 0),

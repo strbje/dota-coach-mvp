@@ -118,3 +118,7 @@ If there is an error, the response now includes `stage: "fetch"` or `stage: "nor
 - Promote STRATZ deathsByPhase to product UI if normalized.
 - Promote STRATZ death position map if coordinates validated.
 - Promote STRATZ heroAverage benchmarks if methodology clear.
+
+## Next UI (post-match)
+- Use STRATZ deathsByPhase in fights card when available.
+- Keep map/death-location features in research-only status until death positions are product-ready.
