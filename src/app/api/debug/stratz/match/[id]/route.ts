@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
+import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 
 const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
 
@@ -285,6 +286,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const isOk = response.ok && errors.length === 0;
 
+    const normalizedPack = parsed?.data ? normalizeStratzMatch(parsed.data) : null;
+    const normalizedSummary = normalizedPack ? buildNormalizedSummary(queryMode, normalizedPack) : null;
+
     return NextResponse.json({
       ok: isOk,
       hasToken: true,
@@ -296,8 +300,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       statusText: response.statusText,
       contentType,
       bodyLength: text.length,
-      bodyPreview: text.slice(0, 500),
+      bodyPreview: text.slice(0, 1000),
       dataShape: match ? { id: match.id, durationSeconds: match.durationSeconds, playersCount: Array.isArray(match.players) ? match.players.length : 0 } : null,
+      normalizedSummary,
       availableFields: match ? selected.availableFields : [],
       errors,
       notes: [
@@ -312,4 +317,61 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const parsed = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ ok: false, hasToken: true, matchId, endpoint: STRATZ_GRAPHQL_URL, queryMode, queryName: selected.name, errors: [parsed], notes: ['Transport or parse failure while probing STRATZ debug endpoint.'] }, { status: 502 });
   }
+}
+
+
+function buildNormalizedSummary(queryMode: QueryMode, pack: ReturnType<typeof normalizeStratzMatch>) {
+  const selected = pack.normalized.selectedPlayer;
+  const baseSelected = {
+    heroId: selected?.heroId,
+    steamAccountId: selected?.steamAccountId,
+    selectedBy: pack.selectedBy
+  };
+
+  if (queryMode === 'playerDeep' || queryMode === 'basic') {
+    return { selectedPlayer: baseSelected, summary: selected, dataAvailability: pack.normalized.dataAvailability };
+  }
+
+  if (queryMode === 'eventsProbe') {
+    return {
+      selectedPlayer: baseSelected,
+      eventSummary: {
+        killEventsCount: selected?.killEvents?.length ?? 0,
+        deathEventsCount: selected?.deathEvents?.length ?? 0,
+        assistEventsCount: selected?.assistEvents?.length ?? 0,
+        firstKillEventsPreview: (selected?.killEvents ?? []).slice(0, 5),
+        firstDeathEventsPreview: (selected?.deathEvents ?? []).slice(0, 5),
+        firstAssistEventsPreview: (selected?.assistEvents ?? []).slice(0, 5),
+        deathEventsTimeAvailable: pack.deathTimings.length > 0,
+        deathTimings: pack.deathTimings,
+        deathsByPhase: pack.deathsByPhase
+      }
+    };
+  }
+
+  if (queryMode === 'playbackProbe') {
+    return {
+      selectedPlayer: baseSelected,
+      positionSamplesCount: pack.positionSamples.length,
+      positionSamplesPreview: { first: pack.positionSamples.slice(0, 5), last: pack.positionSamples.slice(-5) },
+      deathPositionSamplesPreview: pack.deathPositionSamples.slice(0, 5),
+      objectivePlaybackSummary: pack.objectivePlaybackSummary
+    };
+  }
+
+  if (queryMode === 'heroAverageProbe') {
+    const byTime = [10,20,30,40].map((t) => pack.heroAverage.find((x) => x.time === t)).filter(Boolean);
+    return {
+      selectedPlayer: baseSelected,
+      heroAverageBenchmarkPreview: {
+        source: 'stratz_hero_average',
+        entriesCount: pack.heroAverage.length,
+        selectedPosition: selected?.position,
+        samples: [...pack.heroAverage.slice(0,5), ...byTime].slice(0,8),
+        productReady: false
+      }
+    };
+  }
+
+  return { selectedPlayer: baseSelected, dataAvailability: pack.normalized.dataAvailability };
 }

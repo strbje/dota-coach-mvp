@@ -163,3 +163,100 @@ export type PostMatchAnalysis = {
   };
   meta: { source: string[]; confidence: number };
 };
+
+export type StratzCombatEvent = {
+  timeSeconds?: number;
+  time?: string;
+  raw?: Record<string, unknown>;
+};
+
+export type StratzPositionSample = {
+  timeSeconds?: number;
+  time?: string;
+  x?: number;
+  y?: number;
+  source: 'stratz_playback';
+};
+
+export type StratzDeathPositionSample = {
+  deathTimeSeconds: number;
+  deathTime: string;
+  x?: number;
+  y?: number;
+  source: 'stratz_playback';
+  productReady: false;
+};
+
+export type StratzFarmDistribution = {
+  laneFarm?: number;
+  neutralFarm?: number;
+  ancientFarm?: number;
+  heroFarm?: number;
+  objectiveFarm?: number;
+  unknown?: number;
+  rawPreview?: Record<string, unknown>;
+};
+
+export type StratzHeroAverageBenchmark = {
+  time: number;
+  matchCount: number;
+  winCount: number;
+  cs?: number;
+  networth?: number;
+  goldPerMinute?: number;
+  heroDamage?: number;
+  deaths?: number;
+  kills?: number;
+  assists?: number;
+};
+
+export type NormalizedStratzPlayer = {
+  steamAccountId?: number;
+  heroId?: number;
+  isRadiant?: boolean;
+  isVictory?: boolean;
+  lane?: string;
+  position?: string;
+  role?: string;
+  roleBasic?: string;
+  imp?: number | null;
+  award?: string | null;
+  kills?: number;
+  deaths?: number;
+  assists?: number;
+  gpm?: number;
+  xpm?: number;
+  networth?: number;
+  level?: number;
+  lastHits?: number;
+  denies?: number;
+  heroDamage?: number;
+  towerDamage?: number;
+  itemIds?: number[];
+  backpackItemIds?: number[];
+  neutralItemId?: number | null;
+  killEvents?: StratzCombatEvent[];
+  deathEvents?: StratzCombatEvent[];
+  assistEvents?: StratzCombatEvent[];
+  positionSamples?: StratzPositionSample[];
+  deathPositionSamples?: StratzDeathPositionSample[];
+  farmDistribution?: StratzFarmDistribution | null;
+  heroAverageBenchmarks?: StratzHeroAverageBenchmark[];
+};
+
+export type NormalizedStratzMatch = {
+  matchId: number;
+  durationSeconds?: number;
+  didRadiantWin?: boolean;
+  averageImp?: number | null;
+  selectedPlayer?: NormalizedStratzPlayer;
+  dataAvailability: {
+    playerSummary: boolean;
+    eventStats: boolean;
+    playback: boolean;
+    heroAverage: boolean;
+    deathEvents: boolean;
+    positionEvents: boolean;
+    farmDistribution: boolean;
+  };
+};

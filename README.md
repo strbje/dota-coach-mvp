@@ -108,15 +108,13 @@ If there is an error, the response now includes `stage: "fetch"` or `stage: "nor
 - Keep STRATZ data in debug until normalized.
 
 ### Next
-- Normalize STRATZ death events.
-- Normalize STRATZ position events.
-- Normalize STRATZ farm distribution.
-- Normalize STRATZ objective playback events.
-- Decide whether heroAverage can replace manual MVP thresholds.
+- Normalize STRATZ events/playback/heroAverage into debug summaries.
+- Validate deathEvents time fields.
+- Validate player position samples.
+- Validate farmDistributionReport.
+- Validate heroAverage as benchmark candidate.
 
 ### Future
-- First death in fight via kill/death event clusters.
-- Death location map.
-- Solo death / far from allies.
-- Pathing review.
-- Replay-backed fight entry analysis.
+- Promote STRATZ deathsByPhase to product UI if normalized.
+- Promote STRATZ death position map if coordinates validated.
+- Promote STRATZ heroAverage benchmarks if methodology clear.
