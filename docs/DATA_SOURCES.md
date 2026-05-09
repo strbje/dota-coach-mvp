@@ -49,3 +49,9 @@
 ## Manual MVP thresholds
 - Temporary fallback only when OpenDota/STRATZ benchmark data is not confirmed.
 - UI phrasing: **«по MVP-ориентиру»**.
+
+### STRATZ probes (confirmed, debug-only)
+- `eventsProbe` confirmed and normalized into compact debug summary.
+- `playbackProbe` confirmed and normalized (positions + objective playback preview).
+- `heroAverageProbe` confirmed and normalized as benchmark candidate preview.
+- Still research/debug only; product usage requires stable normalization and explicit UI copy gating.

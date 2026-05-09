@@ -192,3 +192,29 @@ query DebugStratzPlayerDeep($id: Long!) {
 4. Only after field confirmation + data confirmation, promote findings from research/debug to product-ready.
 
 Do not build product conclusions like **first death in fight**, **solo death**, or **death location** until schema fields and data payloads are confirmed.
+
+## Validated data probes
+
+### eventsProbe
+- Returned: `match.chatEvents[]`, `players[].stats.killEvents[]`, `deathEvents[]`, `assistEvents[]`.
+- `deathEvents` are returned for the selected Lifestealer player (heroId 54) and normalized in debug route.
+- `time` fields are normalized via `formatGameTime` when present.
+- `deathsByPhase` is calculated only when `time` exists.
+- Research heuristic added as **first death in kill cluster** (not teamfight): debug-only, `productReady=false`.
+
+### playbackProbe
+- Position events are returned from `players[].playbackData.playerUpdatePositionEvents[]`.
+- Coordinates may arrive as `x/y` or `positionX/positionY`; normalized when present.
+- Objective playback is returned from match playback (`roshan/building/tower/ward`) with compact previews.
+- Death time to nearest position mapping is available as research-only (`productReady=false`).
+
+### heroAverageProbe
+- `players[].heroAverage[]` is returned and normalized for selected player.
+- Time samples are previewed (first 5 + targeted 10/20/30/40 checks if present).
+- This is not product benchmark yet: `productReady=false` until methodology is fully confirmed.
+
+## STRATZ product readiness levels
+- Level 1 schema confirmed
+- Level 2 data returned
+- Level 3 normalized
+- Level 4 product-ready
