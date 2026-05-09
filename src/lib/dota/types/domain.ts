@@ -137,6 +137,28 @@ export type NormalizedOpenDotaMatch = {
   };
 };
 
+
+export type StratzPostMatchData = {
+  deathTimings?: Array<{
+    timeSeconds: number;
+    time: string;
+    phase: MatchPhase;
+    source: 'stratz_stats';
+  }>;
+  deathsByPhase?: {
+    laning: number;
+    earlyMid: number;
+    midGame: number;
+    lateGame: number;
+  };
+  selectedPlayer?: {
+    role?: string;
+    lane?: string;
+    position?: string;
+    imp?: number | null;
+  };
+};
+
 export type PostMatchAnalysis = {
   matchId: number;
   hero: HeroName;
@@ -145,9 +167,10 @@ export type PostMatchAnalysis = {
   buildPlayed: string[];
   timings: Record<string, string>;
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
-  economyByPhase?: NormalizedOpenDotaMatch['player']['economyByPhase'];
-  deathsByPhase?: NormalizedOpenDotaMatch['player']['deathsByPhase'];
-  farmProfile?: NormalizedOpenDotaMatch['player']['farmProfile'];
+  economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase'];
+  deathsByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase'];
+  farmProfile?: NonNullable<NormalizedOpenDotaMatch['player']>['farmProfile'];
+  stratz?: StratzPostMatchData;
   grades: {
     lane: { score: number; findings: AnalysisFinding[] };
     items: { score: number; findings: AnalysisFinding[] };

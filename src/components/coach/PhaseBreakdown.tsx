@@ -7,7 +7,7 @@ const PHASES: Array<{ key: MatchPhase; label: string }> = [
   { key: 'lateGame', label: '35+ Лейт' }
 ];
 
-export function PhaseBreakdown({ economyByPhase, deathsByPhase, itemTimings }: { economyByPhase?: NormalizedOpenDotaMatch['player']['economyByPhase']; deathsByPhase?: NormalizedOpenDotaMatch['player']['deathsByPhase']; itemTimings?: Array<{ item: string; phase?: MatchPhase; timeSeconds: number }> }) {
+export function PhaseBreakdown({ economyByPhase, deathsByPhase, itemTimings }: { economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase']; deathsByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase']; itemTimings?: Array<{ item: string; phase?: MatchPhase; timeSeconds: number }> }) {
   if (!economyByPhase && !deathsByPhase) return null;
   return <section className="card"><h3>Фазы матча / Фарм по фазам</h3><div className="grid grid-2">{PHASES.map((p) => {
     const e = economyByPhase?.[p.key];

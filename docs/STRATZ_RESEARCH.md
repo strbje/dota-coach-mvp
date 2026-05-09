@@ -218,3 +218,28 @@ Do not build product conclusions like **first death in fight**, **solo death**, 
 - Level 2 data returned
 - Level 3 normalized
 - Level 4 product-ready
+
+## 2026-05-09 validation snapshot
+
+### eventsProbe validated
+- killEventsCount: 19
+- deathEventsCount: 9
+- assistEventsCount: 18
+- deathTimings: available
+- deathsByPhase: available
+- match 8781054570: laning 2, earlyMid 0, midGame 0, lateGame 7
+
+### playbackProbe validated
+- positionSamplesCount: 2842
+- objectivePlaybackSummary: available
+- towerDeathEventsCount: 32
+- wardEventsCount: 368
+- deathPositionSamples: empty
+- coordinates: not product-ready in normalized preview
+
+### Product readiness
+- deathsByPhase: Level 4 (product-ready)
+- deathTimings: Level 4 (product-ready)
+- death position: Level 2/3 (research only)
+- objective playback: Level 2/3 (research only)
+- heroAverage: research only

@@ -37,3 +37,5 @@ Only Level 4 can be used in product UI.
 ## Product copy discipline
 - Raw provider field names do not belong in product UI.
 - Debug/research payloads are allowed only in debug routes/docs.
+
+- Если STRATZ death timings доступны, они могут заменить OpenDota death_log как источник для deathsByPhase в post-match UI.
