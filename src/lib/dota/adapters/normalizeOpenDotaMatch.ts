@@ -1,5 +1,5 @@
 import { formatGameTime, getItemIconUrlByKey, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
-import { ensureOpenDotaConstantsLoaded } from '@/lib/dota/providers/opendotaConstantsProvider';
+import { ensureOpenDotaConstantsLoaded, getGoldReasonConstants, type GoldReasonGroup } from '@/lib/dota/providers/opendotaConstantsProvider';
 import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
 import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
@@ -22,6 +22,7 @@ type EconomyPhaseValue = EconomyByPhase[MatchPhase];
 
 export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): Promise<NormalizedOpenDotaMatch> {
   await ensureOpenDotaConstantsLoaded();
+  const goldReasonConstants = await getGoldReasonConstants();
   const players = Array.isArray(payload.players) ? payload.players : [];
   const playerRaw = players.find((p) => toNumber((p as Record<string, unknown>).hero_id, -1) === 54) as Record<string, unknown> | undefined;
   if (!playerRaw) throw new Error('Target hero/player not found in OpenDota payload');
@@ -129,6 +130,38 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
     towerKills: toNumber(playerRaw.tower_kills, 0)
   };
 
+  const rawGoldReasons = playerRaw && typeof playerRaw.gold_reasons === 'object' && playerRaw.gold_reasons ? playerRaw.gold_reasons as Record<string, unknown> : {};
+  const decodedGoldReasons = Object.entries(rawGoldReasons)
+    .map(([key, rawAmount]) => {
+      const amount = toNumber(rawAmount, 0);
+      const constant = goldReasonConstants[key];
+      return {
+        key,
+        amount,
+        label: constant?.label ?? `unknown_${key}`,
+        group: constant?.group ?? 'unknown' as GoldReasonGroup,
+        known: Boolean(constant)
+      };
+    })
+    .filter((x) => x.amount !== 0);
+  const groupedGold = decodedGoldReasons.reduce<Record<string, number>>((acc, entry) => {
+    const groupKey = entry.group;
+    acc[groupKey] = (acc[groupKey] ?? 0) + entry.amount;
+    return acc;
+  }, {});
+  const constantsAvailable = decodedGoldReasons.some((x) => x.known);
+  const unknownKeys = decodedGoldReasons.filter((x) => !x.known).map((x) => x.key);
+  const unknownAmount = decodedGoldReasons.filter((x) => !x.known).reduce((sum, x) => sum + x.amount, 0);
+  const totalPositiveGold = decodedGoldReasons.filter((x) => x.amount > 0).reduce((sum, x) => sum + x.amount, 0);
+  const totalNegativeGold = decodedGoldReasons.filter((x) => x.amount < 0).reduce((sum, x) => sum + Math.abs(x.amount), 0);
+
+  const groupLabels: Record<string, string> = {
+    creeps: 'Лейн-крипы', neutral: 'Нейтралы', heroes: 'Герои', buildings: 'Объекты', roshan: 'Рошан', courier: 'Курьеры', starting: 'Стартовое золото', purchase: 'Покупки/потери', other: 'Другое', unknown: 'Другое / нераспознано'
+  };
+  const productGroups = (Object.entries(groupedGold)
+    .filter(([group, amount]) => amount !== 0 && group !== 'unknown')
+    .map(([group, amount]) => ({ group, label: groupLabels[group] ?? 'Другое', amount })));
+
   const rawItemIds = [0, 1, 2, 3, 4, 5].map((slot) => toNumber(playerRaw[`item_${slot}`]));
   const unknownItemIds = rawItemIds.filter((id) => id > 0 && !getItemNameById(id));
   const buildPlayed = rawItemIds.map((id) => getItemNameById(id)).filter((name): name is string => Boolean(name));
@@ -151,6 +184,16 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
     itemObjectiveWindows,
     economyByPhaseSource,
     economyByPhase, farmProfile,
+    goldReasons: {
+      constantsAvailable,
+      totalPositiveGold,
+      totalNegativeGold,
+      groups: productGroups,
+      unknownAmount,
+      unknownKeys,
+      decoded: decodedGoldReasons,
+      grouped: groupedGold
+    },
     laneReview: { lane: typeof playerRaw.lane === 'number' ? toNumber(playerRaw.lane) : undefined, laneRole: typeof playerRaw.lane_role === 'number' ? toNumber(playerRaw.lane_role) : undefined, laneEfficiency, laneEfficiencyPct, lhAt10, goldAt10, deathsBefore10, source: laneSource }
   }};
 }

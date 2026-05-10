@@ -1,8 +1,9 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { fetchOpenDotaConstants, fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
+import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMatch';
+import { getGoldReasonConstants } from '@/lib/dota/providers/opendotaConstantsProvider';
 
 type Stage = 'fetch' | 'normalize' | 'unknown';
 type Transport = 'fetch' | 'https-fallback' | 'unknown';
@@ -60,12 +61,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const normalized = await normalizeOpenDotaMatch(payload);
     const player = Array.isArray(payload.players) ? payload.players.find((p) => Number((p as Record<string, unknown>).hero_id) === 54) as Record<string, unknown> | undefined : undefined;
     const raw = player && typeof player.gold_reasons === 'object' && player.gold_reasons ? player.gold_reasons as Record<string, number> : {};
-    const constants = await fetchOpenDotaConstants('gold_reasons');
-    const constantsAvailable = Boolean(constants);
+    const constants = await getGoldReasonConstants();
     const decoded = Object.entries(raw).map(([key, amount]) => {
-      const label = constants?.[key] ?? `unknown_${key}`;
-      return { key, label, amount: Number(amount) };
+      const constant = constants?.[key];
+      const label = constant?.label ?? `unknown_${key}`;
+      return { key, label, group: constant?.group ?? 'unknown', amount: Number(amount) };
     });
+    const constantsAvailable = decoded.some((entry) => !entry.label.startsWith('unknown_'));
     const grouped = decoded.reduce<GoldGrouped>((acc, entry) => {
       const g = toGoldGroup(entry.label);
       acc[g] = (acc[g] ?? 0) + entry.amount;
