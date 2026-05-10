@@ -26,6 +26,32 @@ const MANUAL_MVP_THRESHOLDS: Record<string, number> = {
   abyssal_blade: 42 * 60
 };
 
+export const LIFESTEALER_CARRY_CORE_ITEMS = [
+  'phase_boots',
+  'armlet',
+  'desolator',
+  'sange_and_yasha',
+  'black_king_bar',
+  'basher',
+  'abyssal_blade',
+  'assault',
+  'satanic',
+  'mjollnir',
+  'monkey_king_bar',
+  'butterfly',
+  'heart'
+] as const;
+
+export const LIFESTEALER_CARRY_SUSPICIOUS_ITEMS = [
+  'dagon',
+  'ethereal_blade',
+  'meteor_hammer',
+  'phylactery',
+  'octarine_core',
+  'aether_lens',
+  'veil_of_discord'
+] as const;
+
 export function getLifestealerCarryItemBenchmark(itemKey: string): ItemBenchmark | null {
   const targetTimeSeconds = MANUAL_MVP_THRESHOLDS[itemKey];
   if (!targetTimeSeconds) return null;

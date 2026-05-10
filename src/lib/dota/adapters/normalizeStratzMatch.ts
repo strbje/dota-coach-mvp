@@ -23,6 +23,16 @@ function asNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function getStratzMatchPayload(raw: unknown): UnknownRecord | undefined {
+  const direct = (raw as { match?: UnknownRecord })?.match;
+  if (direct) return direct;
+
+  const nested = (raw as { data?: { match?: UnknownRecord } })?.data?.match;
+  if (nested) return nested;
+
+  return undefined;
+}
+
 function toPhase(timeSeconds: number): MatchPhase {
   if (timeSeconds < 600) return 'laning';
   if (timeSeconds < 1200) return 'earlyMid';
@@ -39,7 +49,7 @@ function mapCombatEvents(value: unknown): StratzCombatEvent[] {
 }
 
 export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; heroId?: number }) {
-  const match = (raw as { match?: UnknownRecord })?.match;
+  const match = getStratzMatchPayload(raw);
   const players = asArray<UnknownRecord>(match?.players);
   const targetAccountId = opts?.accountId;
   const targetHeroId = opts?.heroId ?? LIFESTEALER_HERO_ID;
