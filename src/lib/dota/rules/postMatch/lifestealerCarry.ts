@@ -41,7 +41,7 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
   const itemsSummary = !trackedTimings.length
     ? 'Тайминги недоступны'
     : suspiciousItems.length > 0
-      ? 'В билде есть спорные слоты для MVP-оценки'
+      ? 'В билде есть спорные слоты'
     : phaseBootsStatus === 'late' || armletStatus === 'late'
       ? 'Есть задержка по таймингу'
       : phaseBoots && armlet
@@ -63,26 +63,25 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
   const itemsFindings: AnalysisFinding[] = [];
   if (!trackedTimings.length) itemsFindings.push({ text: 'Тайминги ключевых предметов в этом матче недоступны.', evidence: [], severity: 'info' });
   if (phaseBoots) {
-    const b = getLifestealerCarryItemBenchmark('phase_boots');
-    const status = compareItemTiming(phaseBoots.timeSeconds, b?.targetTimeSeconds);
-    itemsFindings.push({ text: `Phase Boots — ${phaseBoots.time}, ${status === 'late' ? `позже MVP-ориентира ${phaseBoots.time}.` : `в темпе по MVP-ориентиру ${b?.targetTimeSeconds ? `(${Math.floor(b.targetTimeSeconds / 60)}:00)` : ''}.`}`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
+    const status = compareItemTiming(phaseBoots.timeSeconds, getLifestealerCarryItemBenchmark('phase_boots')?.targetTimeSeconds);
+    itemsFindings.push({ text: status === 'late' ? `Phase Boots — ${phaseBoots.time}: предмет куплен поздновато.` : `Phase Boots — ${phaseBoots.time}: ранний темп хороший.`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
   }
   if (armlet) {
     const b = getLifestealerCarryItemBenchmark('armlet');
     const status = compareItemTiming(armlet.timeSeconds, b?.targetTimeSeconds);
-    itemsFindings.push({ text: status === 'late' ? `Armlet на ${armlet.time} — позже MVP-ориентира 15:00. Проверь ранний фарм и смерти до первого core item.` : `Armlet на ${armlet.time} — хороший тайминг по MVP-ориентиру для Lifestealer.`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
+    itemsFindings.push({ text: status === 'late' ? `Armlet — ${armlet.time}: тайминг запоздал, проверь фарм и смерти до первого ключевого предмета.` : `Armlet — ${armlet.time}: ключевой предмет куплен вовремя.`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
   }
   if (suspiciousItems.length > 0) {
     const labels = suspiciousItems.map((item) => item.replaceAll('_', ' ')).join(', ');
     itemsFindings.push({
-      text: `${labels} в билде — подозрительный слот для Lifestealer carry в рамках MVP-оценки: предмет хуже усиливает план героя через урон с руки, выживаемость или драку в Armlet/BKB timing.`,
+      text: `${labels} в билде — подозрительный слот для Lifestealer carry: предмет хуже усиливает урон с руки, выживаемость и драки в мидгейме.`,
       evidence: [],
       severity: 'bad'
     });
   } else if (phaseBoots && armlet) {
     itemsFindings.push({
-      text: 'Phase Boots и Armlet были в хорошем темпе, но оценка пока ограничена: MVP-логика проверяет только ранние core-тайминги и не сравнивает весь билд с STRATZ/OpenDota benchmark.',
-      evidence: [`core-слоты в сборке: ${coreItemsSeen.length}`],
+      text: 'Ранние ключевые предметы куплены вовремя. Оценка основана на ранних ключевых таймингах.',
+      evidence: [`ключевых слотов в сборке: ${coreItemsSeen.length}`],
       severity: 'info'
     });
   }
