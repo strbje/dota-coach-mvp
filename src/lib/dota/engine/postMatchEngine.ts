@@ -100,7 +100,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
   }
 
   return {
-    analysis: runLifestealerCarryPostMatchRules(normalized, stratz),
+    analysis: await runLifestealerCarryPostMatchRules(normalized, stratz),
     debug: {
       provider: 'opendota+stratz_optional',
       stages: {

@@ -4,13 +4,17 @@ import {
   LIFESTEALER_CARRY_CORE_ITEMS,
   LIFESTEALER_CARRY_SUSPICIOUS_ITEMS
 } from '@/lib/dota/rules/postMatch/itemBenchmarks';
-import { getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
+import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
+import { getHeroItemPopularity } from '@/lib/dota/data/itemPopularity';
+import { getHeroItemTimingScenarios } from '@/lib/dota/data/itemTimingScenarios';
+import { normalizeItemBenchmarks } from '@/lib/dota/normalize/normalizeItemBenchmarks';
+import { evaluateItemStatus } from '@/lib/dota/rules/itemRules';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, StratzPostMatchData } from '@/lib/dota/types/domain';
 
 function score(base: number, delta: number): number { return Math.max(1, Math.min(99, base + delta)); }
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
 
-export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz?: StratzPostMatchData): PostMatchAnalysis {
+export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz?: StratzPostMatchData): Promise<PostMatchAnalysis> {
   const p = match.player; const result: 'win' | 'loss' = p && p.isRadiant === match.didRadiantWin ? 'win' : 'loss';
   const gpm = p?.gpm ?? 0; const xpm = p?.xpm ?? 0; const deaths = p?.deaths ?? 0; const durationMinutes = p?.durationMinutes ?? 0;
   const heroDamage = p?.heroDamage ?? 0; const heroDamagePerMin = p?.heroDamagePerMin ?? 0; const lastHits = p?.lastHits ?? 0; const lastHitsPerMin = p?.lastHitsPerMin ?? 0;
@@ -27,6 +31,13 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
   const armletStatus = armlet ? compareItemTiming(armlet.timeSeconds, getLifestealerCarryItemBenchmark('armlet')?.targetTimeSeconds) : null;
   const coreItemsSeen = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_CORE_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_CORE_ITEMS)[number]));
   const suspiciousItems = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_SUSPICIOUS_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_SUSPICIOUS_ITEMS)[number]));
+  const popularity = await getHeroItemPopularity(54);
+  const timings = await getHeroItemTimingScenarios(54);
+  const benchmarks = normalizeItemBenchmarks(popularity, timings);
+  const itemStatuses = evaluateItemStatus(
+    trackedTimings.map((item) => ({ ...item, phase: getMatchPhase(item.timeSeconds) })),
+    benchmarks
+  );
 
   const laneSummary = lanePct === undefined
     ? 'Линия без полной телеметрии'
@@ -84,6 +95,12 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
       evidence: [`ключевых слотов в сборке: ${coreItemsSeen.length}`],
       severity: 'info'
     });
+  }
+  for (const status of itemStatuses) {
+    if (status.popularityStatus === 'unknown' && status.timingStatus === 'unknown') continue;
+    if (status.popularityStatus === 'rare') itemsFindings.push({ text: `${status.name} (${status.time}) выглядит нетипичным для героя/роли по доступным данным.`, evidence: [], severity: 'warning' });
+    if (status.timingStatus === 'late') itemsFindings.push({ text: `${status.name} (${status.time}) куплен поздно относительно типового тайминга из доступных данных.`, evidence: [], severity: 'warning' });
+    if (status.timingStatus === 'early') itemsFindings.push({ text: `${status.name} (${status.time}) куплен раньше типового окна — это хороший темп, если предмет сразу конвертировался в давление.`, evidence: [], severity: 'good' });
   }
 
   const laneFindings: AnalysisFinding[] = [];
