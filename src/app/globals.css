@@ -94,3 +94,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .phase-chip-normal { background: rgba(48, 80, 126, 0.25); }
 .phase-chip-warning { background: rgba(140, 107, 42, 0.28); }
 .phase-chip-danger { background: rgba(120, 45, 51, 0.3); }
+
+.phase-deaths { font-weight: 600; }
+.phase-deaths-safe { color: #8ce0af; }
+.phase-deaths-neutral { color: #b9ccef; }
+.phase-deaths-warning { color: #ffd48f; }
+.phase-deaths-danger { color: #ff9aa2; }

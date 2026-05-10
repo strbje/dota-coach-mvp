@@ -152,6 +152,7 @@ export type StratzPostMatchData = {
     lateGame: number;
   };
   selectedPlayer?: {
+    heroId?: number;
     role?: string;
     lane?: string;
     position?: string;
@@ -172,10 +173,10 @@ export type PostMatchAnalysis = {
   farmProfile?: NonNullable<NormalizedOpenDotaMatch['player']>['farmProfile'];
   stratz?: StratzPostMatchData;
   grades: {
-    lane: { score: number; findings: AnalysisFinding[] };
-    items: { score: number; findings: AnalysisFinding[] };
-    fights: { score: number; findings: AnalysisFinding[] };
-    map: { score: number; findings: AnalysisFinding[] };
+    lane: { score: number; summary?: string; findings: AnalysisFinding[] };
+    items: { score: number; summary?: string; findings: AnalysisFinding[] };
+    fights: { score: number; summary?: string; findings: AnalysisFinding[] };
+    map: { score: number; summary?: string; findings: AnalysisFinding[] };
   };
   topMistakes: string[];
   nextGameAdjustments: string[];

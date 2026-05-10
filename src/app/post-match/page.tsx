@@ -37,10 +37,10 @@ export default function PostMatchPage() {
   }
 
   return <main className="container"><h1>Пост-матч тренер</h1><div className="card grid"><MatchIdForm matchId={matchId} onChange={setMatchId} /><button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>{error ? <p className="error">{error}</p> : null}</div>
-    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Результат:</strong> {data.analysis.result}</p><p><strong>Финальный инвентарь:</strong> {data.analysis.buildPlayed.length >= 2 ? data.analysis.buildPlayed.join(' → ') : 'данные пока не распознаны'}</p></section>
+    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Результат:</strong> {data.analysis.result}</p></section>
       <GradesGrid grades={data.analysis.grades} />
       <ItemTimeline items={data.analysis.itemTimings} />
-      <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={data.analysis.deathsByPhase} itemTimings={data.analysis.itemTimings} />
+      <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={data.analysis.stratz?.deathsByPhase ?? data.analysis.deathsByPhase} itemTimings={data.analysis.itemTimings} />
       {data.analysis.stratz?.deathsByPhase ? <section className="card"><h3>Смерти по фазам</h3><div className="phase-chip-grid">{[
         ['Линия', data.analysis.stratz.deathsByPhase.laning],
         ['Ранняя середина', data.analysis.stratz.deathsByPhase.earlyMid],

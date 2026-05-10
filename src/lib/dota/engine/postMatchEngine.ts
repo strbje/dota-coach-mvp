@@ -39,6 +39,7 @@ async function fetchStratzDeaths(matchId: number): Promise<StratzPostMatchData |
     deathTimings: normalized.deathTimings,
     deathsByPhase: normalized.deathsByPhase,
     selectedPlayer: {
+      heroId: normalized.normalized.selectedPlayer?.heroId,
       role: normalized.normalized.selectedPlayer?.role,
       lane: normalized.normalized.selectedPlayer?.lane,
       position: normalized.normalized.selectedPlayer?.position,
@@ -84,7 +85,20 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
       summary: {
         hasPlayer: Boolean(normalized.player),
         durationSeconds: normalized.durationSeconds,
-        didRadiantWin: normalized.didRadiantWin
+        didRadiantWin: normalized.didRadiantWin,
+        hasStratzToken: Boolean(process.env.STRATZ_API_TOKEN),
+        stratzEnrichment: Boolean(stratz?.deathsByPhase || stratz?.deathTimings?.length),
+        stratzDeathTimingsCount: stratz?.deathTimings?.length ?? 0,
+        stratzDeathsByPhase: stratz?.deathsByPhase ?? null,
+        stratzSelectedPlayer: stratz?.selectedPlayer
+          ? {
+              heroId: stratz.selectedPlayer.heroId,
+              role: stratz.selectedPlayer.role,
+              lane: stratz.selectedPlayer.lane,
+              position: stratz.selectedPlayer.position,
+              imp: stratz.selectedPlayer.imp ?? null
+            }
+          : null
       }
     }
   };
