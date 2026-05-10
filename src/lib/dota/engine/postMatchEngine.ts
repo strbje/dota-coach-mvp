@@ -1,50 +1,69 @@
 import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMatch';
 import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
+import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
 import { runLifestealerCarryPostMatchRules } from '@/lib/dota/rules/postMatch/lifestealerCarry';
 import type { StratzPostMatchData } from '@/lib/dota/types/domain';
 
-const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
+type StratzFetchDebug = {
+  attempted: boolean;
+  status?: number;
+  statusText?: string;
+  contentType?: string;
+  bodyLength?: number;
+  bodyPreview?: string;
+  graphQLErrors?: unknown[];
+  error?: string;
+  normalizedDeathTimingsCount?: number;
+  normalizedDeathsByPhase?: {
+    laning: number;
+    earlyMid: number;
+    midGame: number;
+    lateGame: number;
+  } | null;
+};
 
-async function fetchStratzDeaths(matchId: number): Promise<StratzPostMatchData | undefined> {
+async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMatchData; debug: StratzFetchDebug }> {
   const token = process.env.STRATZ_API_TOKEN;
-  if (!token) return undefined;
+  if (!token) return { debug: { attempted: false } };
 
-  const response = await fetch(STRATZ_GRAPHQL_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: `query PostMatchStratzDeaths($id: Long!) {
-        match(id: $id) {
-          id
-          players {
-            steamAccountId
-            heroId
-            lane
-            position
-            role
-            imp
-            stats { deathEvents { time } }
-          }
-        }
-      }`,
-      variables: { id: matchId }
-    }),
-    cache: 'no-store'
+  const queryResult = await runStratzQuery({
+    query: STRATZ_EVENTS_QUERY,
+    variables: { id: matchId },
+    token
   });
-  if (!response.ok) return undefined;
-  const payload = await response.json();
+
+  const debug: StratzFetchDebug = {
+    attempted: true,
+    status: queryResult.status,
+    statusText: queryResult.statusText,
+    contentType: queryResult.contentType,
+    bodyLength: queryResult.bodyLength,
+    bodyPreview: queryResult.bodyPreview,
+    graphQLErrors: queryResult.graphQLErrors,
+    error: queryResult.error
+  };
+
+  const payload = queryResult.json;
+  if (!payload || typeof payload !== 'object') return { debug };
+
   const normalized = normalizeStratzMatch(payload);
+  debug.normalizedDeathTimingsCount = normalized.deathTimings.length;
+  debug.normalizedDeathsByPhase = normalized.deathsByPhase ?? null;
+
   return {
-    deathTimings: normalized.deathTimings,
-    deathsByPhase: normalized.deathsByPhase,
-    selectedPlayer: {
-      heroId: normalized.normalized.selectedPlayer?.heroId,
-      role: normalized.normalized.selectedPlayer?.role,
-      lane: normalized.normalized.selectedPlayer?.lane,
-      position: normalized.normalized.selectedPlayer?.position,
-      imp: normalized.normalized.selectedPlayer?.imp ?? null
-    }
+    data: {
+      deathTimings: normalized.deathTimings,
+      deathsByPhase: normalized.deathsByPhase,
+      selectedPlayer: {
+        heroId: normalized.normalized.selectedPlayer?.heroId,
+        role: normalized.normalized.selectedPlayer?.role,
+        lane: normalized.normalized.selectedPlayer?.lane,
+        position: normalized.normalized.selectedPlayer?.position,
+        imp: normalized.normalized.selectedPlayer?.imp ?? null
+      }
+    },
+    debug
   };
 }
 
@@ -67,10 +86,17 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
   }
 
   let stratz: StratzPostMatchData | undefined;
+  let stratzFetch: StratzFetchDebug = { attempted: Boolean(process.env.STRATZ_API_TOKEN) };
   try {
-    stratz = await fetchStratzDeaths(matchId);
-  } catch {
+    const result = await fetchStratzDeaths(matchId);
+    stratz = result.data;
+    stratzFetch = result.debug;
+  } catch (error) {
     stratz = undefined;
+    stratzFetch = {
+      attempted: Boolean(process.env.STRATZ_API_TOKEN),
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 
   return {
@@ -98,7 +124,8 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
               position: stratz.selectedPlayer.position,
               imp: stratz.selectedPlayer.imp ?? null
             }
-          : null
+          : null,
+        stratzFetch
       }
     }
   };
