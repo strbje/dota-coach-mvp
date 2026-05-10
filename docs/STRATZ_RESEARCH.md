@@ -213,6 +213,25 @@ Do not build product conclusions like **first death in fight**, **solo death**, 
 - Time samples are previewed (first 5 + targeted 10/20/30/40 checks if present).
 - This is not product benchmark yet: `productReady=false` until methodology is fully confirmed.
 
+### heroAverage methodology checklist (before product use)
+- `time`: meaning still unconfirmed (likely minute bucket / checkpoint, but not documented in API response itself).
+- sampling: selection logic for `heroAverage` population is unconfirmed (global/rank/patch/region filters unknown).
+- `position`: field exists in payload, but benchmark grouping semantics still unconfirmed.
+- data period: rolling window/patch binding is unconfirmed.
+- rank/bracket: unconfirmed in returned payload.
+- stability: values are returned, but consistency across matches/heroes needs repeated probes.
+- **Policy:** use `heroAverage` only for research/debug until all points above are confirmed from schema/docs/explorer.
+
+## Role detection policy (vNext integration target)
+- Do not hardcode `Lifestealer carry` as the only role signal in product decisions.
+- Prefer runtime role detection from available sources in this priority:
+  1) STRATZ `position`
+  2) STRATZ `role` + `lane`
+  3) STRATZ `roleBasic` + `lane`
+  4) OpenDota `lane_role` / `lane`
+- If detected role is carry/core, apply carry rules + optional hero-specific overrides.
+- If role is unknown/conflicting, fallback to hero/lane stats and keep role conclusions soft (no strict claim).
+
 ## STRATZ product readiness levels
 - Level 1 schema confirmed
 - Level 2 data returned

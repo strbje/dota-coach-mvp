@@ -164,6 +164,7 @@ export type StratzPostMatchData = {
   selectedPlayer?: {
     heroId?: number;
     role?: string;
+    roleBasic?: string;
     lane?: string;
     position?: string;
     imp?: number | null;
