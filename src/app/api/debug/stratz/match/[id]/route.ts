@@ -2,8 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
-
-const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
+import { runStratzQuery, STRATZ_EVENTS_QUERY, STRATZ_GRAPHQL_URL } from '@/lib/dota/clients/stratz';
 
 const SUPPORTED_QUERY_MODES = ['basic', 'playerDeep', 'teamfightsProbe', 'eventsProbe', 'playbackProbe', 'heroAverageProbe'] as const;
 type QueryMode = (typeof SUPPORTED_QUERY_MODES)[number];
@@ -99,36 +98,7 @@ const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
   },
   eventsProbe: {
     name: 'DebugStratzEvents',
-    query: `query DebugStratzEvents($id: Long!) {
-      match(id: $id) {
-        id
-        durationSeconds
-        chatEvents {
-          time
-          type
-          fromHeroId
-          toHeroId
-          value
-          isRadiant
-        }
-        players {
-          steamAccountId
-          heroId
-          isRadiant
-          stats {
-            killEvents {
-              time
-            }
-            deathEvents {
-              time
-            }
-            assistEvents {
-              time
-            }
-          }
-        }
-      }
-    }`,
+    query: STRATZ_EVENTS_QUERY,
     availableFields: ['match.chatEvents[]', 'match.players[].stats.killEvents[]', 'match.players[].stats.deathEvents[]', 'match.players[].stats.assistEvents[]']
   },
   playbackProbe: {
@@ -266,25 +236,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   try {
-    const response = await fetch(STRATZ_GRAPHQL_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'dota-coach-mvp/0.1 local-dev'
-      },
-      body: JSON.stringify({ query: selected.query, variables: { id: matchId } }),
-      cache: 'no-store'
-    });
-
-    const text = await response.text();
-    const contentType = response.headers.get('content-type') ?? '';
-    const mayBeJson = contentType.includes('application/json') || contentType.includes('application/graphql-response+json') || text.trim().startsWith('{');
-    const parsed = mayBeJson ? JSON.parse(text) as { data?: { match?: { id?: number; durationSeconds?: number; players?: Array<Record<string, unknown>> } }; errors?: Array<{ message?: string }> } : null;
+    const stratzResult = await runStratzQuery({ query: selected.query, variables: { id: matchId }, token });
+    const parsed = stratzResult.json as { data?: { match?: { id?: number; durationSeconds?: number; players?: Array<Record<string, unknown>> } }; errors?: Array<{ message?: string }> } | undefined;
     const match = parsed?.data?.match;
-    const errors = parsed?.errors?.map((entry) => entry.message ?? 'Unknown GraphQL error') ?? [];
+    const errors = (stratzResult.graphQLErrors ?? parsed?.errors ?? [])
+      .map((entry) => (typeof (entry as { message?: unknown })?.message === 'string' ? (entry as { message: string }).message : 'Unknown GraphQL error'));
 
-    const isOk = response.ok && errors.length === 0;
+    const isOk = stratzResult.ok && errors.length === 0;
 
     const normalizedPack = parsed?.data ? normalizeStratzMatch(parsed.data) : null;
     const normalizedSummary = normalizedPack ? buildNormalizedSummary(queryMode, normalizedPack) : null;
@@ -296,11 +254,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       endpoint: STRATZ_GRAPHQL_URL,
       queryMode,
       queryName: selected.name,
-      status: response.status,
-      statusText: response.statusText,
-      contentType,
-      bodyLength: text.length,
-      bodyPreview: text.slice(0, 1000),
+      status: stratzResult.status,
+      statusText: stratzResult.statusText,
+      contentType: stratzResult.contentType,
+      bodyLength: stratzResult.bodyLength,
+      bodyPreview: stratzResult.bodyPreview,
       dataShape: match ? { id: match.id, durationSeconds: match.durationSeconds, playersCount: Array.isArray(match.players) ? match.players.length : 0 } : null,
       normalizedSummary,
       availableFields: match ? selected.availableFields : [],
