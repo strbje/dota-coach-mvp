@@ -2,6 +2,7 @@ import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMat
 import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
+import { detectRole } from '@/lib/dota/role/detectRole';
 import { runLifestealerCarryPostMatchRules } from '@/lib/dota/rules/postMatch/lifestealerCarry';
 import type { StratzPostMatchData } from '@/lib/dota/types/domain';
 
@@ -58,6 +59,7 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
       selectedPlayer: {
         heroId: normalized.normalized.selectedPlayer?.heroId,
         role: normalized.normalized.selectedPlayer?.role,
+        roleBasic: normalized.normalized.selectedPlayer?.roleBasic,
         lane: normalized.normalized.selectedPlayer?.lane,
         position: normalized.normalized.selectedPlayer?.position,
         imp: normalized.normalized.selectedPlayer?.imp ?? null
@@ -109,6 +111,14 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
         stratzEnrichment: Boolean(stratz?.deathsByPhase || stratz?.deathTimings?.length)
       },
       summary: {
+        roleDetection: detectRole({
+          stratzRole: stratz?.selectedPlayer?.role,
+          stratzRoleBasic: stratz?.selectedPlayer?.roleBasic,
+          stratzPosition: stratz?.selectedPlayer?.position,
+          stratzLane: stratz?.selectedPlayer?.lane,
+          openDotaLaneRole: normalized.player?.laneReview?.laneRole,
+          openDotaLane: normalized.player?.laneReview?.lane
+        }),
         hasPlayer: Boolean(normalized.player),
         durationSeconds: normalized.durationSeconds,
         didRadiantWin: normalized.didRadiantWin,
@@ -120,6 +130,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
           ? {
               heroId: stratz.selectedPlayer.heroId,
               role: stratz.selectedPlayer.role,
+              roleBasic: stratz.selectedPlayer.roleBasic,
               lane: stratz.selectedPlayer.lane,
               position: stratz.selectedPlayer.position,
               imp: stratz.selectedPlayer.imp ?? null
