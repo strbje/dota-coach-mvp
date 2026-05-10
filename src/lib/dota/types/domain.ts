@@ -134,6 +134,16 @@ export type NormalizedOpenDotaMatch = {
     farmProfile?: {
       laneKills?: number; neutralKills?: number; ancientKills?: number; heroKills?: number; roshanKills?: number; towerKills?: number;
     };
+    goldReasons?: {
+      constantsAvailable: boolean;
+      totalPositiveGold: number;
+      totalNegativeGold: number;
+      groups: Array<{ group: string; label: string; amount: number }>;
+      unknownAmount: number;
+      unknownKeys: string[];
+      decoded: Array<{ key: string; label: string; amount: number; group: string; known: boolean }>;
+      grouped: Record<string, number>;
+    };
   };
 };
 
@@ -171,6 +181,7 @@ export type PostMatchAnalysis = {
   economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase'];
   deathsByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase'];
   farmProfile?: NonNullable<NormalizedOpenDotaMatch['player']>['farmProfile'];
+  goldReasons?: NonNullable<NormalizedOpenDotaMatch['player']>['goldReasons'];
   stratz?: StratzPostMatchData;
   grades: {
     lane: { score: number; summary?: string; findings: AnalysisFinding[] };
