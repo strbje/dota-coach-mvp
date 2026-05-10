@@ -1,4 +1,5 @@
 import { formatGameTime, getItemIconUrlByKey, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
+import { ensureOpenDotaConstantsLoaded } from '@/lib/dota/providers/opendotaConstantsProvider';
 import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
 import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
@@ -19,7 +20,8 @@ type EconomyByPhase = NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>
 type EconomyPhaseValue = EconomyByPhase[MatchPhase];
 
 
-export function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): NormalizedOpenDotaMatch {
+export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): Promise<NormalizedOpenDotaMatch> {
+  await ensureOpenDotaConstantsLoaded();
   const players = Array.isArray(payload.players) ? payload.players : [];
   const playerRaw = players.find((p) => toNumber((p as Record<string, unknown>).hero_id, -1) === 54) as Record<string, unknown> | undefined;
   if (!playerRaw) throw new Error('Target hero/player not found in OpenDota payload');

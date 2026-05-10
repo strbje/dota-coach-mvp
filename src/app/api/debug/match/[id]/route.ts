@@ -57,7 +57,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   }
 
   try {
-    const normalized = normalizeOpenDotaMatch(payload);
+    const normalized = await normalizeOpenDotaMatch(payload);
     const player = Array.isArray(payload.players) ? payload.players.find((p) => Number((p as Record<string, unknown>).hero_id) === 54) as Record<string, unknown> | undefined : undefined;
     const raw = player && typeof player.gold_reasons === 'object' && player.gold_reasons ? player.gold_reasons as Record<string, number> : {};
     const constants = await fetchOpenDotaConstants('gold_reasons');

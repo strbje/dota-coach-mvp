@@ -79,7 +79,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
 
   let normalized;
   try {
-    normalized = normalizeOpenDotaMatch(openDotaPayload, hero);
+    normalized = await normalizeOpenDotaMatch(openDotaPayload, hero);
   } catch (error) {
     const parsed = error instanceof Error ? error : new Error(String(error));
     throw new Error(`Post-match normalize stage failed: ${parsed.message}`, { cause: parsed });
