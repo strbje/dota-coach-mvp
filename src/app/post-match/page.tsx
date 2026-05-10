@@ -54,7 +54,7 @@ export default function PostMatchPage() {
       <section className="card"><h3>Итог тренера</h3><p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p><p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p><p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p></section>
       <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
       <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />
-      <DebugPanel data={data.debug} title="Provider payload summary / Debug" />
+      <DebugPanel data={data.debug} title="Детали данных матча" />
     </div> : null}
   </main>;
 }
