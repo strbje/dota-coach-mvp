@@ -43,6 +43,7 @@ Open `http://localhost:3000`.
 - `docs/DATA_SOURCES.md`
 - `docs/OPENDOTA_FIELDS.md`
 - `docs/BENCHMARKS.md`
+- `docs/BENCHMARK_RESEARCH.md`
 - `docs/ANALYTICS_METHODOLOGY.md`
 - `docs/STRATZ_RESEARCH.md`
 - `docs/UI_COPY_RULES.md`
@@ -56,6 +57,7 @@ Open `http://localhost:3000`.
 - `GET /api/debug/match/:id`
 - `GET /api/debug/stratz/match/:id?query=basic|playerDeep|teamfightsProbe|eventsProbe|playbackProbe|heroAverageProbe`
 - `GET /api/debug/stratz/schema?type=MatchType`
+- `GET /api/debug/benchmarks/:heroId?matchId=8781054570`
 
 Debug URLs:
 - `/api/debug/env`
