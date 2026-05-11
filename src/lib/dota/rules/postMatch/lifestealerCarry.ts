@@ -96,11 +96,15 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
       severity: 'info'
     });
   }
+  const hasPopularityBenchmarks = Array.isArray(popularity) && popularity.length > 0;
+  const hasTimingBenchmarks = Array.isArray(timings) && timings.length > 0;
+
   for (const status of itemStatuses) {
+    if (!hasPopularityBenchmarks && !hasTimingBenchmarks) continue;
     if (status.popularityStatus === 'unknown' && status.timingStatus === 'unknown') continue;
-    if (status.popularityStatus === 'rare') itemsFindings.push({ text: `${status.name} (${status.time}) выглядит нетипичным для героя/роли по доступным данным.`, evidence: [], severity: 'warning' });
-    if (status.timingStatus === 'late') itemsFindings.push({ text: `${status.name} (${status.time}) куплен поздно относительно типового тайминга из доступных данных.`, evidence: [], severity: 'warning' });
-    if (status.timingStatus === 'early') itemsFindings.push({ text: `${status.name} (${status.time}) куплен раньше типового окна — это хороший темп, если предмет сразу конвертировался в давление.`, evidence: [], severity: 'good' });
+    if (hasPopularityBenchmarks && status.popularityStatus === 'rare') itemsFindings.push({ text: `${status.name} (${status.time}) выглядит нетипичным для героя/роли по доступным данным.`, evidence: [], severity: 'warning' });
+    if (hasTimingBenchmarks && status.timingStatus === 'late') itemsFindings.push({ text: `${status.name} (${status.time}) куплен поздно относительно типового тайминга из доступных данных.`, evidence: [], severity: 'warning' });
+    if (hasTimingBenchmarks && status.timingStatus === 'early') itemsFindings.push({ text: `${status.name} (${status.time}) куплен раньше типового окна — это хороший темп, если предмет сразу конвертировался в давление.`, evidence: [], severity: 'good' });
   }
 
   const laneFindings: AnalysisFinding[] = [];
@@ -163,7 +167,7 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
       ? [`${deaths} смертей — высокий риск для carry, но разложение по фазам недоступно.`]
       : ['Критичных ошибок по доступным данным не найдено.'];
 
-  return { matchId: match.matchId, hero: 'Lifestealer', role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
+  return { matchId: match.matchId, hero: 'Lifestealer', role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
     grades: { lane: { score: laneFinalScore, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: score(58, heroDamagePerMin >= 700 ? 10 : -5), summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: score(60, gpm >= 650 ? 10 : -5), summary: mapSummary, findings: mapFindings.slice(0, 3) } },
     topMistakes: safeTopMistakes,
     nextGameAdjustments: [

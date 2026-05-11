@@ -11,6 +11,16 @@ import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 
 type Payload = { analysis: PostMatchAnalysis; debug: unknown };
 
+function roleLabel(role?: string): string {
+  const normalized = role?.toLowerCase();
+  if (normalized === 'carry') return 'Carry';
+  if (normalized === 'mid') return 'Mid';
+  if (normalized === 'offlane') return 'Offlane';
+  if (normalized === 'support') return 'Support';
+  if (normalized === 'hard support') return 'Hard Support';
+  return 'Unknown';
+}
+
 
 function phaseTone(value: number): string {
   if (value >= 3) return 'phase-chip-danger';
@@ -38,7 +48,7 @@ export default function PostMatchPage() {
   }
 
   return <main className="container"><h1>Пост-матч тренер</h1><div className="card grid"><MatchIdForm matchId={matchId} onChange={setMatchId} /><button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>{error ? <p className="error">{error}</p> : null}</div>
-    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Результат:</strong> {data.analysis.result}</p></section>
+    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Роль:</strong> {roleLabel(data.analysis.role)}</p><p><strong>Результат:</strong> {data.analysis.result}</p></section>
       <GradesGrid grades={data.analysis.grades} />
       <ItemTimeline items={data.analysis.itemTimings} />
       <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={deathsByPhaseForUi} itemTimings={data.analysis.itemTimings} />
