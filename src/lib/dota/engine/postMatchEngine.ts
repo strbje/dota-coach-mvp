@@ -101,8 +101,11 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
     };
   }
 
+  const analysis = await runLifestealerCarryPostMatchRules(normalized, stratz);
+  const itemAnalysis = analysis.itemAnalysis ?? [];
+
   return {
-    analysis: await runLifestealerCarryPostMatchRules(normalized, stratz),
+    analysis,
     debug: {
       provider: 'opendota+stratz_optional',
       stages: {
@@ -119,6 +122,12 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
           openDotaLaneRole: normalized.player?.laneReview?.laneRole,
           openDotaLane: normalized.player?.laneReview?.lane
         }),
+        itemAnalysisAvailable: itemAnalysis.length > 0,
+        itemPopularityStatus: itemAnalysis.some((it) => it.popularityStatus !== 'unknown') ? 'available' : 'unavailable',
+        itemTimingScenariosStatus: itemAnalysis.some((it) => it.timingStatus !== 'unknown') ? 'available' : 'unavailable',
+        itemBenchmarkedItemsCount: itemAnalysis.filter((it) => it.popularityStatus !== 'unknown' || it.timingStatus !== 'unknown').length,
+        appliedRuleSet: 'lifestealerCarry',
+        heroOverride: 'lifestealer',
         hasPlayer: Boolean(normalized.player),
         durationSeconds: normalized.durationSeconds,
         didRadiantWin: normalized.didRadiantWin,

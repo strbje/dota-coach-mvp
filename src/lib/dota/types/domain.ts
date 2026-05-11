@@ -179,6 +179,14 @@ export type PostMatchAnalysis = {
   buildPlayed: string[];
   timings: Record<string, string>;
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;
+  itemAnalysis?: Array<{
+    key: string;
+    name: string;
+    time: string;
+    phase: MatchPhase;
+    popularityStatus: 'typical' | 'uncommon' | 'rare' | 'unknown';
+    timingStatus: 'early' | 'normal' | 'late' | 'unknown';
+  }>;
   economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase'];
   deathsByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase'];
   farmProfile?: NonNullable<NormalizedOpenDotaMatch['player']>['farmProfile'];
