@@ -186,7 +186,38 @@ export type PostMatchAnalysis = {
     phase: MatchPhase;
     popularityStatus: 'typical' | 'uncommon' | 'rare' | 'unknown';
     timingStatus: 'early' | 'normal' | 'late' | 'unknown';
+    scenarioContext?: {
+      nearestBucketTimeLabel: string;
+      nearestBucketTimeSeconds: number;
+      games: number;
+      wins: number;
+      winRate: number | null;
+      sampleSizeStatus: 'ok' | 'small';
+    };
   }>;
+  benchmarkSummary?: {
+    source: 'opendota';
+    heroId: number;
+    metrics: Partial<Record<'gpm' | 'xpm' | 'lhPerMin' | 'heroDamagePerMin' | 'towerDamage' | 'killsPerMin', {
+      actual: number;
+      percentileRange: string;
+      label: string;
+    }>>;
+  };
+  heroAverageComparison?: {
+    source: 'stratz';
+    methodologyStatus: 'research';
+    selectedPosition?: string;
+    checkpoints: Array<{
+      minute: number;
+      actualCs?: number;
+      averageCs?: number;
+      deltaCs?: number;
+      actualNetworth?: number;
+      averageNetworth?: number;
+      deltaNetworth?: number;
+    }>;
+  };
   economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase'];
   deathsByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase'];
   farmProfile?: NonNullable<NormalizedOpenDotaMatch['player']>['farmProfile'];

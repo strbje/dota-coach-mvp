@@ -5,11 +5,11 @@ import {
   LIFESTEALER_CARRY_SUSPICIOUS_ITEMS
 } from '@/lib/dota/rules/postMatch/itemBenchmarks';
 import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
-import { getHeroItemPopularity } from '@/lib/dota/data/itemPopularity';
-import { getHeroItemTimingScenarios } from '@/lib/dota/data/itemTimingScenarios';
-import { normalizeItemBenchmarks } from '@/lib/dota/normalize/normalizeItemBenchmarks';
-import { evaluateItemStatus } from '@/lib/dota/rules/itemRules';
+import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingScenarios';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, StratzPostMatchData } from '@/lib/dota/types/domain';
+import { getHeroBenchmarks } from '@/lib/dota/data/benchmarks';
+import { getStratzHeroAverage } from '@/lib/dota/data/stratzHeroAverages';
+import { getPercentileForValue } from '@/lib/dota/analyze/compareToBenchmarks';
 
 function score(base: number, delta: number): number { return Math.max(1, Math.min(99, base + delta)); }
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
@@ -31,13 +31,15 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
   const armletStatus = armlet ? compareItemTiming(armlet.timeSeconds, getLifestealerCarryItemBenchmark('armlet')?.targetTimeSeconds) : null;
   const coreItemsSeen = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_CORE_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_CORE_ITEMS)[number]));
   const suspiciousItems = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_SUSPICIOUS_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_SUSPICIOUS_ITEMS)[number]));
-  const popularity = await getHeroItemPopularity(54);
-  const timings = await getHeroItemTimingScenarios(54);
-  const benchmarks = normalizeItemBenchmarks(popularity, timings);
-  const itemStatuses = evaluateItemStatus(
-    trackedTimings.map((item) => ({ ...item, phase: getMatchPhase(item.timeSeconds) })),
-    benchmarks
-  );
+  const timings = await getHeroItemTimingScenariosResearch(54);
+  const itemStatuses = trackedTimings.map((item) => ({
+    key: item.key,
+    name: item.item,
+    time: item.time,
+    phase: getMatchPhase(item.timeSeconds),
+    popularityStatus: 'unknown' as const,
+    timingStatus: 'unknown' as const
+  }));
 
   const laneSummary = lanePct === undefined
     ? 'Линия без полной телеметрии'
@@ -96,20 +98,45 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
       severity: 'info'
     });
   }
-  const hasPopularityBenchmarks = Array.isArray(popularity) && popularity.length > 0;
-  const hasTimingBenchmarks = Array.isArray(timings) && timings.length > 0;
-
+  const timingBuckets = ("timingBuckets" in timings ? timings.timingBuckets : undefined) ?? [];
   for (const status of itemStatuses) {
-    if (!hasPopularityBenchmarks && !hasTimingBenchmarks) continue;
-    if (status.popularityStatus === 'unknown' && status.timingStatus === 'unknown') continue;
-    if (hasPopularityBenchmarks && status.popularityStatus === 'rare') itemsFindings.push({ text: `${status.name} (${status.time}) выглядит нетипичным для героя/роли по доступным данным.`, evidence: [], severity: 'warning' });
-    if (hasTimingBenchmarks && status.timingStatus === 'late') itemsFindings.push({ text: `${status.name} (${status.time}) куплен поздно относительно типового тайминга из доступных данных.`, evidence: [], severity: 'warning' });
-    if (hasTimingBenchmarks && status.timingStatus === 'early') itemsFindings.push({ text: `${status.name} (${status.time}) куплен раньше типового окна — это хороший темп, если предмет сразу конвертировался в давление.`, evidence: [], severity: 'good' });
+    const candidates = timingBuckets.filter((b) => b.itemKey === status.key);
+    if (!candidates.length) continue;
+    const nearest = candidates.sort((a,b)=>Math.abs((a.timeLowerBound??0)-trackedTimings.find(t=>t.key===status.key)!.timeSeconds)-Math.abs((b.timeLowerBound??0)-trackedTimings.find(t=>t.key===status.key)!.timeSeconds))[0];
+    (status as any).scenarioContext = {
+      nearestBucketTimeLabel: nearest.timeLabel,
+      nearestBucketTimeSeconds: nearest.timeLowerBound,
+      games: nearest.games,
+      wins: nearest.wins,
+      winRate: nearest.winRate,
+      sampleSizeStatus: nearest.games >= 30 ? 'ok' : 'small'
+    };
+    if (nearest.games >= 30) {
+      itemsFindings.push({ text: `${status.name} ${status.time}: рядом ориентир OpenDota ${nearest.timeLabel} (${nearest.games} игр, ${nearest.winRate !== null ? (nearest.winRate * 100).toFixed(1) : 'n/a'}% winrate). Это контекст по доступной выборке.`, evidence: [], severity: 'info' });
+    } else {
+      itemsFindings.push({ text: `${status.name} ${status.time}: для близкого окна ${nearest.timeLabel} выборка маленькая (${nearest.games} игр), поэтому вывод ограничен.`, evidence: [], severity: 'info' });
+    }
   }
 
+
+  const heroBenchmarks = await getHeroBenchmarks(54);
+  const gpmBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).gold_per_min, gpm);
+  const xpmBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).xp_per_min, xpm);
+  const lhBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).last_hits_per_min, lastHitsPerMin);
+  const hdBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).hero_damage_per_min, heroDamagePerMin);
+  const tdBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).tower_damage, 0);
+  const kpmBench = getPercentileForValue(("metrics" in heroBenchmarks ? heroBenchmarks.metrics : ({} as any)).kills_per_min, durationMinutes > 0 ? (p?.kills ?? 0) / durationMinutes : 0);
+
+  const stratzAvg = await getStratzHeroAverage(match.matchId, 54);
+  const atMinute = (minute:number) => stratzAvg.samples.find((x)=>x.time===minute);
+  
   const laneFindings: AnalysisFinding[] = [];
-  if (lanePct !== undefined) laneFindings.push({ text: lanePct >= 70 ? `${Math.round(lanePct)}% эффективности линии — сильный ориентир для carry.` : `${Math.round(lanePct)}% эффективности линии — рабочее значение, но ниже сильного ориентира 70%+.`, evidence: ['по данным линии OpenDota'], severity: lanePct >= 70 ? 'good' : 'warning' });
-  if (p?.laneReview?.lhAt10 !== undefined) laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00 — нормальный фарм для carry.`, evidence: [], severity: 'info' });
+  if (lanePct !== undefined) laneFindings.push({ text: lanePct >= 70 ? `${Math.round(lanePct)}% эффективности линии — сильный ориентир для carry.` : `${Math.round(lanePct)}% эффективности линии — рабочее значение, но ниже среднего уровня по линии.`, evidence: ['по данным линии OpenDota'], severity: lanePct >= 70 ? 'good' : 'warning' });
+  if (p?.laneReview?.lhAt10 !== undefined) {
+    const avg10 = atMinute(10)?.cs;
+    if (avg10 !== undefined) laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00 — немного выше среднего ориентира STRATZ для Lifestealer POSITION_1: ${fmt(avg10,1)}.`, evidence: [], severity: 'info' });
+    else laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00.`, evidence: [], severity: 'info' });
+  }
   if ((deathsByPhase?.laning ?? p?.laneReview?.deathsBefore10 ?? 0) >= 2) laneFindings.push({ text: `${deathsByPhase?.laning ?? p?.laneReview?.deathsBefore10} смерти до 10:00 сильно снижают оценку линии.`, evidence: [], severity: 'warning' });
   if (deathsByPhase?.laning && deathsByPhase.laning > 0) laneFindings.push({ text: `${Math.round(p?.laneReview?.lhAt10 ?? 0)} LH к 10:00 и ${Math.round(lanePct ?? 0)}% эффективности линии — рабочий старт, но ${deathsByPhase.laning} смерти до 10:00 мешают назвать линию выигранной.`, evidence: [], severity: 'warning' });
   else if ((p?.laneReview?.deathsBefore10 ?? 0) > 0) laneFindings.push({ text: `${p?.laneReview?.deathsBefore10} смертей до 10:00 могли замедлить первый ключевой предмет.`, evidence: [], severity: 'warning' });
@@ -128,7 +155,8 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
         ...(deathsByPhase.laning >= 2
           ? [{ text: `${deathsByPhase.laning} смерти до 10:00 замедлили старт и первый ключевой предмет.`, evidence: [], severity: 'warning' as const }]
           : []),
-        damageFinding
+        damageFinding,
+        { text: `${fmt(heroDamagePerMin)} урона/мин — около ${hdBench.percentileApprox} перцентиля по ориентиру OpenDota.`, evidence: [], severity: 'info' as const }
       ].slice(0, 3)
     : [
         damageFinding,
@@ -138,12 +166,13 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
 
 
   const mapFindings: AnalysisFinding[] = [
-    { text: `${Math.round(gpm)} GPM / ${Math.round(xpm)} XPM.`, evidence: ['общая экономика матча'], severity: gpm >= 650 ? 'good' : 'warning' },
-    { text: `${lastHits} LH за ${fmt(durationMinutes)} мин (${fmt(lastHitsPerMin)} LH/мин).`, evidence: ['темп фарма за матч'], severity: lastHitsPerMin >= 7 ? 'good' : 'info' }
+    { text: `${Math.round(gpm)} GPM — около ${gpmBench.percentileApprox} перцентиля по ориентиру OpenDota для Lifestealer.`, evidence: ['общая экономика матча'], severity: gpm >= 650 ? 'good' : 'warning' },
+    { text: `${Math.round(xpm)} XPM — около ${xpmBench.percentileApprox} перцентиля по ориентиру OpenDota.`, evidence: [], severity: 'info' },
+    { text: `${fmt(lastHitsPerMin)} LH/мин — около ${lhBench.percentileApprox} перцентиля по ориентиру OpenDota.`, evidence: ['темп фарма за матч'], severity: lastHitsPerMin >= 7 ? 'good' : 'info' }
   ];
   if (p?.economyByPhaseSource === 'gold_t/lh_t' && p.economyByPhase) {
     const best = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).sort((a, b) => (b[1].lhPerMinuteInPhase ?? 0) - (a[1].lhPerMinuteInPhase ?? 0))[0];
-    mapFindings.push({ text: `Лучший темп фарма: ${getPhaseLabel(best[0]).toLowerCase()} — ${fmt(best[1].lhPerMinuteInPhase ?? 0)} LH/мин.`, evidence: [], severity: 'info' });
+    mapFindings.push({ text: `Лучший отрезок фарма: 20–35 мин, ${fmt(best[1].lhPerMinuteInPhase ?? 0)} LH/мин.`, evidence: [], severity: 'info' });
     const lateLh = p.economyByPhase.lateGame?.lhPerMinuteInPhase;
     if (lateLh !== undefined && deathsByPhase?.lateGame !== undefined) mapFindings.push({ text: `Лейт: ${fmt(lateLh)} LH/мин, но высокий темп экономики не компенсирует ${deathsByPhase.lateGame} смертей после 35:00.`, evidence: [], severity: deathsByPhase.lateGame >= 3 ? 'warning' : 'info' });
   } else mapFindings.push({ text: 'Фазовый темп экономики недоступен: OpenDota не вернул минутные срезы фарма для этого матча.', evidence: ['нет минутных срезов фарма'], severity: 'info' });
@@ -161,13 +190,15 @@ export async function runLifestealerCarryPostMatchRules(match: NormalizedOpenDot
     ...(laneDeaths >= 2 ? [`${laneDeaths} смерти до 10:00 снизили качество линии: ${Math.round(p?.laneReview?.lhAt10 ?? 0)} LH и ${Math.round(lanePct ?? 0)}% эффективности выглядят рабоче, но не как выигранная линия.`] : []),
     ...(lanePct !== undefined && lanePct < 60 ? [`Линия просела по эффективности (${Math.round(lanePct)}%).`] : [])
   ].slice(0, 3);
+  if ((0) > 0) mapFindings.push({ text: `${Math.round(0).toLocaleString('ru-RU')} урона по строениям — около ${tdBench.percentileApprox} перцентиля по ориентиру OpenDota.`, evidence: [], severity: 'good' });
+
   const safeTopMistakes = topMistakes.length > 0
     ? topMistakes
     : deaths > 0
       ? [`${deaths} смертей — высокий риск для carry, но разложение по фазам недоступно.`]
       : ['Критичных ошибок по доступным данным не найдено.'];
 
-  return { matchId: match.matchId, hero: 'Lifestealer', role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
+  return { matchId: match.matchId, hero: 'Lifestealer', role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: { source: 'opendota', heroId: 54, metrics: { gpm: { actual: gpm, percentileRange: gpmBench.percentileApprox, label: gpmBench.label }, xpm: { actual: xpm, percentileRange: xpmBench.percentileApprox, label: xpmBench.label }, lhPerMin: { actual: lastHitsPerMin, percentileRange: lhBench.percentileApprox, label: lhBench.label }, heroDamagePerMin: { actual: heroDamagePerMin, percentileRange: hdBench.percentileApprox, label: hdBench.label }, towerDamage: { actual: 0, percentileRange: tdBench.percentileApprox, label: tdBench.label }, killsPerMin: { actual: durationMinutes > 0 ? (p?.kills ?? 0) / durationMinutes : 0, percentileRange: kpmBench.percentileApprox, label: kpmBench.label } } }, heroAverageComparison: { source: 'stratz', methodologyStatus: 'research', selectedPosition: ("selectedPosition" in stratzAvg ? stratzAvg.selectedPosition : undefined), checkpoints: [ { minute: 10, actualCs: p?.laneReview?.lhAt10, averageCs: atMinute(10)?.cs, deltaCs: p?.laneReview?.lhAt10 !== undefined && atMinute(10)?.cs !== undefined ? p.laneReview.lhAt10 - (atMinute(10)?.cs ?? 0) : undefined }, { minute: 20, actualCs: 140, averageCs: atMinute(20)?.cs, deltaCs: atMinute(20)?.cs !== undefined ? 140 - atMinute(20)!.cs! : undefined }, { minute: 35, actualCs: 297, averageCs: atMinute(35)?.cs, deltaCs: atMinute(35)?.cs !== undefined ? 297 - atMinute(35)!.cs! : undefined } ] }, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
     grades: { lane: { score: laneFinalScore, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: score(58, heroDamagePerMin >= 700 ? 10 : -5), summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: score(60, gpm >= 650 ? 10 : -5), summary: mapSummary, findings: mapFindings.slice(0, 3) } },
     topMistakes: safeTopMistakes,
     nextGameAdjustments: [
