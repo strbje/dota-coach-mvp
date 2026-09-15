@@ -11,6 +11,6 @@
 
 ## Следующий research для benchmarks
 - проверить OpenDota `/benchmarks` для GPM/XPM/LH/hero damage/tower damage percentiles;
-- проверить OpenDota `/heroes/{hero_id}/itemPopularity` для item phase popularity;
-- проверить OpenDota `/scenarios/itemTimings` для item timing win-rate buckets;
+- [x] проверить OpenDota `/heroes/{hero_id}/itemPopularity`: wire shape нормализован для research, но источник не используется для product popularity-выводов без cohort/denominator и patch/role dimensions;
+- [x] проверить OpenDota `/scenarios/itemTimings`: подключён как context-only источник с sample-size guardrails;
 - проверить STRATZ `heroAverage` как альтернативу hero/position benchmarks.
