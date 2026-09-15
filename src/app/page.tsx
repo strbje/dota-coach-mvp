@@ -1,23 +1,4 @@
-import Link from 'next/link';
-
-export default function HomePage() {
-  return (
-    <main className="container">
-      <h1>Dota Coach MVP</h1>
-      <p className="muted">Deterministic coaching for Lifestealer carry in two scenarios: pre-game planning and post-match review.</p>
-      <div className="grid grid-2">
-        <article className="card">
-          <h2>Pre-Game Assistant</h2>
-          <p>Input lane setup and draft names to get a deterministic plan.</p>
-          <Link href="/pre-game">Open flow →</Link>
-        </article>
-        <article className="card">
-          <h2>Post-Match Coach</h2>
-          <p>Analyze one match via OpenDota with rule-driven feedback.</p>
-          <Link href="/post-match">Open flow →</Link>
-        </article>
-      </div>
-      <p style={{ marginTop: '1rem' }}><Link href="/debug">Developer debug page</Link></p>
-    </main>
-  );
-}
+import { PageContainer } from '@/components/layout/PageContainer';
+import { ActionLink, Panel } from '@/components/ui';
+import styles from './home.module.css';
+export default function HomePage() { return <PageContainer><div className={styles.hero}><div className={styles.copy}><span className="eyebrow">Тактический помощник</span><h1 className={styles.title}>Персональный тренер для вашей следующей игры</h1><p className={styles.lead}>Разберите решения после матча или подготовьте чёткий план до старта — без лишней статистики и догадок.</p><div className={styles.actions}><ActionLink href="/post-match">Разобрать матч</ActionLink><ActionLink href="/pre-game" variant="secondary">Составить план</ActionLink></div></div></div><section className="page-stack" aria-labelledby="steps"><h2 id="steps">От матча к следующему решению</h2><div className={`grid grid-2 ${styles.steps}`}><Panel as="article" className={styles.step}><h3>Укажите матч</h3><p className="muted">Введите ID завершённой игры.</p></Panel><Panel as="article" className={styles.step}><h3>Получите разбор</h3><p className="muted">Посмотрите вывод тренера, ошибки и доказательства.</p></Panel><Panel as="article" className={styles.step}><h3>Выберите фокус</h3><p className="muted">Возьмите одно конкретное действие в следующий матч.</p></Panel></div></section></PageContainer>; }

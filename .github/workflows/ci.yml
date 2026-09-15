@@ -32,11 +32,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Benchmark tests
         run: npm run test:benchmarks
+
+      - name: Design guard
+        run: npm run check:design
 
       - name: Production build
         run: npm run build

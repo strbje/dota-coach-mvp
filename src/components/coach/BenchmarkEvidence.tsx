@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { formatPercentileRange } from '@/lib/dota/analyze/compareToBenchmarks';
 
@@ -23,7 +24,7 @@ export function BenchmarkEvidence({
 
   if (!metrics.length && !checkpoints.length) return null;
 
-  return <section className="card">
+  return <Panel>
     <h3>Ориентиры по герою</h3>
     {metrics.length ? <ul>{metrics.map(([key, metric]) => {
       if (!metric) return null;
@@ -33,13 +34,13 @@ export function BenchmarkEvidence({
       return <li key={key}><strong>{formatValue(metric.actual, copy.digits)} {copy.name}</strong> — {percentileCopy} для Lifestealer. {metric.label}.</li>;
     })}</ul> : null}
     {checkpoints.length ? <>
-      <h4 style={{ marginTop: '1rem' }}>Темп фарма по ходу матча</h4>
+      <h4 className="subsection">Темп фарма по ходу матча</h4>
       <ul>{checkpoints.map((checkpoint) => {
         const delta = checkpoint.deltaCs ?? 0;
         const comparison = Math.abs(delta) < 1 ? 'на уровне' : delta > 0 ? 'выше' : 'ниже';
         return <li key={checkpoint.minute}><strong>{formatValue(checkpoint.actualCs!)} LH к {checkpoint.minute}:00</strong> — {comparison} среднего ориентира STRATZ для Lifestealer Position 1: {formatValue(checkpoint.averageCs!, 1)}.</li>;
       })}</ul>
-      <p className="muted" style={{ marginTop: '0.75rem' }}>Средние значения STRATZ — ориентир для сравнения темпа, а не абсолютный рейтинг игры.</p>
+      <p className="muted supporting-copy">Средние значения STRATZ — ориентир для сравнения темпа, а не абсолютный рейтинг игры.</p>
     </> : null}
-  </section>;
+  </Panel>;
 }

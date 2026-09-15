@@ -1,3 +1,4 @@
+import { Panel } from '@/components/ui';
 type ItemTiming = {
   key: string;
   item: string;
@@ -9,7 +10,7 @@ type ItemTiming = {
 
 export function ItemTimeline({ items, title = 'Тайминг предметов' }: { items: ItemTiming[]; title?: string }) {
   return (
-    <section className="card">
+    <Panel>
       <h3>{title}</h3>
       {items.length === 0 ? (
         <p className="muted">OpenDota не дал надёжных данных о ключевых покупках.</p>
@@ -31,6 +32,6 @@ export function ItemTimeline({ items, title = 'Тайминг предметов
           ))}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

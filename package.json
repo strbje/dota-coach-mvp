@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:benchmarks": "node -e \"require('fs').rmSync('.tmp-benchmark-tests',{recursive:true,force:true})\" && tsc src/lib/dota/analyze/compareToBenchmarks.ts src/lib/dota/analyze/compareToBenchmarks.test.ts src/lib/dota/analyze/itemTimingBenchmarks.ts src/lib/dota/analyze/itemTimingBenchmarks.test.ts --outDir .tmp-benchmark-tests --module commonjs --moduleResolution node --target es2022 --esModuleInterop --skipLibCheck && node --test .tmp-benchmark-tests/*.test.js && node -e \"require('fs').rmSync('.tmp-benchmark-tests',{recursive:true,force:true})\""
+    "test:benchmarks": "node -e \"require('fs').rmSync('.tmp-benchmark-tests',{recursive:true,force:true})\" && tsc src/lib/dota/analyze/compareToBenchmarks.ts src/lib/dota/analyze/compareToBenchmarks.test.ts src/lib/dota/analyze/itemTimingBenchmarks.ts src/lib/dota/analyze/itemTimingBenchmarks.test.ts --outDir .tmp-benchmark-tests --module commonjs --moduleResolution node --target es2022 --esModuleInterop --skipLibCheck && node --test .tmp-benchmark-tests/*.test.js && node -e \"require('fs').rmSync('.tmp-benchmark-tests',{recursive:true,force:true})\"",
+    "check:design": "node scripts/check-design.mjs && node --test scripts/check-design.test.mjs"
   },
   "dependencies": {
     "next": "15.5.25",
