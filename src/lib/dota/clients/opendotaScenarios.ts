@@ -34,13 +34,3 @@ export async function fetchHeroItemTimings(heroId: number): Promise<unknown[] | 
     return null;
   }
 }
-
-export async function fetchHeroItemPopularity(heroId: number): Promise<unknown[] | null> {
-  try {
-    const payload = await fetchOpenDotaScenario(`/heroes/${heroId}/itemPopularity`);
-    if (!Array.isArray(payload)) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}

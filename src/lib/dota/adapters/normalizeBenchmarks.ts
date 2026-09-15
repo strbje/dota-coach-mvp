@@ -1,5 +1,5 @@
-import { getItemKeyById, getItemNameById, getItemNameByKey } from '@/lib/dota/data/itemConstants';
-import { normalizeItemTimingBucket } from '@/lib/dota/analyze/itemTimingBenchmarks';
+import { getItemKeyById, getItemNameById, getItemNameByKey, humanizeItemKey, type ItemConstant } from '../data/itemConstants';
+import { normalizeItemTimingBucket } from '../analyze/itemTimingBenchmarks';
 
 type PercentileRow = { percentile: number; value: number };
 
@@ -49,13 +49,26 @@ export function normalizeHeroBenchmarks(heroId: number, payload: unknown) {
   return normalized;
 }
 
-export function normalizeItemPopularity(heroId: number, payload: unknown) {
+export type ItemPopularityLookup = {
+  itemKeyById: Record<number, string>;
+  itemByKey: Record<string, ItemConstant>;
+};
+
+export function normalizeItemPopularity(heroId: number, payload: unknown, itemLookup?: ItemPopularityLookup) {
   const errors: string[] = [];
   const node = asObject(payload);
   if (!node) errors.push('OpenDota itemPopularity payload is not an object');
 
-  const readPhase = (phase: 'start' | 'early' | 'mid' | 'late') => {
-    const value = node?.[phase];
+  const phaseKeys = {
+    start: 'start_game_items',
+    early: 'early_game_items',
+    mid: 'mid_game_items',
+    late: 'late_game_items'
+  } as const;
+  const readPhase = (phase: keyof typeof phaseKeys) => {
+    // OpenDota's documented wire keys use *_game_items. Keep the short-key
+    // fallback for captured/legacy fixtures, but never require it.
+    const value = node?.[phaseKeys[phase]] ?? node?.[phase];
     return asObject(value) as Record<string, number> | undefined;
   };
 
@@ -64,13 +77,18 @@ export function normalizeItemPopularity(heroId: number, payload: unknown) {
   const parseTop = (phaseData: Record<string, number> | undefined) => {
     if (!phaseData) return [];
     return Object.entries(phaseData)
-      .map(([itemIdOrKey, count]) => {
+      .flatMap(([itemIdOrKey, count]) => {
+        if (typeof count !== 'number' || !Number.isFinite(count) || count < 0) return [];
         const numericId = Number(itemIdOrKey);
         const isNumericId = Number.isFinite(numericId) && numericId > 0;
         const itemId = isNumericId ? numericId : 0;
-        const key = isNumericId ? getItemKeyById(itemId) ?? undefined : itemIdOrKey;
-        const name = isNumericId ? getItemNameById(itemId) ?? undefined : getItemNameByKey(itemIdOrKey);
-        return { itemId, key, name, count: typeof count === 'number' ? count : 0 };
+        const key = isNumericId
+          ? itemLookup ? itemLookup.itemKeyById[itemId] : getItemKeyById(itemId) ?? undefined
+          : itemIdOrKey;
+        const name = key
+          ? itemLookup ? itemLookup.itemByKey[key]?.dname ?? humanizeItemKey(key) : isNumericId ? getItemNameById(itemId) ?? undefined : getItemNameByKey(key)
+          : undefined;
+        return [{ itemId, key, name, count }];
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
@@ -84,6 +102,7 @@ export function normalizeItemPopularity(heroId: number, payload: unknown) {
   };
 
   const available = Object.values(topItemsByPhase).some((rows) => rows.length > 0);
+  if (node && !available) errors.push('OpenDota itemPopularity contains no item counts for this hero');
 
   return {
     source: 'opendota' as const,

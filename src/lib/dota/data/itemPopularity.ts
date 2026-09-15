@@ -1,48 +1,40 @@
-import { normalizeItemPopularity } from '@/lib/dota/adapters/normalizeBenchmarks';
-import { fetchHeroItemPopularity } from '@/lib/dota/clients/opendotaScenarios';
-import { fetchOpenDotaPath } from '@/lib/dota/providers/opendotaProvider';
+import { normalizeItemPopularity } from '../adapters/normalizeBenchmarks';
+import { normalizeItemConstants } from '../adapters/normalizeItemConstants';
+import { fetchOpenDotaPathResearch } from '../providers/opendotaProvider';
 
-export type ItemPopularityRow = {
-  itemKey: string;
-  stage: 'start' | 'early' | 'mid' | 'late';
-  matches?: number;
-  winRate?: number;
-};
-
-export async function getHeroItemPopularity(heroId: number): Promise<ItemPopularityRow[] | null> {
-  const rows = await fetchHeroItemPopularity(heroId);
-  if (!rows) return null;
-
-  const normalized: ItemPopularityRow[] = [];
-  for (const row of rows) {
-    if (!row || typeof row !== 'object') continue;
-    const raw = row as Record<string, unknown>;
-    const itemKey = typeof raw.item === 'string' ? raw.item : typeof raw.item_name === 'string' ? raw.item_name : null;
-    const stageRaw = typeof raw.stage === 'string' ? raw.stage.toLowerCase() : 'mid';
-    const stage = (['start', 'early', 'mid', 'late'].includes(stageRaw) ? stageRaw : 'mid') as ItemPopularityRow['stage'];
-    if (!itemKey) continue;
-    normalized.push({
-      itemKey,
-      stage,
-      matches: typeof raw.games === 'number' ? raw.games : typeof raw.matches === 'number' ? raw.matches : undefined,
-      winRate: typeof raw.win_rate === 'number' ? raw.win_rate : undefined
-    });
+async function loadResearchItemConstants() {
+  const [items, itemIds] = await Promise.all([
+    fetchOpenDotaPathResearch('/constants/items'),
+    fetchOpenDotaPathResearch('/constants/item_ids')
+  ]);
+  if (items.error || itemIds.error || items.payload === undefined || itemIds.payload === undefined) {
+    return { lookup: { itemByKey: {}, itemKeyById: {} }, error: `OpenDota item constants unavailable: ${items.error ?? itemIds.error ?? 'items or item_ids payload missing'}` };
   }
-  return normalized;
+
+  const normalized = normalizeItemConstants(items.payload, itemIds.payload);
+  if (!Object.keys(normalized.itemByKey).length || !Object.keys(normalized.itemKeyById).length) {
+    return { lookup: { itemByKey: {}, itemKeyById: {} }, error: 'OpenDota item constants unavailable: items or item_ids payload has no usable entries' };
+  }
+  return { lookup: normalized, error: undefined };
 }
 
 export async function getHeroItemPopularityResearch(heroId: number) {
-  try {
-    const payload = await fetchOpenDotaPath(`/heroes/${heroId}/itemPopularity`);
-    return normalizeItemPopularity(heroId, payload);
-  } catch (error) {
-    return {
-      source: 'opendota' as const,
-      heroId,
-      available: false,
-      phases: {},
-      topItemsByPhase: { start: [], early: [], mid: [], late: [] },
-      errors: [error instanceof Error ? error.message : 'OpenDota itemPopularity unavailable']
-    };
-  }
+  const response = await fetchOpenDotaPathResearch(`/heroes/${heroId}/itemPopularity`);
+  const constants = response.payload !== undefined ? await loadResearchItemConstants() : undefined;
+  const constantsError = constants?.error;
+  const normalized = normalizeItemPopularity(heroId, response.payload, constants?.lookup);
+  const unavailableReason = response.error
+    ?? (!normalized.available ? normalized.errors?.[0] ?? 'OpenDota returned no item popularity data for this hero' : undefined);
+
+  return {
+    ...normalized,
+    status: response.status,
+    contentType: response.contentType,
+    requestUrl: response.url,
+    ...(unavailableReason ? { unavailableReason } : {}),
+    ...(response.rawPreview ? { rawPreview: response.rawPreview } : {}),
+    ...(response.error || constantsError
+      ? { errors: [...(normalized.errors ?? []), ...(response.error ? [response.error] : []), ...(constantsError ? [`Item constants: ${constantsError}`] : [])] }
+      : {})
+  };
 }
