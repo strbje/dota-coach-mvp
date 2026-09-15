@@ -42,6 +42,9 @@ export type PostMatchBenchmarkContext = {
       games: number;
       wins: number;
       winRate: number | null;
+      sampleSize: 'insufficient' | 'weak' | 'standard';
+      timeSemantics: 'discrete_timing_point';
+      timeUpperBound?: number;
     }>;
   };
 };
@@ -219,7 +222,7 @@ export type PostMatchAnalysis = {
       games: number;
       wins: number;
       winRate: number | null;
-      sampleSizeStatus: 'ok' | 'small';
+      sampleSizeStatus: 'weak' | 'standard';
     };
   }>;
   benchmarkSummary?: {
