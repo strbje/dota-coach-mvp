@@ -7,6 +7,7 @@ import {
 import { getMatchPhase, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, PostMatchBenchmarkContext, StratzPostMatchData } from '@/lib/dota/types/domain';
 import { formatPercentileRange, getPercentileForValue } from '@/lib/dota/analyze/compareToBenchmarks';
+import { findNearestUsableItemTimingBucket } from '@/lib/dota/analyze/itemTimingBenchmarks';
 
 function score(base: number, delta: number): number { return Math.round(Math.max(1, Math.min(99, base + delta))); }
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
@@ -29,6 +30,10 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
   const coreItemsSeen = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_CORE_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_CORE_ITEMS)[number]));
   const suspiciousItems = (p?.buildPlayed ?? []).filter((item) => LIFESTEALER_CARRY_SUSPICIOUS_ITEMS.includes(item as (typeof LIFESTEALER_CARRY_SUSPICIOUS_ITEMS)[number]));
   const timings = benchmarkContext.itemTimingScenarios;
+  const timingBuckets = timings?.timingBuckets ?? [];
+  const hasExternalTimingContext = (item: typeof phaseBoots) => Boolean(item && findNearestUsableItemTimingBucket(timingBuckets, item.key, item.timeSeconds));
+  const phaseBootsHasExternalContext = hasExternalTimingContext(phaseBoots);
+  const armletHasExternalContext = hasExternalTimingContext(armlet);
   const itemStatuses: NonNullable<PostMatchAnalysis['itemAnalysis']> = trackedTimings.map((item) => ({
     key: item.key,
     name: item.item,
@@ -52,6 +57,8 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
     ? 'Тайминги недоступны'
     : suspiciousItems.length > 0
       ? 'В билде есть спорные слоты'
+    : phaseBootsHasExternalContext || armletHasExternalContext
+      ? 'Тайминги сопоставлены с контекстом OpenDota'
     : phaseBootsStatus === 'late' || armletStatus === 'late'
       ? 'Есть задержка по таймингу'
       : phaseBoots && armlet
@@ -60,11 +67,11 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
 
   const itemsFindings: AnalysisFinding[] = [];
   if (!trackedTimings.length) itemsFindings.push({ text: 'Тайминги ключевых предметов в этом матче недоступны.', evidence: [], severity: 'info' });
-  if (phaseBoots) {
+  if (phaseBoots && !phaseBootsHasExternalContext) {
     const status = compareItemTiming(phaseBoots.timeSeconds, getLifestealerCarryItemBenchmark('phase_boots')?.targetTimeSeconds);
     itemsFindings.push({ text: status === 'late' ? `Phase Boots — ${phaseBoots.time}: предмет куплен поздновато.` : `Phase Boots — ${phaseBoots.time}: ранний темп хороший.`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
   }
-  if (armlet) {
+  if (armlet && !armletHasExternalContext) {
     const b = getLifestealerCarryItemBenchmark('armlet');
     const status = compareItemTiming(armlet.timeSeconds, b?.targetTimeSeconds);
     itemsFindings.push({ text: status === 'late' ? `Armlet — ${armlet.time}: тайминг запоздал, проверь фарм и смерти до первого ключевого предмета.` : `Armlet — ${armlet.time}: ключевой предмет куплен вовремя.`, evidence: [], severity: status === 'late' ? 'warning' : 'good' });
@@ -76,31 +83,28 @@ export function runLifestealerCarryPostMatchRules(match: NormalizedOpenDotaMatch
       evidence: [],
       severity: 'bad'
     });
-  } else if (phaseBoots && armlet) {
+  } else if (phaseBoots && armlet && !phaseBootsHasExternalContext && !armletHasExternalContext) {
     itemsFindings.push({
       text: 'Ранние ключевые предметы куплены вовремя. Оценка основана на ранних ключевых таймингах.',
       evidence: [`ключевых слотов в сборке: ${coreItemsSeen.length}`],
       severity: 'info'
     });
   }
-  const timingBuckets = timings?.timingBuckets ?? [];
   for (const status of itemStatuses) {
-    const candidates = timingBuckets.filter((b) => b.itemKey === status.key);
-    if (!candidates.length) continue;
-    const nearest = candidates.sort((a,b)=>Math.abs((a.timeLowerBound??0)-trackedTimings.find(t=>t.key===status.key)!.timeSeconds)-Math.abs((b.timeLowerBound??0)-trackedTimings.find(t=>t.key===status.key)!.timeSeconds))[0];
+    const actual = trackedTimings.find((timing) => timing.key === status.key);
+    if (!actual) continue;
+    const nearest = findNearestUsableItemTimingBucket(timingBuckets, status.key, actual.timeSeconds);
+    if (!nearest) continue;
     status.scenarioContext = {
       nearestBucketTimeLabel: nearest.timeLabel,
       nearestBucketTimeSeconds: nearest.timeLowerBound,
       games: nearest.games,
       wins: nearest.wins,
       winRate: nearest.winRate,
-      sampleSizeStatus: nearest.games >= 30 ? 'ok' : 'small'
+      sampleSizeStatus: nearest.sampleSize === 'standard' ? 'standard' : 'weak'
     };
-    if (nearest.games >= 30) {
-      itemsFindings.push({ text: `${status.name} ${status.time}: рядом ориентир OpenDota ${nearest.timeLabel} (${nearest.games} игр, ${nearest.winRate !== null ? (nearest.winRate * 100).toFixed(1) : 'n/a'}% winrate). Это контекст по доступной выборке.`, evidence: [], severity: 'info' });
-    } else {
-      itemsFindings.push({ text: `${status.name} ${status.time}: для близкого окна ${nearest.timeLabel} выборка маленькая (${nearest.games} игр), поэтому вывод ограничен.`, evidence: [], severity: 'info' });
-    }
+    const confidence = nearest.sampleSize === 'standard' ? 'нормальная выборка' : 'слабый контекст';
+    itemsFindings.push({ text: `${status.name} ${status.time}: ближайший timing context OpenDota — ${nearest.timeLabel} (${nearest.games} игр, ${nearest.winRate !== null ? (nearest.winRate * 100).toFixed(1) : 'n/a'}% winrate; ${confidence}). Это контекст, а не оценка качества тайминга.`, evidence: [], severity: 'info' });
   }
 
 

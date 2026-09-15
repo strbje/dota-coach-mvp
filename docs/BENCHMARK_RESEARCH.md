@@ -1,6 +1,6 @@
 # Benchmark Research (debug-only)
 
-Статус: **research/debug only**. Никакие данные из этого документа пока не должны напрямую попадать в product UI без дополнительной валидации.
+Статус: источники исследуются отдельно; нормализованный item timing context разрешён в product-анализе только с guardrails ниже.
 
 ## 1) OpenDota `/benchmarks?hero_id={heroId}`
 - Источник подключён через debug endpoint.
@@ -26,8 +26,16 @@
   - `/scenarios/itemTimings?hero_id={heroId}`
   - `/scenarios/itemTimings?hero_id={heroId}&item={itemKey}` (поддержано функцией research fetch)
 - На этапе research сохраняется `raw` preview на уровне `items[]`.
-- Дополнительно добавлен best-effort `timingBuckets` (если поля читаемы), но без жёстких предположений о контракте.
-- Ограничение: при нестабильном формате использовать только как debug-источник.
+- Raw `time` — дискретное значение времени в секундах, по которому scenario-ответ группирует строки. Контракт endpoint не сообщает, что это начало или конец интервала, и не возвращает границы интервала. Поэтому нормализация фиксирует `timeSemantics: discrete_timing_point`, сохраняет значение в `timeLowerBound` для обратной совместимости, но **не трактует его как нижнюю границу** и не выдумывает `timeUpperBound`.
+- Фактическая покупка из `purchase_log` сопоставляется с ближайшей дискретной точкой только при достаточной выборке. Это proximity context, а не утверждение, что покупка попала в опубликованный OpenDota-интервал.
+- `games` и `wins` принимаются как числа или числовые строки; `winRate` рассчитывается как `wins / games` (при `games > 0`). Некорректные и противоречивые строки отбрасываются.
+
+### Sample-size policy (методология продукта, не факт OpenDota API)
+- `<30 games` — `insufficient`: строка не используется для оценки или ближайшего контекста;
+- `30–99 games` — `weak`: показывается только как слабый контекст;
+- `100+ games` — `standard`: нормальный контекст.
+
+Win rate всегда показывается вместе с размером выборки и не превращается самостоятельно в вывод «хороший/плохой тайминг». При наличии пригодного внешнего контекста ручная MVP-оценка тайминга для этого item не используется.
 
 ## 4) STRATZ `heroAverage`
 - Используется server-side STRATZ token и существующий GraphQL client.
@@ -39,11 +47,11 @@
 ## 5) Product readiness matrix
 - OpenDota benchmarks: **candidate** (нужно подтвердить coverage по ролям/патчам).
 - OpenDota itemPopularity: **candidate** (нужна проверка стабильности фаз).
-- OpenDota itemTimings scenarios: **research-only** (контракт требует дополнительной валидации).
+- OpenDota itemTimings scenarios: **context-only candidate** (без interval semantics и без quality verdict по win rate).
 - STRATZ heroAverage: **research-only** (методология агрегирования не подтверждена).
 
 ## Guardrails
 - Не делать выводы при отсутствии данных.
 - Все source errors трактовать как `unavailable`, не как падение endpoint.
 - Не возвращать секреты (например, `STRATZ_API_TOKEN`).
-- Не подключать эти источники в product UI до отдельного продуктового решения.
+- Не подключать в product UI источники со статусом **research-only** до отдельного продуктового решения. OpenDota itemTimings разрешён только как **context-only** источник с описанными выше semantics и sample-size guardrails.

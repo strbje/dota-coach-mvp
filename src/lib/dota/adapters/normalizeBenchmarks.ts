@@ -1,4 +1,5 @@
 import { getItemKeyById, getItemNameById, getItemNameByKey } from '@/lib/dota/data/itemConstants';
+import { normalizeItemTimingBucket } from '@/lib/dota/analyze/itemTimingBenchmarks';
 
 type PercentileRow = { percentile: number; value: number };
 
@@ -108,23 +109,8 @@ export function normalizeItemTimingScenarios(heroId: number, payload: unknown) {
 
   const timingBuckets = rows
     .map((row) => {
-      const raw = asObject(row);
-      if (!raw) return null;
-      const itemKey = typeof raw.item === 'string' ? raw.item : typeof raw.item_name === 'string' ? raw.item_name : null;
-      if (!itemKey) return null;
-      const lower = typeof raw.time === 'number' ? raw.time : typeof raw.time_start === 'number' ? raw.time_start : undefined;
-      const upper = typeof raw.time_end === 'number' ? raw.time_end : typeof raw.next_time === 'number' ? raw.next_time : undefined;
-      const gamesRaw = typeof raw.games === 'number' ? raw.games : typeof raw.games === 'string' ? Number(raw.games) : typeof raw.match_count === 'number' ? raw.match_count : undefined;
-      const winsRaw = typeof raw.wins === 'number' ? raw.wins : typeof raw.wins === 'string' ? Number(raw.wins) : undefined;
-      const games = Number.isFinite(gamesRaw) ? Number(gamesRaw) : 0;
-      const wins = Number.isFinite(winsRaw) ? Number(winsRaw) : 0;
-      const winRate = games > 0 ? wins / games : null;
-      const timeLabel = typeof raw.label === 'string'
-        ? raw.label
-        : typeof lower === 'number'
-          ? `${Math.floor(lower / 60)}:${String(lower % 60).padStart(2, '0')}`
-          : 'n/a';
-      return { itemKey, itemName: getItemNameByKey(itemKey), timeLowerBound: lower ?? 0, timeUpperBound: upper, timeLabel, games, wins, winRate };
+      const bucket = normalizeItemTimingBucket(row);
+      return bucket ? { ...bucket, itemName: getItemNameByKey(bucket.itemKey) } : null;
     })
     .filter((row): row is NonNullable<typeof row> => Boolean(row));
 
