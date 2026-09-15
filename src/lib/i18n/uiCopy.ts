@@ -61,3 +61,21 @@ export function getPostMatchErrorCopy(locale: Locale, errorCode: unknown): strin
 
   return postMatchErrors[locale].POST_MATCH_FAILED;
 }
+
+const preGameErrors = {
+  ru: {
+    UNSUPPORTED_PRE_GAME_INPUT: 'Этот сценарий пока поддерживает только Lifestealer на позиции керри.',
+    PRE_GAME_FAILED: 'Не удалось составить план. Попробуйте ещё раз.'
+  },
+  en: {
+    UNSUPPORTED_PRE_GAME_INPUT: 'This scenario currently supports only Lifestealer carry.',
+    PRE_GAME_FAILED: 'Could not build the plan. Please try again.'
+  }
+} as const;
+
+export function getPreGameErrorCopy(locale: Locale, errorCode: unknown): string {
+  if (typeof errorCode === 'string' && errorCode in preGameErrors[locale]) {
+    return preGameErrors[locale][errorCode as keyof typeof preGameErrors.ru];
+  }
+  return preGameErrors[locale].PRE_GAME_FAILED;
+}
