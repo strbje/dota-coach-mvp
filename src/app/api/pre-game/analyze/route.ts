@@ -1,23 +1,13 @@
 import { NextResponse } from 'next/server';
 import { analyzePreGame } from '@/lib/dota/engine/preGameEngine';
-import type { PreGameDraftInput } from '@/lib/dota/types/domain';
+import { handlePreGameAnalyze, preGameFailure } from './handler';
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as PreGameDraftInput;
-    if (body.hero !== 'Lifestealer' || body.role !== 'carry') {
-      return NextResponse.json(
-        { error: 'v1 supports only hero=Lifestealer and role=carry' },
-        { status: 400 }
-      );
-    }
-
-    const result = await analyzePreGame(body);
-    return NextResponse.json(result);
+    const result = await handlePreGameAnalyze(await request.json(), analyzePreGame);
+    return NextResponse.json(result.body, { status: result.status });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown pre-game error' },
-      { status: 500 }
-    );
+    const result = preGameFailure(error);
+    return NextResponse.json(result.body, { status: result.status });
   }
 }

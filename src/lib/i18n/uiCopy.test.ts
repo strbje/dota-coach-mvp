@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getPostMatchErrorCopy, getUiCopy } from './uiCopy';
+import { getPostMatchErrorCopy, getPreGameErrorCopy, getUiCopy } from './uiCopy';
 
 test('localizes Match ID form copy', () => {
   assert.equal(getUiCopy('ru').postMatch.matchIdHint, 'Числовой ID завершённого матча');
@@ -20,4 +20,17 @@ test('localizes every controlled post-match error code', () => {
 test('unknown post-match error codes use locale-specific generic copy', () => {
   assert.equal(getPostMatchErrorCopy('ru', 'UNKNOWN'), 'Не удалось разобрать матч. Попробуйте ещё раз.');
   assert.equal(getPostMatchErrorCopy('en', 'UNKNOWN'), 'Could not review the match. Please try again.');
+});
+
+test('pre-game unsupported input is localized in Russian', () => {
+  assert.equal(getPreGameErrorCopy('ru', 'UNSUPPORTED_PRE_GAME_INPUT'), 'Этот сценарий пока поддерживает только Lifestealer на позиции керри.');
+});
+
+test('pre-game unsupported input is localized in English', () => {
+  assert.equal(getPreGameErrorCopy('en', 'UNSUPPORTED_PRE_GAME_INPUT'), 'This scenario currently supports only Lifestealer carry.');
+});
+
+test('unknown pre-game error codes use the locale-specific failure fallback', () => {
+  assert.equal(getPreGameErrorCopy('ru', 'SOMETHING_NEW'), 'Не удалось составить план. Попробуйте ещё раз.');
+  assert.equal(getPreGameErrorCopy('en', undefined), 'Could not build the plan. Please try again.');
 });

@@ -1,7 +1,7 @@
 'use client';
 import { type FormEvent, useMemo, useState } from 'react';
 import { useLocale } from '@/components/layout/LocaleProvider';
-import { getUiCopy } from '@/lib/i18n/uiCopy';
+import { getPreGameErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 import { localizePreGameAnalysis, preGameHeadings } from '@/lib/i18n/preGameCopy';
 import { BuildBranchesCard } from '@/components/coach/BuildBranchesCard';
 import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
@@ -27,12 +27,12 @@ export default function PreGamePage() {
   const [enemyPair,setEnemyPair]=useState('Legion Commander, Tusk');
   const [data,setData]=useState<PreGameAnalysis|null>(null);
   const [loading,setLoading]=useState(false);
-  const [error,setError]=useState<string|null>(null);
+  const [errorCode,setErrorCode]=useState<string|null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setData(null);
-    setError(null);
+    setErrorCode(null);
     setLoading(true);
 
     try {
@@ -52,11 +52,15 @@ export default function PreGamePage() {
           }
         })
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? copy.failed);
-      setData(payload);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : copy.unknownError);
+      const payload = await response.json() as PreGameAnalysis | { errorCode?: unknown };
+      if (!response.ok) {
+        const responseError = payload as { errorCode?: unknown };
+        setErrorCode(typeof responseError.errorCode === 'string' ? responseError.errorCode : 'PRE_GAME_FAILED');
+        return;
+      }
+      setData(payload as PreGameAnalysis);
+    } catch {
+      setErrorCode('PRE_GAME_FAILED');
     } finally {
       setLoading(false);
     }
@@ -78,8 +82,8 @@ export default function PreGamePage() {
 <RolePicker value={role} onChange={setRole} locale={locale}/></div>
 <LaneSetupForm {...{allies,enemies,allyPair,enemyPair}} locale={locale} onChange={(field,value)=>({allies:setAllies,enemies:setEnemies,allyPair:setAllyPair,enemyPair:setEnemyPair}[field](value))}/>
 <Button type="submit" loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
-{error?<Alert tone="danger">{error}</Alert>
-:null}{!data&&!loading&&!error?<Alert tone="unknown">{copy.initial}</Alert>
+{errorCode?<Alert tone="danger">{getPreGameErrorCopy(locale, errorCode)}</Alert>
+:null}{!data&&!loading&&!errorCode?<Alert tone="unknown">{copy.initial}</Alert>
 :null}</form>
 </Panel>
 {localizedData?<div className="page-stack">
