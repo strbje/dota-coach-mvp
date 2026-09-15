@@ -33,6 +33,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
   const assists = toNumber(playerRaw.assists);
   const lastHits = toNumber(playerRaw.last_hits);
   const heroDamage = toNumber(playerRaw.hero_damage);
+  const towerDamage = toNumber(playerRaw.tower_damage);
   const deaths = toNumber(playerRaw.deaths);
 
   const rawPurchaseLog = Array.isArray(playerRaw.purchase_log) ? (playerRaw.purchase_log as Array<Record<string, unknown>>) : null;
@@ -121,6 +122,13 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
       lateGame: buildEconomyPhase('lateGame', 35, null)
     }
     : undefined;
+  const economyCheckpoints = economyByPhaseSource === 'gold_t/lh_t'
+    ? [10, 20, 35].map((minute) => ({
+      minute,
+      cs: lhT![Math.min(minute, lhT!.length - 1)],
+      totalGold: goldT![Math.min(minute, goldT!.length - 1)]
+    }))
+    : undefined;
   const farmProfile = {
     laneKills: toNumber(playerRaw.lane_kills, 0),
     neutralKills: toNumber(playerRaw.neutral_kills, 0),
@@ -171,7 +179,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
 
   return { matchId: toNumber(payload.match_id), didRadiantWin: toBoolean(payload.radiant_win), durationSeconds, player: {
     heroName, isRadiant: toBoolean(playerRaw.isRadiant), durationMinutes, kills, deaths, assists, lastHits,
-    lastHitsPerMin: durationMinutes > 0 ? lastHits / durationMinutes : 0, heroDamage, heroDamagePerMin: durationMinutes > 0 ? heroDamage / durationMinutes : 0,
+    lastHitsPerMin: durationMinutes > 0 ? lastHits / durationMinutes : 0, heroDamage, heroDamagePerMin: durationMinutes > 0 ? heroDamage / durationMinutes : 0, towerDamage,
     gpm: toNumber(playerRaw.gold_per_min), xpm: toNumber(playerRaw.xp_per_min), killParticipation: teamKills ? (kills + assists) / teamKills : undefined,
     item0: rawItemIds[0], item1: rawItemIds[1], item2: rawItemIds[2], item3: rawItemIds[3], item4: rawItemIds[4], item5: rawItemIds[5],
     itemTimings, itemTimingSource, buildPlayed,
@@ -183,7 +191,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
     objectiveEvents,
     itemObjectiveWindows,
     economyByPhaseSource,
-    economyByPhase, farmProfile,
+    economyByPhase, economyCheckpoints, farmProfile,
     goldReasons: {
       constantsAvailable,
       totalPositiveGold,

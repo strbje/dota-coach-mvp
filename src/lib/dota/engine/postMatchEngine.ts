@@ -4,7 +4,10 @@ import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
 import { detectRole } from '@/lib/dota/role/detectRole';
 import { runLifestealerCarryPostMatchRules } from '@/lib/dota/rules/postMatch/lifestealerCarry';
-import type { StratzPostMatchData } from '@/lib/dota/types/domain';
+import { getHeroBenchmarks } from '@/lib/dota/data/benchmarks';
+import { getStratzHeroAverage } from '@/lib/dota/data/stratzHeroAverages';
+import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingScenarios';
+import type { PostMatchBenchmarkContext, StratzPostMatchData } from '@/lib/dota/types/domain';
 
 type StratzFetchDebug = {
   attempted: boolean;
@@ -87,21 +90,35 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
     throw new Error(`Post-match normalize stage failed: ${parsed.message}`, { cause: parsed });
   }
 
-  let stratz: StratzPostMatchData | undefined;
-  let stratzFetch: StratzFetchDebug = { attempted: Boolean(process.env.STRATZ_API_TOKEN) };
-  try {
-    const result = await fetchStratzDeaths(matchId);
-    stratz = result.data;
-    stratzFetch = result.debug;
-  } catch (error) {
-    stratz = undefined;
-    stratzFetch = {
-      attempted: Boolean(process.env.STRATZ_API_TOKEN),
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
+  const safeStratzDeaths = async () => {
+    try {
+      return await fetchStratzDeaths(matchId);
+    } catch (error) {
+      return {
+        data: undefined,
+        debug: {
+          attempted: Boolean(process.env.STRATZ_API_TOKEN),
+          error: error instanceof Error ? error.message : String(error)
+        } satisfies StratzFetchDebug
+      };
+    }
+  };
 
-  const analysis = await runLifestealerCarryPostMatchRules(normalized, stratz);
+  const [stratzResult, heroBenchmarks, heroAverage, itemTimingScenarios] = await Promise.all([
+    safeStratzDeaths(),
+    getHeroBenchmarks(54),
+    getStratzHeroAverage(matchId, 54),
+    getHeroItemTimingScenariosResearch(54)
+  ]);
+  const stratz = stratzResult.data;
+  const stratzFetch = stratzResult.debug;
+  const benchmarkContext: PostMatchBenchmarkContext = {
+    heroBenchmarks,
+    heroAverage,
+    itemTimingScenarios
+  };
+
+  const analysis = runLifestealerCarryPostMatchRules(normalized, stratz, benchmarkContext);
   const itemAnalysis = analysis.itemAnalysis ?? [];
 
   return {
@@ -145,7 +162,8 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
               imp: stratz.selectedPlayer.imp ?? null
             }
           : null,
-        stratzFetch
+        stratzFetch,
+        scoreBreakdown: analysis.scoreBreakdown
       }
     }
   };

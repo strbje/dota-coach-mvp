@@ -1,22 +1,28 @@
-type PercentileBucket = { percentile: number; value: number };
+export type PercentileBucket = { percentile: number; value: number };
 
-type BenchmarkLabel = 'below_average' | 'average' | 'good' | 'very_good' | 'elite';
+export type BenchmarkLabel = 'Ниже среднего' | 'Средний уровень' | 'Выше среднего' | 'Очень высокий' | 'Элитный уровень';
+
+function displayPercentile(percentile: number): number {
+  return Math.round(percentile <= 1 ? percentile * 100 : percentile);
+}
 
 export function getPercentileForValue(metricBuckets: PercentileBucket[] | undefined, actualValue: number): {
-  percentileApprox: string;
+  percentileRange: string;
+  lowerPercentile?: number;
+  upperPercentile?: number;
   nearestLower?: PercentileBucket;
   nearestUpper?: PercentileBucket;
   label: BenchmarkLabel;
 } {
   if (!Array.isArray(metricBuckets) || metricBuckets.length === 0 || !Number.isFinite(actualValue)) {
-    return { percentileApprox: 'n/a', label: 'below_average' };
+    return { percentileRange: 'n/a', label: 'Ниже среднего' };
   }
 
   const sorted = [...metricBuckets]
     .filter((it) => Number.isFinite(it.percentile) && Number.isFinite(it.value))
     .sort((a, b) => a.percentile - b.percentile);
 
-  if (!sorted.length) return { percentileApprox: 'n/a', label: 'below_average' };
+  if (!sorted.length) return { percentileRange: 'n/a', label: 'Ниже среднего' };
 
   let nearestLower: PercentileBucket | undefined;
   let nearestUpper: PercentileBucket | undefined;
@@ -29,11 +35,20 @@ export function getPercentileForValue(metricBuckets: PercentileBucket[] | undefi
     break;
   }
 
-  const lower = nearestLower?.percentile;
-  const upper = nearestUpper?.percentile;
-  const percentileApprox = lower !== undefined && upper !== undefined ? `${lower}-${upper}` : lower !== undefined ? `${lower}+` : `<${upper ?? sorted[0].percentile}`;
+  const lower = nearestLower ? displayPercentile(nearestLower.percentile) : undefined;
+  const upper = nearestUpper ? displayPercentile(nearestUpper.percentile) : undefined;
+  const percentileRange = lower !== undefined && upper !== undefined ? `${lower}-${upper}` : lower !== undefined ? `${lower}+` : `<${upper ?? displayPercentile(sorted[0].percentile)}`;
   const effective = lower ?? 0;
-  const label: BenchmarkLabel = effective >= 90 ? 'elite' : effective >= 80 ? 'very_good' : effective >= 70 ? 'good' : effective >= 50 ? 'average' : 'below_average';
+  const label: BenchmarkLabel = effective >= 95 ? 'Элитный уровень' : effective >= 90 ? 'Очень высокий' : effective >= 70 ? 'Выше среднего' : effective >= 50 ? 'Средний уровень' : 'Ниже среднего';
 
-  return { percentileApprox, nearestLower, nearestUpper, label };
+  return { percentileRange, lowerPercentile: lower, upperPercentile: upper, nearestLower, nearestUpper, label };
+}
+
+export function formatPercentileRange(lowerPercentile?: number, upperPercentile?: number): string | null {
+  if (lowerPercentile !== undefined && upperPercentile !== undefined) {
+    return `между ${lowerPercentile}-м и ${upperPercentile}-м перцентилем`;
+  }
+  if (lowerPercentile !== undefined) return `${lowerPercentile}-й перцентиль или выше`;
+  if (upperPercentile !== undefined) return `ниже ${upperPercentile}-го перцентиля`;
+  return null;
 }

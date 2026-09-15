@@ -21,6 +21,31 @@ export type AnalysisFinding = {
   severity: 'good' | 'warning' | 'bad' | 'info';
 };
 
+export type BenchmarkPercentileBucket = { percentile: number; value: number };
+
+export type PostMatchBenchmarkContext = {
+  heroBenchmarks?: {
+    available: boolean;
+    metrics: Partial<Record<'gold_per_min' | 'xp_per_min' | 'last_hits_per_min' | 'hero_damage_per_min' | 'tower_damage' | 'kills_per_min', BenchmarkPercentileBucket[]>>;
+  };
+  heroAverage?: {
+    available: boolean;
+    selectedPosition?: string;
+    samples: Array<{ time: number; position?: string; cs?: number }>;
+  };
+  itemTimingScenarios?: {
+    available: boolean;
+    timingBuckets?: Array<{
+      itemKey: string;
+      timeLowerBound: number;
+      timeLabel: string;
+      games: number;
+      wins: number;
+      winRate: number | null;
+    }>;
+  };
+};
+
 export type PreGameAnalysis = {
   hero: HeroName;
   role: RoleName;
@@ -57,6 +82,7 @@ export type NormalizedOpenDotaMatch = {
     lastHitsPerMin?: number;
     heroDamage?: number;
     heroDamagePerMin?: number;
+    towerDamage?: number;
     gpm?: number;
     xpm?: number;
     killParticipation?: number;
@@ -131,6 +157,7 @@ export type NormalizedOpenDotaMatch = {
       xpStart?: number; xpEnd?: number; xpDelta?: number; xpPerMinuteInPhase?: number;
       deaths?: number;
     }>;
+    economyCheckpoints?: Array<{ minute: number; cs?: number; totalGold?: number }>;
     farmProfile?: {
       laneKills?: number; neutralKills?: number; ancientKills?: number; heroKills?: number; roshanKills?: number; towerKills?: number;
     };
@@ -201,6 +228,8 @@ export type PostMatchAnalysis = {
     metrics: Partial<Record<'gpm' | 'xpm' | 'lhPerMin' | 'heroDamagePerMin' | 'towerDamage' | 'killsPerMin', {
       actual: number;
       percentileRange: string;
+      lowerPercentile?: number;
+      upperPercentile?: number;
       label: string;
     }>>;
   };
@@ -213,9 +242,6 @@ export type PostMatchAnalysis = {
       actualCs?: number;
       averageCs?: number;
       deltaCs?: number;
-      actualNetworth?: number;
-      averageNetworth?: number;
-      deltaNetworth?: number;
     }>;
   };
   economyByPhase?: NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase'];
@@ -228,6 +254,9 @@ export type PostMatchAnalysis = {
     items: { score: number; summary?: string; findings: AnalysisFinding[] };
     fights: { score: number; summary?: string; findings: AnalysisFinding[] };
     map: { score: number; summary?: string; findings: AnalysisFinding[] };
+  };
+  scoreBreakdown?: {
+    fights: { baseBenchmarkScore: number; deathRiskAdjustment: number; finalScore: number };
   };
   topMistakes: string[];
   nextGameAdjustments: string[];
