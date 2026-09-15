@@ -5,9 +5,9 @@
 .button:hover, .actionLink:hover { filter: brightness(1.08); }
 .button:disabled { cursor: not-allowed; opacity: .58; }
 .fullWidth { width: 100%; }
-.loadingLabel { opacity: 0; }
-.loadingWrap { position: relative; }
-.loadingWrap::after { content: '•••'; position: absolute; inset: 0; display: grid; place-items: center; }
+.button { position: relative; }
+.buttonLabel[aria-hidden='true'] { visibility: hidden; }
+.loadingLabel { position: absolute; inset: 0; display: grid; place-items: center; padding: inherit; white-space: nowrap; }
 .panel { min-width: 0; padding: var(--space-4); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-panel); }
 .badge { display: inline-flex; align-items: center; width: fit-content; padding: var(--space-1) var(--space-2); border: var(--border-width) solid currentColor; border-radius: var(--radius-pill); font-size: var(--font-size-sm); font-weight: 700; }
 .success { color: var(--color-success); } .warning { color: var(--color-warning); } .danger { color: var(--color-danger); } .info { color: var(--color-info); } .unknown { color: var(--color-unknown); } .brand { color: var(--color-brand); }

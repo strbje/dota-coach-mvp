@@ -1,13 +1,22 @@
 import { Panel } from '@/components/ui';
 import type { PreGameAnalysis } from '@/lib/dota/types/domain';
+import { preGameHeadings } from '@/lib/i18n/preGameCopy';
+import type { Locale } from '@/lib/i18n/locales';
 
-export function TargetPriorityCard({ targetPriority }: { targetPriority: PreGameAnalysis['targetPriority'] }) {
+type Props = {
+  targetPriority: PreGameAnalysis['targetPriority'];
+  locale: Locale;
+};
+
+export function TargetPriorityCard({ targetPriority, locale }: Props) {
+  const copy = preGameHeadings[locale];
+
   return (
     <Panel>
-      <h3>Приоритет целей</h3>
-      <p><strong>Основные цели:</strong> {targetPriority.primary.join(', ')}</p>
-      <p><strong>Не начинать с:</strong> {targetPriority.avoidOpeningOn.join(', ')}</p>
-      <p><strong>Подсказки:</strong> {targetPriority.notes.join(', ')}</p>
+      <h3>{copy.targets}</h3>
+      <p><strong>{copy.primary}</strong> {targetPriority.primary.join(', ')}</p>
+      <p><strong>{copy.avoid}</strong> {targetPriority.avoidOpeningOn.join(', ')}</p>
+      <p><strong>{copy.notes}</strong> {targetPriority.notes.join(', ')}</p>
     </Panel>
   );
 }

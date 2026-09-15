@@ -38,6 +38,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Benchmark tests
         run: npm run test:benchmarks
 

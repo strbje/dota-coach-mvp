@@ -7,20 +7,27 @@ import { ItemTimeline } from '@/components/coach/ItemTimeline';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { useLocale } from '@/components/layout/LocaleProvider';
 import { Alert, Badge, Button, Panel } from '@/components/ui';
 import type { MatchPhase, PostMatchAnalysis } from '@/lib/dota/types/domain';
+import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 type Payload = { analysis: PostMatchAnalysis; debug: unknown };
 const PHASE_LABELS: Record<MatchPhase, string> = { laning: 'линия', earlyMid: 'ранняя середина', midGame: 'мидгейм', lateGame: 'лейт' };
 const ROLE_LABELS: Record<string, string> = { carry: 'Керри', mid: 'Мидер', offlane: 'Оффлейнер', support: 'Поддержка', 'hard support': 'Полная поддержка' };
 export default function PostMatchPage() {
+  const { locale } = useLocale();
   const [matchId, setMatchId] = useState('8781054570');
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const analysis = data?.analysis;
+  // Keep the result consistently Russian until rules expose stable message IDs.
+  const copy = getUiCopy(analysis ? 'ru' : locale).postMatch;
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setData(null);
-    setError(null);
+    setErrorCode(null);
     setLoading(true);
 
     try {
@@ -29,32 +36,45 @@ export default function PostMatchPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' })
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? 'Не удалось разобрать матч');
+      const payload = await response.json() as Payload | { errorCode?: unknown };
+      if (!response.ok) {
+        const responseError = payload as { errorCode?: unknown };
+        setErrorCode(
+          typeof responseError.errorCode === 'string'
+            ? responseError.errorCode
+            : 'POST_MATCH_FAILED'
+        );
+        return;
+      }
       setData(payload as Payload);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Неизвестная ошибка');
+    } catch {
+      setErrorCode('POST_MATCH_FAILED');
     } finally {
       setLoading(false);
     }
   }
 
-  const analysis = data?.analysis;
   const deaths = analysis?.stratz?.deathsByPhase ?? analysis?.deathsByPhase;
 
   return (
     <PageContainer className="page-stack">
 <header className="stack">
-<span className="eyebrow">После игры</span>
-<h1 className="page-title">Разбор матча</h1>
-<p className="muted">Узнайте, что определило игру и какой фокус взять в следующий матч.</p>
+<span className="eyebrow">{copy.eyebrow}</span>
+<h1 className="page-title">{copy.title}</h1>
+<p className="muted">{copy.lead}</p>
 </header>
 <Panel>
 <form className="stack" onSubmit={submit} aria-busy={loading}>
-<MatchIdForm matchId={matchId} onChange={setMatchId} />
-<Button type="submit" loading={loading}>Разобрать матч</Button>
-{error ? <Alert tone="danger">{error}</Alert>
- : null}{!analysis && !loading && !error ? <Alert tone="unknown">Введите Match ID, чтобы начать разбор.</Alert>
+<MatchIdForm
+  matchId={matchId}
+  label={copy.matchIdLabel}
+  hint={copy.matchIdHint}
+  onChange={setMatchId}
+/>
+<Button type="submit" loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
+{loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
+{errorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, errorCode)}</Alert>
+ : null}{!analysis && !loading && !errorCode ? <Alert tone="unknown">{copy.initial}</Alert>
  : null}</form>
 </Panel>
 {analysis ? <div className="page-stack">
