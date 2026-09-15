@@ -1,70 +1,145 @@
 'use client';
-
-import { useState } from 'react';
-import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
+import { type FormEvent, useState } from 'react';
 import { BenchmarkEvidence } from '@/components/coach/BenchmarkEvidence';
+import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
 import { GradesGrid } from '@/components/coach/GradesGrid';
-import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { ItemTimeline } from '@/components/coach/ItemTimeline';
+import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
-import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
-
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Alert, Badge, Button, Panel } from '@/components/ui';
+import type { MatchPhase, PostMatchAnalysis } from '@/lib/dota/types/domain';
 type Payload = { analysis: PostMatchAnalysis; debug: unknown };
-
-function roleLabel(role?: string): string {
-  const normalized = role?.toLowerCase();
-  if (normalized === 'carry') return 'Carry';
-  if (normalized === 'mid') return 'Mid';
-  if (normalized === 'offlane') return 'Offlane';
-  if (normalized === 'support') return 'Support';
-  if (normalized === 'hard support') return 'Hard Support';
-  return 'Unknown';
-}
-
-
-function phaseTone(value: number): string {
-  if (value >= 3) return 'phase-chip-danger';
-  if (value >= 2) return 'phase-chip-warning';
-  if (value === 1) return 'phase-chip-normal';
-  return 'phase-chip-safe';
-}
-
-
+const PHASE_LABELS: Record<MatchPhase, string> = { laning: 'линия', earlyMid: 'ранняя середина', midGame: 'мидгейм', lateGame: 'лейт' };
+const ROLE_LABELS: Record<string, string> = { carry: 'Керри', mid: 'Мидер', offlane: 'Оффлейнер', support: 'Поддержка', 'hard support': 'Полная поддержка' };
 export default function PostMatchPage() {
   const [matchId, setMatchId] = useState('8781054570');
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const deathsByPhaseForUi = data?.analysis.stratz?.deathsByPhase ?? data?.analysis.deathsByPhase;
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setData(null);
+    setError(null);
+    setLoading(true);
 
-  async function submit() {
-    setLoading(true); setError(null);
     try {
-      const response = await fetch('/api/post-match/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' }) });
+      const response = await fetch('/api/post-match/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' })
+      });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? 'Post-match analyze failed');
+      if (!response.ok) throw new Error(payload.error ?? 'Не удалось разобрать матч');
       setData(payload as Payload);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Unknown error'); } finally { setLoading(false); }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Неизвестная ошибка');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  return <main className="container"><h1>Пост-матч тренер</h1><div className="card grid"><MatchIdForm matchId={matchId} onChange={setMatchId} /><button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>{error ? <p className="error">{error}</p> : null}</div>
-    {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Роль:</strong> {roleLabel(data.analysis.role)}</p><p><strong>Результат:</strong> {data.analysis.result}</p></section>
-      <GradesGrid grades={data.analysis.grades} />
-      <BenchmarkEvidence benchmarkSummary={data.analysis.benchmarkSummary} heroAverageComparison={data.analysis.heroAverageComparison} />
-      <ItemTimeline items={data.analysis.itemTimings} />
-      <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={deathsByPhaseForUi} itemTimings={data.analysis.itemTimings} />
-      {deathsByPhaseForUi ? <section className="card"><h3>Смерти по фазам</h3><div className="phase-chip-grid">{[
-        ['Линия', deathsByPhaseForUi.laning],
-        ['Ранняя середина', deathsByPhaseForUi.earlyMid],
-        ['Мидгейм', deathsByPhaseForUi.midGame],
-        ['Лейт', deathsByPhaseForUi.lateGame]
-      ].map(([label, value]) => <div key={String(label)} className={`phase-chip ${phaseTone(Number(value))}`}><span>{label}</span><strong>{value}</strong></div>)}</div>
-      {data.analysis.stratz?.deathTimings?.length ? <details style={{ marginTop: '0.75rem' }}><summary>Показать тайминги смертей</summary><ul>{data.analysis.stratz.deathTimings.map((d) => <li key={`${d.time}-${d.phase}`}>{d.time} — {d.phase === 'laning' ? 'линия' : d.phase === 'earlyMid' ? 'ранняя середина' : d.phase === 'midGame' ? 'мидгейм' : 'лейт'}</li>)}</ul></details> : null}
-      </section> : null}
-      {data.analysis.farmProfile ? <section className="card"><h3>Профиль фарма</h3>{data.analysis.goldReasons?.constantsAvailable ? <ul>{data.analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>)}{data.analysis.goldReasons.unknownAmount > 0 ? <li>Другое / нераспознано: {Math.round(data.analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li> : null}</ul> : <><ul><li>Лейн-крипы: {data.analysis.farmProfile.laneKills ?? 0}</li><li>Нейтралы: {data.analysis.farmProfile.neutralKills ?? 0}</li><li>Древние: {data.analysis.farmProfile.ancientKills ?? 0}</li><li>Убийства героев: {data.analysis.farmProfile.heroKills ?? 0}</li></ul><p style={{ marginTop: '0.5rem', opacity: 0.8 }}>Разбивка золота по источникам пока недоступна.</p></>}</section> : null}
-      <section className="card"><h3>Итог тренера</h3><p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p><p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p><p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p></section>
-      <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
-      <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />
-    </div> : null}
-  </main>;
+  const analysis = data?.analysis;
+  const deaths = analysis?.stratz?.deathsByPhase ?? analysis?.deathsByPhase;
+
+  return (
+    <PageContainer className="page-stack">
+<header className="stack">
+<span className="eyebrow">После игры</span>
+<h1 className="page-title">Разбор матча</h1>
+<p className="muted">Узнайте, что определило игру и какой фокус взять в следующий матч.</p>
+</header>
+<Panel>
+<form className="stack" onSubmit={submit} aria-busy={loading}>
+<MatchIdForm matchId={matchId} onChange={setMatchId} />
+<Button type="submit" loading={loading}>Разобрать матч</Button>
+{error ? <Alert tone="danger">{error}</Alert>
+ : null}{!analysis && !loading && !error ? <Alert tone="unknown">Введите Match ID, чтобы начать разбор.</Alert>
+ : null}</form>
+</Panel>
+{analysis ? <div className="page-stack">
+<Panel>
+<h2 className="section-heading">Контекст матча</h2>
+
+<div className="result-context">
+<div className="context-item">
+<span>Match ID</span>
+<strong>{analysis.matchId}</strong></div>
+
+<div className="context-item">
+<span>Герой</span>
+<strong>{analysis.hero ?? '—'}</strong></div>
+
+<div className="context-item">
+<span>Роль</span>
+<strong>{ROLE_LABELS[analysis.role?.toLowerCase()] ?? 'Недостаточно данных'}</strong></div>
+
+<div className="context-item">
+<span>Результат</span>
+<Badge tone={analysis.result === 'win' ? 'success' : 'danger'}>{analysis.result === 'win' ? 'Победа' : 'Поражение'}</Badge>
+</div>
+</div>
+</Panel>
+
+<Panel className="verdict">
+<span className="eyebrow">Итог тренера</span>
+
+<div className="verdict-grid">
+<div>
+<h2>Что определило матч</h2>
+<p>{analysis.finalVerdict.mainReason}</p>
+</div>
+
+<div>
+<h3>Главный риск</h3>
+<p>{analysis.finalVerdict.biggestRisk}</p>
+</div>
+
+<div>
+<h3>Фокус на следующую игру</h3>
+<p>{analysis.finalVerdict.nextMatchFocus}</p>
+</div>
+</div>
+</Panel>
+<div className="grid grid-2">
+<CoachSummaryCard title="Главные ошибки" lines={analysis.topMistakes} />
+<CoachSummaryCard title="Что сделать в следующей игре" lines={analysis.nextGameAdjustments} /></div>
+<GradesGrid grades={analysis.grades} />
+<details className="details">
+<summary>Показать доказательства и подробности</summary>
+
+<div className="details-content">
+<BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} heroAverageComparison={analysis.heroAverageComparison} />
+<ItemTimeline items={analysis.itemTimings} />
+<PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={deaths} itemTimings={analysis.itemTimings} />{deaths ? <Panel>
+<h3>Смерти по фазам</h3>
+<ul>{Object.entries(deaths).map(([phase, count]) => <li key={phase}>{PHASE_LABELS[phase as MatchPhase]}: <strong>{count}</strong></li>
+)}</ul>
+{analysis.stratz?.deathTimings?.length ? <ul>{analysis.stratz.deathTimings.map((entry) => <li key={`${entry.time}-${entry.phase}`}>{entry.time} — {PHASE_LABELS[entry.phase]}</li>
+)}</ul>
+ : null}</Panel>
+ : <Alert tone="unknown">Недостаточно данных о смертях по фазам.</Alert>
+}{analysis.farmProfile ? <Panel>
+<h3>Профиль фарма</h3>
+{analysis.goldReasons?.constantsAvailable ? <ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>
+)}{analysis.goldReasons.unknownAmount > 0 ? <li>Другое / нераспознано: {Math.round(analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li>
+ : null}</ul>
+ : <>
+<ul>
+<li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
+
+<li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li>
+
+<li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li>
+
+<li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
+</ul>
+<Alert tone="unknown">Разбивка золота по источникам недоступна.</Alert>
+</>}</Panel>
+ : <Alert tone="unknown">Недостаточно данных о профиле фарма.</Alert>
+}</div>
+</details>
+</div>
+ : null}</PageContainer>
+  );
 }

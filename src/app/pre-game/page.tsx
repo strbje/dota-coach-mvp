@@ -1,6 +1,5 @@
 'use client';
-
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { BuildBranchesCard } from '@/components/coach/BuildBranchesCard';
 import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
 import { DebugPanel } from '@/components/coach/DebugPanel';
@@ -10,26 +9,28 @@ import { RolePicker } from '@/components/coach/RolePicker';
 import { StagePlanCard } from '@/components/coach/StagePlanCard';
 import { TargetPriorityCard } from '@/components/coach/TargetPriorityCard';
 import { ThreatsCard } from '@/components/coach/ThreatsCard';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Alert, Badge, Button, Panel } from '@/components/ui';
 import type { PreGameAnalysis } from '@/lib/dota/types/domain';
-
-function splitCSV(value: string): string[] {
-  return value.split(',').map((x) => x.trim()).filter(Boolean);
-}
-
+const DIFFICULTY = { easy: 'лёгкая', medium: 'средняя', hard: 'сложная' } as const;
+const splitCSV = (value: string) => value.split(',').map((part) => part.trim()).filter(Boolean);
 export default function PreGamePage() {
-  const [hero, setHero] = useState('Lifestealer');
-  const [role, setRole] = useState('carry');
-  const [allies, setAllies] = useState('Lifestealer, Lion, Puck, Mars, Phoenix');
-  const [enemies, setEnemies] = useState('Legion Commander, Tusk, Invoker, Dazzle, Sven');
-  const [allyPair, setAllyPair] = useState('Lifestealer, Lion');
-  const [enemyPair, setEnemyPair] = useState('Legion Commander, Tusk');
-  const [data, setData] = useState<PreGameAnalysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [hero,setHero]=useState('Lifestealer');
+  const [role,setRole]=useState('carry');
+  const [allies,setAllies]=useState('Lifestealer, Lion, Puck, Mars, Phoenix');
+  const [enemies,setEnemies]=useState('Legion Commander, Tusk, Invoker, Dazzle, Sven');
+  const [allyPair,setAllyPair]=useState('Lifestealer, Lion');
+  const [enemyPair,setEnemyPair]=useState('Legion Commander, Tusk');
+  const [data,setData]=useState<PreGameAnalysis|null>(null);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState<string|null>(null);
 
-  async function submit() {
-    setLoading(true);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setData(null);
     setError(null);
+    setLoading(true);
+
     try {
       const response = await fetch('/api/pre-game/analyze', {
         method: 'POST',
@@ -47,56 +48,56 @@ export default function PreGamePage() {
           }
         })
       });
-      if (!response.ok) {
-        const payload = await response.json();
-        throw new Error(payload.error ?? 'Pre-game analyze failed');
-      }
-      setData((await response.json()) as PreGameAnalysis);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Не удалось составить план');
+      setData(payload);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="container">
-      <h1>Pre-Game Assistant</h1>
-      <div className="card grid">
-        <HeroPicker value={hero} onChange={setHero} />
-        <RolePicker value={role} onChange={setRole} />
-        <LaneSetupForm
-          allies={allies}
-          enemies={enemies}
-          allyPair={allyPair}
-          enemyPair={enemyPair}
-          onChange={(field, value) => {
-            if (field === 'allies') setAllies(value);
-            if (field === 'enemies') setEnemies(value);
-            if (field === 'allyPair') setAllyPair(value);
-            if (field === 'enemyPair') setEnemyPair(value);
-          }}
-        />
-        <button disabled={loading} onClick={submit}>{loading ? 'Analyzing...' : 'Analyze pre-game'}</button>
-        {error ? <p className="error">{error}</p> : null}
-      </div>
+    <PageContainer className="page-stack">
+<header className="stack">
+<span className="eyebrow">До игры</span>
+<h1 className="page-title">План перед матчем</h1>
+<p className="muted">Зафиксируйте драфт и получите конкретный план для линии, сборки и карты.</p>
+</header>
+<Panel>
+<form className="stack" onSubmit={submit} aria-busy={loading}>
+<div className="grid grid-2">
+<HeroPicker value={hero} onChange={setHero}/>
+<RolePicker value={role} onChange={setRole}/></div>
+<LaneSetupForm {...{allies,enemies,allyPair,enemyPair}} onChange={(field,value)=>({allies:setAllies,enemies:setEnemies,allyPair:setAllyPair,enemyPair:setEnemyPair}[field](value))}/>
+<Button type="submit" loading={loading}>Составить план</Button>
+{error?<Alert tone="danger">{error}</Alert>
+:null}{!data&&!loading&&!error?<Alert tone="unknown">Заполните составы, чтобы составить план.</Alert>
+:null}</form>
+</Panel>
+{data?<div className="page-stack">
+<Panel>
+<h2>Оценка линии</h2>
+<Badge tone={data.lane.difficulty==='hard'?'danger':data.lane.difficulty==='medium'?'warning':'success'}>{DIFFICULTY[data.lane.difficulty]}</Badge>
 
-      {data ? (
-        <div className="grid" style={{ marginTop: '1rem' }}>
-          <section className="card">
-            <h3>Lane Verdict: {data.lane.difficulty}</h3>
-            <ul>{data.lane.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-          </section>
-          <ThreatsCard threats={data.threats} />
-          <section className="card"><h3>Starting Items</h3><ul>{data.startingItems.map((i) => <li key={i.name}><strong>{i.name}</strong> — {i.reason}</li>)}</ul></section>
-          <BuildBranchesCard branches={data.buildBranches} />
-          <StagePlanCard stagePlan={data.stagePlan} />
-          <TargetPriorityCard targetPriority={data.targetPriority} />
-          <CoachSummaryCard title="Map Plan" lines={[...data.mapPlan.early, ...data.mapPlan.mid, ...data.mapPlan.late]} />
-          <CoachSummaryCard title="Mistakes to Avoid" lines={data.mistakesToAvoid} />
-          <DebugPanel data={data} title="Pre-game JSON" />
-        </div>
-      ) : null}
-    </main>
+<ul>{data.lane.reasons.map((reason)=>
+<li key={reason}>{reason}</li>
+)}</ul>
+</Panel>
+<ThreatsCard threats={data.threats}/>
+<Panel>
+<h3>Стартовые предметы</h3>
+<ul>{data.startingItems.map((item)=>
+<li key={item.name}><strong>{item.name}</strong> — {item.reason}</li>
+)}</ul>
+</Panel>
+<BuildBranchesCard branches={data.buildBranches}/>
+<StagePlanCard stagePlan={data.stagePlan}/>
+<TargetPriorityCard targetPriority={data.targetPriority}/>
+<CoachSummaryCard title="План по карте" lines={[...data.mapPlan.early,...data.mapPlan.mid,...data.mapPlan.late]}/>
+<CoachSummaryCard title="Ошибки, которых стоит избежать" lines={data.mistakesToAvoid}/>
+<DebugPanel data={data} title="JSON плана"/></div>
+:null}</PageContainer>
   );
 }

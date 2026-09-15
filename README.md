@@ -40,6 +40,7 @@ Open `http://localhost:3000`.
 
 
 ## Documentation
+- [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) — Tactical Coach v1 design system
 - `docs/DATA_SOURCES.md`
 - `docs/OPENDOTA_FIELDS.md`
 - `docs/BENCHMARKS.md`

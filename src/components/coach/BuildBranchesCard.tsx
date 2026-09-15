@@ -1,16 +1,19 @@
+import { Panel } from '@/components/ui';
 import type { PreGameAnalysis } from '@/lib/dota/types/domain';
 
 export function BuildBranchesCard({ branches }: { branches: PreGameAnalysis['buildBranches'] }) {
   return (
-    <section className="card">
-      <h3>Build Branches</h3>
-      {branches.map((b) => (
-        <div key={b.tag} style={{ marginBottom: '0.75rem' }}>
-          <strong>{b.title}</strong>
-          <p className="muted">{b.when}</p>
-          <p>{b.items.join(' → ')}</p>
-        </div>
-      ))}
-    </section>
+    <Panel>
+      <h3>Варианты сборки</h3>
+      <div className="branch-list">
+        {branches.map((branch) => (
+          <div key={branch.tag}>
+            <strong>{branch.title}</strong>
+            <p className="muted">{branch.when}</p>
+            <p>{branch.items.join(' → ')}</p>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
