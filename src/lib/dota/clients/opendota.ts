@@ -1,5 +1,5 @@
 import https from 'node:https';
-import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
+import type { OpenDotaMatchResponse } from '../types/providers';
 
 const OPENDOTA_BASE = 'https://api.opendota.com/api';
 const OPENDOTA_TIMEOUT_MS = 60_000;
@@ -10,7 +10,9 @@ const RETRYABLE_NETWORK_ERRORS = [
   'UND_ERR_SOCKET',
   'UND_ERR_BODY_TIMEOUT',
   'ETIMEDOUT',
-  'EAI_AGAIN'
+  'EAI_AGAIN',
+  'OpenDota returned empty response body',
+  'OpenDota returned invalid JSON payload'
 ];
 
 type OpenDotaTransport = 'fetch' | 'https-fallback';

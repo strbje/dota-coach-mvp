@@ -27,12 +27,14 @@ type Tone =
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
   loading?: boolean;
+  loadingLabel?: ReactNode;
   fullWidth?: boolean;
 };
 
 export function Button({
   variant = 'primary',
   loading = false,
+  loadingLabel,
   fullWidth = false,
   disabled,
   children,
@@ -44,9 +46,10 @@ export function Button({
       {...props}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`${styles.button} ${styles[variant]} ${fullWidth ? styles.fullWidth : ''} ${loading ? styles.loadingWrap : ''} ${className}`}
+      className={`${styles.button} ${styles[variant]} ${fullWidth ? styles.fullWidth : ''} ${className}`}
     >
-      <span className={loading ? styles.loadingLabel : ''}>{children}</span>
+      <span className={styles.buttonLabel} aria-hidden={loading || undefined}>{children}</span>
+      {loading ? <span className={styles.loadingLabel}>{loadingLabel ?? children}</span> : null}
     </button>
   );
 }
