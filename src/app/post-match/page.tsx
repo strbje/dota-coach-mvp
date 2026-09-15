@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
-import { DebugPanel } from '@/components/coach/DebugPanel';
+import { BenchmarkEvidence } from '@/components/coach/BenchmarkEvidence';
 import { GradesGrid } from '@/components/coach/GradesGrid';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { ItemTimeline } from '@/components/coach/ItemTimeline';
@@ -50,6 +50,7 @@ export default function PostMatchPage() {
   return <main className="container"><h1>Пост-матч тренер</h1><div className="card grid"><MatchIdForm matchId={matchId} onChange={setMatchId} /><button disabled={loading} onClick={submit}>{loading ? 'Анализ...' : 'Анализировать матч'}</button>{error ? <p className="error">{error}</p> : null}</div>
     {data ? <div className="grid" style={{ marginTop: '1rem' }}><section className="card"><h3>Краткая сводка матча</h3><p><strong>ID матча:</strong> {data.analysis.matchId}</p><p><strong>Герой:</strong> {data.analysis.hero}</p><p><strong>Роль:</strong> {roleLabel(data.analysis.role)}</p><p><strong>Результат:</strong> {data.analysis.result}</p></section>
       <GradesGrid grades={data.analysis.grades} />
+      <BenchmarkEvidence benchmarkSummary={data.analysis.benchmarkSummary} heroAverageComparison={data.analysis.heroAverageComparison} />
       <ItemTimeline items={data.analysis.itemTimings} />
       <PhaseBreakdown economyByPhase={data.analysis.economyByPhase} deathsByPhase={deathsByPhaseForUi} itemTimings={data.analysis.itemTimings} />
       {deathsByPhaseForUi ? <section className="card"><h3>Смерти по фазам</h3><div className="phase-chip-grid">{[
@@ -64,7 +65,6 @@ export default function PostMatchPage() {
       <section className="card"><h3>Итог тренера</h3><p><strong>Главная причина:</strong> {data.analysis.finalVerdict.mainReason}</p><p><strong>Главный риск:</strong> {data.analysis.finalVerdict.biggestRisk}</p><p><strong>Фокус на следующий матч:</strong> {data.analysis.finalVerdict.nextMatchFocus}</p></section>
       <CoachSummaryCard title="Главные ошибки" lines={data.analysis.topMistakes} />
       <CoachSummaryCard title="Что сделать в следующей игре" lines={data.analysis.nextGameAdjustments} />
-      <DebugPanel data={data.debug} title="Детали данных матча" />
     </div> : null}
   </main>;
 }
