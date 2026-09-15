@@ -1,0 +1,77 @@
+name: Generate UI baselines
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect optional UI tooling
+        id: ui-tooling
+        shell: bash
+        run: |
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const { scripts = {} } = require('./package.json');
+
+          console.log(`typecheck_ui=${Boolean(scripts['typecheck:ui'])}`);
+          console.log(`test_ui_update=${Boolean(scripts['test:ui:update'])}`);
+
+          let playwright = false;
+          for (const packageName of ['@playwright/test', 'playwright']) {
+            try {
+              require.resolve(packageName);
+              playwright = true;
+              break;
+            } catch {}
+          }
+          console.log(`playwright=${playwright}`);
+          NODE
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Typecheck UI
+        if: steps.ui-tooling.outputs.typecheck_ui == 'true'
+        run: npm run typecheck:ui
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        if: steps.ui-tooling.outputs.playwright == 'true'
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Update UI baselines
+        if: steps.ui-tooling.outputs.test_ui_update == 'true'
+        run: npm run test:ui:update
+
+      - name: Upload Linux UI baselines
+        if: always() && steps.ui-tooling.outputs.test_ui_update == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-ui-baselines
+          path: |
+            **/__snapshots__/**/*.png
+            **/*-snapshots/**/*.png
+            !node_modules/**
+            !.next/**
+          if-no-files-found: error
