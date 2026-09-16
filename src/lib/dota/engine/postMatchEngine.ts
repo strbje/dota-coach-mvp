@@ -11,6 +11,9 @@ import { getStratzHeroAverage } from '@/lib/dota/data/stratzHeroAverages';
 import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingScenarios';
 import type { PostMatchBenchmarkContext, StratzPostMatchData } from '@/lib/dota/types/domain';
 import { evaluateDeathRules } from '@/lib/dota/rules/deathRules';
+import { withTimeout } from '@/lib/dota/async/withTimeout';
+
+const OPTIONAL_SOURCE_TIMEOUT_MS = 4_000;
 
 type StratzFetchDebug = {
   attempted: boolean;
@@ -88,7 +91,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
 
   const safeStratzDeaths = async () => {
     try {
-      return await fetchStratzDeaths(matchId);
+      return await withTimeout(fetchStratzDeaths(matchId), OPTIONAL_SOURCE_TIMEOUT_MS, 'STRATZ events');
     } catch (error) {
       return {
         data: undefined,

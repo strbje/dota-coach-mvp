@@ -9,9 +9,9 @@ import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useLocale } from '@/components/layout/LocaleProvider';
 import { Alert, Badge, Button, Panel } from '@/components/ui';
-import type { MatchPhase, PostMatchAnalysis } from '@/lib/dota/types/domain';
+import type { MatchPhase } from '@/lib/dota/types/domain';
 import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
-type Payload = { analysis: PostMatchAnalysis; debug: unknown };
+import { isPostMatchSuccessPayload, type PostMatchSuccessPayload as Payload } from '@/lib/dota/validation/postMatchResponse';
 const PHASE_LABELS: Record<MatchPhase, string> = { laning: 'линия', earlyMid: 'ранняя середина', midGame: 'мидгейм', lateGame: 'лейт' };
 const ROLE_LABELS: Record<string, string> = { carry: 'Керри', mid: 'Мидер', offlane: 'Оффлейнер', support: 'Поддержка', 'hard support': 'Полная поддержка' };
 export default function PostMatchPage() {
@@ -46,7 +46,11 @@ export default function PostMatchPage() {
         );
         return;
       }
-      setData(payload as Payload);
+      if (!isPostMatchSuccessPayload(payload)) {
+        setErrorCode('POST_MATCH_FAILED');
+        return;
+      }
+      setData(payload);
     } catch {
       setErrorCode('POST_MATCH_FAILED');
     } finally {

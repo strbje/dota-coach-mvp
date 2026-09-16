@@ -1,6 +1,9 @@
 import { normalizeItemTimingScenarios } from '@/lib/dota/adapters/normalizeBenchmarks';
 import { fetchHeroItemTimings } from '@/lib/dota/clients/opendotaScenarios';
 import { fetchOpenDotaPath } from '@/lib/dota/providers/opendotaProvider';
+import { withTimeout } from '@/lib/dota/async/withTimeout';
+
+const OPTIONAL_SOURCE_TIMEOUT_MS = 4_000;
 
 export type ItemTimingScenarioRow = {
   itemKey: string;
@@ -31,7 +34,7 @@ export async function getHeroItemTimingScenarios(heroId: number): Promise<ItemTi
 export async function getHeroItemTimingScenariosResearch(heroId: number, itemKey?: string) {
   try {
     const query = itemKey ? `/scenarios/itemTimings?hero_id=${heroId}&item=${encodeURIComponent(itemKey)}` : `/scenarios/itemTimings?hero_id=${heroId}`;
-    const payload = await fetchOpenDotaPath(query);
+    const payload = await withTimeout(fetchOpenDotaPath(query), OPTIONAL_SOURCE_TIMEOUT_MS, 'OpenDota item timings');
     return normalizeItemTimingScenarios(heroId, payload);
   } catch (error) {
     return {
