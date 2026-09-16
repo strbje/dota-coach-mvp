@@ -298,7 +298,10 @@ export type StratzPositionSample = {
   x?: number;
   y?: number;
   source: 'stratz_playback';
-};
+} & import('../normalize/stratzCoordinates').StratzCoordinates;
+
+export type StratzDeathEventSource = 'stratz_stats.deathEvents' | 'stratz_playback.deathEvents';
+export type StratzPositionConfidence = 'exact' | 'high' | 'medium' | 'low' | 'unmatched';
 
 export type StratzDeathPositionSample = {
   deathTimeSeconds: number;
@@ -306,8 +309,19 @@ export type StratzDeathPositionSample = {
   x?: number;
   y?: number;
   source: 'stratz_playback';
+  deathEventSource: StratzDeathEventSource;
+  deltaSeconds?: number;
+  confidence: StratzPositionConfidence;
   productReady: false;
-};
+} & Partial<import('../normalize/stratzCoordinates').StratzCoordinates>;
+
+export type StratzFarmPositionSample = {
+  eventType: 'cs' | 'gold';
+  timeSeconds?: number;
+  time?: string;
+  deltaSeconds?: number;
+  productReady: false;
+} & Partial<import('../normalize/stratzCoordinates').StratzCoordinates>;
 
 export type StratzFarmDistribution = {
   laneFarm?: number;

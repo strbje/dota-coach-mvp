@@ -148,6 +148,11 @@ const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
           playbackData {
             playerUpdatePositionEvents {
               time
+              x
+              y
+            }
+            csEvents {
+              time
             }
             killEvents {
               time
@@ -318,6 +323,8 @@ function buildNormalizedSummary(queryMode: QueryMode, pack: ReturnType<typeof no
       positionSamplesCount: pack.positionSamples.length,
       positionSamplesPreview: { first: pack.positionSamples.slice(0, 5), last: pack.positionSamples.slice(-5) },
       deathPositionSamplesPreview: pack.deathPositionSamples.slice(0, 5),
+      deathEventSource: pack.deathEventSource,
+      farmPositionSamplesPreview: pack.farmPositionSamples.slice(0, 5),
       objectivePlaybackSummary: pack.objectivePlaybackSummary
     };
   }

@@ -5,11 +5,14 @@ import type {
   NormalizedStratzPlayer,
   StratzCombatEvent,
   StratzDeathPositionSample,
+  StratzDeathEventSource,
+  StratzFarmPositionSample,
   StratzFarmDistribution,
   StratzHeroAverageBenchmark,
   StratzEventCoverage,
   StratzPositionSample
 } from '../types/domain';
+import { normalizeStratzCoordinates } from '../normalize/stratzCoordinates';
 import { evaluateDeathRules } from '../rules/deathRules';
 import { evaluateFightRules } from '../rules/fightRules';
 
@@ -53,6 +56,26 @@ function mapCombatEvents(value: unknown): StratzCombatEvent[] {
   }));
 }
 
+function nearestPosition(timeSeconds: number, positions: StratzPositionSample[]) {
+  return positions
+    .filter((position): position is StratzPositionSample & { timeSeconds: number; rawX: number; rawY: number } =>
+      position.timeSeconds !== undefined
+      && position.rawX !== undefined
+      && position.rawY !== undefined
+      && position.coordinateSystem === 'stratz_grid_0_255'
+    )
+    .map((position) => ({ position, deltaSeconds: Math.abs(position.timeSeconds - timeSeconds) }))
+    .sort((a, b) => a.deltaSeconds - b.deltaSeconds)[0];
+}
+
+function positionConfidence(deltaSeconds: number | undefined) {
+  if (deltaSeconds === undefined || deltaSeconds > 5) return 'unmatched' as const;
+  if (deltaSeconds === 0) return 'exact' as const;
+  if (deltaSeconds === 1) return 'high' as const;
+  if (deltaSeconds <= 3) return 'medium' as const;
+  return 'low' as const;
+}
+
 export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; heroId?: number }) {
   const match = getStratzMatchPayload(raw);
   const players = asArray<UnknownRecord>(match?.players);
@@ -70,18 +93,29 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
   const positionRaw = asArray<UnknownRecord>(playbackData.playerUpdatePositionEvents);
 
   const positionSamples: StratzPositionSample[] = positionRaw
-    .map((entry) => ({
-      timeSeconds: asNumber(entry.time),
-      time: asNumber(entry.time) !== undefined ? formatGameTime(asNumber(entry.time) ?? 0) : undefined,
-      x: asNumber(entry.x) ?? asNumber(entry.positionX),
-      y: asNumber(entry.y) ?? asNumber(entry.positionY),
-      source: 'stratz_playback' as const
-    }));
+    .map((entry) => {
+      const x = asNumber(entry.x) ?? asNumber(entry.positionX);
+      const y = asNumber(entry.y) ?? asNumber(entry.positionY);
+      return {
+        timeSeconds: asNumber(entry.time),
+        time: asNumber(entry.time) !== undefined ? formatGameTime(asNumber(entry.time) ?? 0) : undefined,
+        x,
+        y,
+        source: 'stratz_playback' as const,
+        ...normalizeStratzCoordinates(x, y)
+      };
+    });
 
   const selectedDeathEventsAvailable = Array.isArray(selectedStats.deathEvents);
   const selectedKillEventsAvailable = Array.isArray(selectedStats.killEvents);
   const selectedAssistEventsAvailable = Array.isArray(selectedStats.assistEvents);
   const deathEvents = mapCombatEvents(selectedStats.deathEvents);
+  const playbackDeathEventsAvailable = Array.isArray(playbackData.deathEvents);
+  const playbackDeathEvents = mapCombatEvents(playbackData.deathEvents);
+  const researchDeathEvents = selectedDeathEventsAvailable ? deathEvents : playbackDeathEvents;
+  const deathEventSource: StratzDeathEventSource | undefined = selectedDeathEventsAvailable
+    ? 'stratz_stats.deathEvents'
+    : playbackDeathEventsAvailable ? 'stratz_playback.deathEvents' : undefined;
   const deathTimed = deathEvents.filter((event) => event.timeSeconds !== undefined);
   const deathTimings = deathTimed.map((event) => ({
     timeSeconds: event.timeSeconds as number,
@@ -95,24 +129,52 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     return acc;
   }, { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 }) : undefined;
 
-  const deathPositionSamples: StratzDeathPositionSample[] = deathTimings.map((death) => {
-    const nearest = positionSamples
-      .filter((p) => typeof p.timeSeconds === 'number' && Math.abs((p.timeSeconds as number) - death.timeSeconds) <= 5)
-      .sort((a, b) => Math.abs((a.timeSeconds as number) - death.timeSeconds) - Math.abs((b.timeSeconds as number) - death.timeSeconds))[0];
+  const deathPositionSamples: StratzDeathPositionSample[] = researchDeathEvents
+    .filter((death): death is StratzCombatEvent & { timeSeconds: number } => death.timeSeconds !== undefined)
+    .map((death) => {
+    const nearest = nearestPosition(death.timeSeconds, positionSamples);
+    const matched = nearest && nearest.deltaSeconds <= 5 ? nearest.position : undefined;
     return {
       deathTimeSeconds: death.timeSeconds,
-      deathTime: death.time,
-      x: nearest?.x,
-      y: nearest?.y,
+      deathTime: death.time ?? formatGameTime(death.timeSeconds),
+      x: matched?.x,
+      y: matched?.y,
       source: 'stratz_playback',
+      deathEventSource: deathEventSource as StratzDeathEventSource,
+      deltaSeconds: nearest?.deltaSeconds,
+      confidence: positionConfidence(nearest?.deltaSeconds),
+      ...(matched ? normalizeStratzCoordinates(matched.rawX, matched.rawY) : {}),
       productReady: false
     };
   });
+
+  const farmPositionSamples: StratzFarmPositionSample[] = (['csEvents', 'goldEvents'] as const).flatMap((field) =>
+    asArray<UnknownRecord>(playbackData[field]).map((event) => {
+      const timeSeconds = asNumber(event.time);
+      const nearest = timeSeconds === undefined ? undefined : nearestPosition(timeSeconds, positionSamples);
+      const matched = nearest && nearest.deltaSeconds <= 5 ? nearest.position : undefined;
+      return {
+        eventType: field === 'csEvents' ? 'cs' as const : 'gold' as const,
+        timeSeconds,
+        time: timeSeconds === undefined ? undefined : formatGameTime(timeSeconds),
+        deltaSeconds: nearest?.deltaSeconds,
+        ...(matched ? normalizeStratzCoordinates(matched.rawX, matched.rawY) : {}),
+        productReady: false as const
+      };
+    })
+  );
   const matchPlaybackData = (match?.playbackData as UnknownRecord | undefined) ?? {};
-  const mapObjectiveEvents = (value: unknown) => asArray<UnknownRecord>(value).map((entry) => ({
-    ...entry,
-    time: asNumber(entry.time) !== undefined ? formatGameTime(asNumber(entry.time) ?? 0) : entry.time
-  }));
+  const mapObjectiveEvents = (value: unknown) => asArray<UnknownRecord>(value).map((entry) => {
+    const rawX = asNumber(entry.x) ?? asNumber(entry.positionX);
+    const rawY = asNumber(entry.y) ?? asNumber(entry.positionY);
+    return {
+      ...entry,
+      time: asNumber(entry.time) !== undefined ? formatGameTime(asNumber(entry.time) ?? 0) : entry.time,
+      ...normalizeStratzCoordinates(rawX, rawY),
+      teamAttribution: 'unconfirmed' as const,
+      productReady: false as const
+    };
+  });
   const objectivePlaybackSummary = {
     roshanEventsCount: asArray(matchPlaybackData.roshanEvents).length,
     buildingEventsCount: asArray(matchPlaybackData.buildingEvents).length,
@@ -120,7 +182,8 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     wardEventsCount: asArray(matchPlaybackData.wardEvents).length,
     roshanEventsPreview: mapObjectiveEvents(matchPlaybackData.roshanEvents).slice(0, PREVIEW_LIMIT),
     buildingEventsPreview: mapObjectiveEvents(matchPlaybackData.buildingEvents).slice(0, PREVIEW_LIMIT),
-    towerDeathEventsPreview: mapObjectiveEvents(matchPlaybackData.towerDeathEvents).slice(0, PREVIEW_LIMIT)
+    towerDeathEventsPreview: mapObjectiveEvents(matchPlaybackData.towerDeathEvents).slice(0, PREVIEW_LIMIT),
+    wardEventsPreview: mapObjectiveEvents(matchPlaybackData.wardEvents).slice(0, PREVIEW_LIMIT)
   };
 
   const farmRaw = selectedStats.farmDistributionReport as UnknownRecord | undefined;
@@ -231,5 +294,5 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     }
   };
 
-  return { normalized, selectedBy, deathsByPhase, deathTimings, positionSamples, deathPositionSamples, heroAverage, objectivePlaybackSummary, eventPlayers, allPlayerDeaths, eventCoverage, deathMetrics, fightMetrics };
+  return { normalized, selectedBy, deathsByPhase, deathTimings, positionSamples, deathPositionSamples, deathEventSource, farmPositionSamples, heroAverage, objectivePlaybackSummary, eventPlayers, allPlayerDeaths, eventCoverage, deathMetrics, fightMetrics };
 }
