@@ -204,9 +204,14 @@ Do not build product conclusions like **first death in fight**, **solo death**, 
 
 ### playbackProbe
 - Position events are returned from `players[].playbackData.playerUpdatePositionEvents[]`.
-- Coordinates may arrive as `x/y` or `positionX/positionY`; normalized when present.
+- `PlayerUpdatePositionDetailType` probing now explicitly requests `time`, `x`, and `y`; the debug response preserves raw coordinates and reports source/confidence.
+- Coordinates may arrive as `x/y` or `positionX/positionY`; both shapes are normalized when present.
+- Byte-sized coordinate pairs are projected as the research hypothesis `world = (grid - 128) * 128` and `map = grid / 255`. This is **structural-only**, not product validation.
 - Objective playback is returned from match playback (`roshan/building/tower/ward`) with compact previews.
-- Death time to nearest position mapping is available as research-only (`productReady=false`).
+- Death time to nearest position mapping uses a five-second window and reports `deltaSeconds` plus `exact/high/medium/low/unmatched` confidence.
+- `csEvents` and `goldEvents` are associated to the nearest position sample for research; no farm heatmap is exposed to product UI.
+- Ward/objective previews preserve coordinates, but team attribution is deliberately `unconfirmed`.
+- Death map, farm heatmap, and vision/objective coach conclusions remain `productReady=false` until real-match landmark and attribution validation is documented.
 
 ### heroAverageProbe
 - `players[].heroAverage[]` is returned and normalized for selected player.
@@ -255,6 +260,13 @@ Do not build product conclusions like **first death in fight**, **solo death**, 
 - wardEventsCount: 368
 - deathPositionSamples: empty
 - coordinates: not product-ready in normalized preview
+
+The empty death-position result above was caused by the old playback probe requesting
+only position `time`. The current probe requests position `x/y`; playback death events
+are a research-only fallback for position association and never replace canonical
+`stats.deathEvents` combat telemetry. A token-backed
+run against multiple matches is still required to record real coordinate ranges and
+validate the transform against known Roshan/building/ward landmarks.
 
 ### Product readiness
 - deathsByPhase: Level 4 (product-ready)

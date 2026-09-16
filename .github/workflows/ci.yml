@@ -41,6 +41,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Combat tests
+        run: npm run test:combat
+
       - name: Benchmark tests
         run: npm run test:benchmarks
 

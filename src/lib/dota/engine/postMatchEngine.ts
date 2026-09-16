@@ -59,6 +59,7 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
 
   return {
     data: {
+      eventCoverage: normalized.eventCoverage,
       deathTimings: normalized.deathTimings,
       deathsByPhase: normalized.deathsByPhase,
       selectedPlayer: {

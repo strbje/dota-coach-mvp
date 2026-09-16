@@ -99,7 +99,7 @@ const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
   eventsProbe: {
     name: 'DebugStratzEvents',
     query: STRATZ_EVENTS_QUERY,
-    availableFields: ['match.chatEvents[]', 'match.players[].stats.killEvents[]', 'match.players[].stats.deathEvents[]', 'match.players[].stats.assistEvents[]']
+    availableFields: ['match.chatEvents[]', 'match.players[].playerSlot', 'match.players[].stats.killEvents[]', 'match.players[].stats.deathEvents[]', 'match.players[].stats.assistEvents[]']
   },
   playbackProbe: {
     name: 'DebugStratzPlayback',
@@ -148,6 +148,8 @@ const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
           playbackData {
             playerUpdatePositionEvents {
               time
+              x
+              y
             }
             killEvents {
               time
@@ -161,11 +163,14 @@ const QUERY_BY_MODE: Record<QueryMode, QueryConfig> = {
             goldEvents {
               time
             }
+            csEvents {
+              time
+            }
           }
         }
       }
     }`,
-    availableFields: ['match.playbackData.roshanEvents[]', 'match.playbackData.buildingEvents[]', 'match.playbackData.towerDeathEvents[]', 'match.playbackData.wardEvents[]', 'match.players[].playbackData.*Events[]']
+    availableFields: ['match.playbackData.roshanEvents[]', 'match.playbackData.buildingEvents[]', 'match.playbackData.towerDeathEvents[]', 'match.playbackData.wardEvents[]', 'match.players[].playbackData.playerUpdatePositionEvents[].{time,x,y}', 'match.players[].playbackData.{deathEvents,csEvents,goldEvents}[]']
   },
   heroAverageProbe: {
     name: 'DebugStratzHeroAverage',
@@ -294,6 +299,7 @@ function buildNormalizedSummary(queryMode: QueryMode, pack: ReturnType<typeof no
     return {
       selectedPlayer: baseSelected,
       eventSummary: {
+        eventCoverage: pack.eventCoverage,
         killEventsCount: selected?.killEvents?.length ?? 0,
         deathEventsCount: selected?.deathEvents?.length ?? 0,
         assistEventsCount: selected?.assistEvents?.length ?? 0,
@@ -308,12 +314,35 @@ function buildNormalizedSummary(queryMode: QueryMode, pack: ReturnType<typeof no
   }
 
   if (queryMode === 'playbackProbe') {
+    const coordinateSamples = pack.positionSamples.filter((sample) => sample.confidence === 'observed');
+    const matchedDeaths = pack.deathPositionSamples.filter((sample) => sample.confidence !== 'unmatched');
+    const matchedFarmEvents = pack.farmEventPositionSamples.filter((sample) => sample.confidence !== 'unmatched');
     return {
       selectedPlayer: baseSelected,
       positionSamplesCount: pack.positionSamples.length,
+      positionCoordinatesCount: coordinateSamples.length,
+      coordinateSystems: [...new Set(coordinateSamples.map((sample) => sample.coordinateSystem))],
       positionSamplesPreview: { first: pack.positionSamples.slice(0, 5), last: pack.positionSamples.slice(-5) },
-      deathPositionSamplesPreview: pack.deathPositionSamples.slice(0, 5),
-      objectivePlaybackSummary: pack.objectivePlaybackSummary
+      deathPositionAssociation: {
+        deathsCount: pack.deathPositionSamples.length,
+        matchedCount: matchedDeaths.length,
+        windowSeconds: 5,
+        samples: pack.deathPositionSamples
+      },
+      farmEventPositionAssociation: {
+        eventsCount: pack.farmEventPositionSamples.length,
+        matchedCount: matchedFarmEvents.length,
+        windowSeconds: 5,
+        samplesPreview: pack.farmEventPositionSamples.slice(0, 10),
+        productReady: false
+      },
+      objectivePlaybackSummary: pack.objectivePlaybackSummary,
+      readiness: {
+        coordinateTransform: 'requires_known_landmark_validation',
+        deathMap: { productReady: false },
+        farmHeatmap: { productReady: false },
+        visionObjectiveConclusions: { productReady: false, teamAttribution: 'unconfirmed' }
+      }
     };
   }
 

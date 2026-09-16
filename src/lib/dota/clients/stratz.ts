@@ -16,6 +16,7 @@ export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!) {
     }
     players {
       steamAccountId
+      playerSlot
       heroId
       isRadiant
       stats {

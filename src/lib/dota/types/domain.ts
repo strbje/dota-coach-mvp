@@ -179,6 +179,7 @@ export type NormalizedOpenDotaMatch = {
 
 
 export type StratzPostMatchData = {
+  eventCoverage?: StratzEventCoverage;
   deathTimings?: Array<{
     timeSeconds: number;
     time: string;
@@ -282,7 +283,17 @@ export type StratzPositionSample = {
   time?: string;
   x?: number;
   y?: number;
+  rawX?: number;
+  rawY?: number;
+  mapX?: number;
+  mapY?: number;
+  worldX?: number;
+  worldY?: number;
+  coordinateSystem?: 'stratz_grid_0_255' | 'dota_world_units' | 'unknown';
+  coordinateValidation?: 'structural_only' | 'invalid' | 'missing';
   source: 'stratz_playback';
+  confidence: 'observed' | 'missing_coordinates';
+  productReady: false;
 };
 
 export type StratzDeathPositionSample = {
@@ -290,7 +301,28 @@ export type StratzDeathPositionSample = {
   deathTime: string;
   x?: number;
   y?: number;
+  rawX?: number;
+  rawY?: number;
+  mapX?: number;
+  mapY?: number;
+  worldX?: number;
+  worldY?: number;
+  coordinateSystem?: 'stratz_grid_0_255' | 'dota_world_units' | 'unknown';
+  positionTimeSeconds?: number;
+  deltaSeconds?: number;
   source: 'stratz_playback';
+  deathEventSource: 'stratz_stats.deathEvents' | 'stratz_playback.deathEvents';
+  confidence: 'exact' | 'high' | 'medium' | 'low' | 'unmatched';
+  productReady: false;
+};
+
+export type StratzFarmEventPositionSample = {
+  eventType: 'cs' | 'gold';
+  eventTimeSeconds: number;
+  eventTime: string;
+  position?: StratzPositionSample;
+  deltaSeconds?: number;
+  confidence: 'exact' | 'high' | 'medium' | 'low' | 'unmatched';
   productReady: false;
 };
 
@@ -347,6 +379,7 @@ export type NormalizedStratzPlayer = {
   assistEvents?: StratzCombatEvent[];
   positionSamples?: StratzPositionSample[];
   deathPositionSamples?: StratzDeathPositionSample[];
+  farmEventPositionSamples?: StratzFarmEventPositionSample[];
   farmDistribution?: StratzFarmDistribution | null;
   heroAverageBenchmarks?: StratzHeroAverageBenchmark[];
 };
@@ -357,6 +390,7 @@ export type NormalizedStratzMatch = {
   didRadiantWin?: boolean;
   averageImp?: number | null;
   selectedPlayer?: NormalizedStratzPlayer;
+  eventCoverage: StratzEventCoverage;
   dataAvailability: {
     playerSummary: boolean;
     eventStats: boolean;
@@ -366,4 +400,13 @@ export type NormalizedStratzMatch = {
     positionEvents: boolean;
     farmDistribution: boolean;
   };
+};
+
+export type StratzEventCoverage = {
+  selectedDeathEvents: boolean;
+  selectedKillEvents: boolean;
+  selectedAssistEvents: boolean;
+  eventPlayers: number;
+  fullRoster: boolean;
+  allPlayerDeaths: boolean;
 };
