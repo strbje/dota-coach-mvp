@@ -41,6 +41,7 @@ const postMatchErrors = {
     OPENDOTA_NOT_FOUND: 'Матч не найден или ещё не обработан OpenDota.',
     OPENDOTA_RATE_LIMIT: 'OpenDota временно ограничил число запросов. Попробуйте немного позже.',
     OPENDOTA_UNAVAILABLE: 'OpenDota временно недоступен. Попробуйте позже.',
+    UNSUPPORTED_POST_MATCH_ROLE: 'Пока разбор доступен только для игроков, надёжно определённых как carry.',
     POST_MATCH_FAILED: 'Не удалось разобрать матч. Попробуйте ещё раз.'
   },
   en: {
@@ -50,6 +51,7 @@ const postMatchErrors = {
     OPENDOTA_NOT_FOUND: 'The match was not found or has not been processed by OpenDota yet.',
     OPENDOTA_RATE_LIMIT: 'OpenDota has temporarily limited requests. Please try again later.',
     OPENDOTA_UNAVAILABLE: 'OpenDota is temporarily unavailable. Please try again later.',
+    UNSUPPORTED_POST_MATCH_ROLE: 'Match review currently supports only players reliably identified as carry.',
     POST_MATCH_FAILED: 'Could not review the match. Please try again.'
   }
 } as const;
