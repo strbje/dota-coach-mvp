@@ -10,6 +10,7 @@ import { getHeroBenchmarks } from '@/lib/dota/data/benchmarks';
 import { getStratzHeroAverage } from '@/lib/dota/data/stratzHeroAverages';
 import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingScenarios';
 import type { PostMatchBenchmarkContext, StratzPostMatchData } from '@/lib/dota/types/domain';
+import { evaluateDeathRules } from '@/lib/dota/rules/deathRules';
 
 type StratzFetchDebug = {
   attempted: boolean;
@@ -20,13 +21,6 @@ type StratzFetchDebug = {
   bodyPreview?: string;
   graphQLErrors?: unknown[];
   error?: string;
-  normalizedDeathTimingsCount?: number;
-  normalizedDeathsByPhase?: {
-    laning: number;
-    earlyMid: number;
-    midGame: number;
-    lateGame: number;
-  } | null;
 };
 
 async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMatchData; debug: StratzFetchDebug }> {
@@ -54,9 +48,6 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
   if (!payload || typeof payload !== 'object') return { debug };
 
   const normalized = normalizeStratzMatch(payload);
-  debug.normalizedDeathTimingsCount = normalized.deathTimings.length;
-  debug.normalizedDeathsByPhase = normalized.deathsByPhase ?? null;
-
   return {
     data: {
       deathTimings: normalized.deathTimings,
@@ -68,7 +59,10 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
         lane: normalized.normalized.selectedPlayer?.lane,
         position: normalized.normalized.selectedPlayer?.position,
         imp: normalized.normalized.selectedPlayer?.imp ?? null
-      }
+      },
+      deathMetrics: normalized.deathMetrics,
+      fightMetrics: normalized.fightMetrics,
+      eventCoverage: normalized.eventCoverage
     },
     debug
   };
@@ -120,6 +114,21 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
     itemTimingScenarios
   };
 
+  if (stratz?.deathMetrics && stratz.eventCoverage?.selectedDeathEvents) {
+    const initial = stratz.deathMetrics;
+    stratz.deathMetrics = evaluateDeathRules({
+      selectedHeroId: stratz.selectedPlayer?.heroId,
+      selectedDeaths: stratz.deathTimings?.map((death) => ({ timeSeconds: death.timeSeconds, heroId: stratz.selectedPlayer?.heroId })),
+      keyItems: normalized.player?.itemTimingSource === 'purchase_log' ? normalized.player.itemTimings : undefined,
+      objectives: normalized.player?.objectiveDataSource === 'objectives'
+        ? normalized.player.objectiveEvents?.map((event) => ({ timeSeconds: event.timeSeconds, type: event.type }))
+        : undefined
+    });
+    // Preserve the all-player STRATZ cluster metric; cross-provider rules above
+    // intentionally receive only the selected player's exported event stream.
+    stratz.deathMetrics.firstDeathInKillCluster = initial.firstDeathInKillCluster;
+  }
+
   const roleDetection = detectRole({
     stratzRole: stratz?.selectedPlayer?.role,
     stratzRoleBasic: stratz?.selectedPlayer?.roleBasic,
@@ -143,7 +152,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
       stages: {
         fetched: true,
         normalized: true,
-        stratzEnrichment: Boolean(stratz?.deathsByPhase || stratz?.deathTimings?.length)
+        stratzEnrichment: Boolean(stratz?.eventCoverage?.selectedDeathEvents || stratz?.fightMetrics?.readiness === 'normalized')
       },
       summary: {
         roleDetection,
@@ -157,9 +166,10 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
         durationSeconds: normalized.durationSeconds,
         didRadiantWin: normalized.didRadiantWin,
         hasStratzToken: Boolean(process.env.STRATZ_API_TOKEN),
-        stratzEnrichment: Boolean(stratz?.deathsByPhase || stratz?.deathTimings?.length),
+        stratzEnrichment: Boolean(stratz?.eventCoverage?.selectedDeathEvents || stratz?.fightMetrics?.readiness === 'normalized'),
         stratzDeathTimingsCount: stratz?.deathTimings?.length ?? 0,
         stratzDeathsByPhase: stratz?.deathsByPhase ?? null,
+        combatMetrics: stratz ? { death: stratz.deathMetrics, fight: stratz.fightMetrics } : null,
         stratzSelectedPlayer: stratz?.selectedPlayer
           ? {
               heroId: stratz.selectedPlayer.heroId,

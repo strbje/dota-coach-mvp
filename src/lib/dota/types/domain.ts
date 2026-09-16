@@ -1,3 +1,6 @@
+import type { DeathRulesSummary } from '../rules/deathRules';
+import type { FightRulesSummary } from '../rules/fightRules';
+
 export type HeroName = string;
 export type RoleName = 'carry';
 export type MatchPhase = 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
@@ -134,6 +137,7 @@ export type NormalizedOpenDotaMatch = {
       phase: MatchPhase;
       isPlayerTeam?: boolean;
     }>;
+    objectiveDataSource?: 'objectives' | 'unavailable';
     itemObjectiveWindows?: Array<{
       itemKey: string;
       item: string;
@@ -199,6 +203,17 @@ export type StratzPostMatchData = {
     position?: string;
     imp?: number | null;
   };
+  fightMetrics?: FightRulesSummary;
+  deathMetrics?: DeathRulesSummary;
+  eventCoverage?: StratzEventCoverage;
+};
+
+export type StratzEventCoverage = {
+  selectedDeathEvents: boolean;
+  selectedKillEvents: boolean;
+  selectedAssistEvents: boolean;
+  allPlayerDeathEvents: boolean;
+  teamKillEvents: boolean;
 };
 
 export type PostMatchAnalysis = {

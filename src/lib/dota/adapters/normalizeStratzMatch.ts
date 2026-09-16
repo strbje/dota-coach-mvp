@@ -1,4 +1,4 @@
-import { formatGameTime } from '@/lib/dota/utils/time';
+import { formatGameTime } from '../utils/time';
 import type {
   MatchPhase,
   NormalizedStratzMatch,
@@ -7,13 +7,18 @@ import type {
   StratzDeathPositionSample,
   StratzFarmDistribution,
   StratzHeroAverageBenchmark,
+  StratzEventCoverage,
   StratzPositionSample
-} from '@/lib/dota/types/domain';
+} from '../types/domain';
+import { evaluateDeathRules } from '../rules/deathRules';
+import { evaluateFightRules } from '../rules/fightRules';
 
 type UnknownRecord = Record<string, unknown>;
 
 const LIFESTEALER_HERO_ID = 54;
 const PREVIEW_LIMIT = 5;
+const MATCH_ROSTER_SIZE = 10;
+const TEAM_ROSTER_SIZE = 5;
 
 function asArray<T = UnknownRecord>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
@@ -73,6 +78,9 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
       source: 'stratz_playback' as const
     }));
 
+  const selectedDeathEventsAvailable = Array.isArray(selectedStats.deathEvents);
+  const selectedKillEventsAvailable = Array.isArray(selectedStats.killEvents);
+  const selectedAssistEventsAvailable = Array.isArray(selectedStats.assistEvents);
   const deathEvents = mapCombatEvents(selectedStats.deathEvents);
   const deathTimed = deathEvents.filter((event) => event.timeSeconds !== undefined);
   const deathTimings = deathTimed.map((event) => ({
@@ -82,7 +90,7 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     source: 'stratz_stats' as const
   }));
 
-  const deathsByPhase = deathTimings.length > 0 ? deathTimings.reduce((acc, item) => {
+  const deathsByPhase = selectedDeathEventsAvailable ? deathTimings.reduce((acc, item) => {
     acc[item.phase] += 1;
     return acc;
   }, { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 }) : undefined;
@@ -157,14 +165,57 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     itemIds: [0,1,2,3,4,5].map((i) => asNumber(selected[`item${i}Id`])).filter((v): v is number => v !== undefined),
     backpackItemIds: [0,1,2].map((i) => asNumber(selected[`backpack${i}Id`])).filter((v): v is number => v !== undefined),
     neutralItemId: asNumber(selected.neutral0Id) ?? null,
-    killEvents: mapCombatEvents(selectedStats.killEvents),
-    deathEvents,
-    assistEvents: mapCombatEvents(selectedStats.assistEvents),
+    killEvents: selectedKillEventsAvailable ? mapCombatEvents(selectedStats.killEvents) : undefined,
+    deathEvents: selectedDeathEventsAvailable ? deathEvents : undefined,
+    assistEvents: selectedAssistEventsAvailable ? mapCombatEvents(selectedStats.assistEvents) : undefined,
     positionSamples,
     deathPositionSamples,
     farmDistribution,
     heroAverageBenchmarks: heroAverage
   } : undefined;
+
+  const eventPlayers = players.map((player) => {
+    const stats = (player.stats as UnknownRecord | undefined) ?? {};
+    const timed = (value: unknown) => mapCombatEvents(value)
+      .filter((event): event is StratzCombatEvent & { timeSeconds: number } => event.timeSeconds !== undefined)
+      .map((event) => ({ timeSeconds: event.timeSeconds }));
+    return {
+      heroId: asNumber(player.heroId),
+      isRadiant: typeof player.isRadiant === 'boolean' ? player.isRadiant : undefined,
+      killEvents: Array.isArray(stats.killEvents) ? timed(stats.killEvents) : undefined,
+      deathEvents: Array.isArray(stats.deathEvents) ? timed(stats.deathEvents) : undefined,
+      assistEvents: Array.isArray(stats.assistEvents) ? timed(stats.assistEvents) : undefined
+    };
+  });
+  const selectedEventPlayer = eventPlayers.find((player) => player.heroId === selectedPlayer?.heroId);
+  const heroIds = eventPlayers.map((player) => player.heroId);
+  const hasCompleteUniqueRoster = eventPlayers.length === MATCH_ROSTER_SIZE
+    && heroIds.every((heroId): heroId is number => heroId !== undefined)
+    && new Set(heroIds).size === MATCH_ROSTER_SIZE;
+  const selectedTeam = selectedEventPlayer?.isRadiant === undefined
+    ? []
+    : eventPlayers.filter((player) => player.isRadiant === selectedEventPlayer.isRadiant);
+  const allPlayerDeathEventsAvailable = hasCompleteUniqueRoster
+    && eventPlayers.every((player) => player.deathEvents !== undefined);
+  const teamKillEventsAvailable = hasCompleteUniqueRoster
+    && eventPlayers.every((player) => player.isRadiant !== undefined)
+    && selectedTeam.length === TEAM_ROSTER_SIZE
+    && selectedTeam.every((player) => player.killEvents !== undefined);
+  const eventCoverage: StratzEventCoverage = {
+    selectedDeathEvents: selectedDeathEventsAvailable,
+    selectedKillEvents: selectedKillEventsAvailable,
+    selectedAssistEvents: selectedAssistEventsAvailable,
+    allPlayerDeathEvents: allPlayerDeathEventsAvailable,
+    teamKillEvents: teamKillEventsAvailable
+  };
+  const allPlayerDeaths = allPlayerDeathEventsAvailable
+    ? eventPlayers.flatMap((player) => player.deathEvents!.map((event) => ({ ...event, heroId: player.heroId })))
+    : undefined;
+  const selectedTimedDeaths = selectedDeathEventsAvailable
+    ? deathTimed.map((event) => ({ timeSeconds: event.timeSeconds as number, heroId: selectedPlayer?.heroId }))
+    : undefined;
+  const deathMetrics = evaluateDeathRules({ selectedHeroId: selectedPlayer?.heroId, allPlayerDeaths, selectedDeaths: selectedTimedDeaths });
+  const fightMetrics = evaluateFightRules(eventPlayers, selectedPlayer?.heroId);
 
   const normalized: NormalizedStratzMatch = {
     matchId: asNumber(match?.id) ?? 0,
@@ -173,12 +224,12 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
     averageImp: asNumber(match?.averageImp) ?? null,
     selectedPlayer,
     dataAvailability: {
-      playerSummary: Boolean(selectedPlayer), eventStats: deathEvents.length > 0 || (selectedPlayer?.killEvents?.length ?? 0) > 0,
-      playback: positionSamples.length > 0, heroAverage: heroAverage.length > 0, deathEvents: deathEvents.length > 0,
+      playerSummary: Boolean(selectedPlayer), eventStats: selectedDeathEventsAvailable || selectedKillEventsAvailable || selectedAssistEventsAvailable,
+      playback: positionSamples.length > 0, heroAverage: heroAverage.length > 0, deathEvents: selectedDeathEventsAvailable,
       positionEvents: positionSamples.some((p) => p.x !== undefined || p.y !== undefined),
       farmDistribution: Boolean(farmDistribution)
     }
   };
 
-  return { normalized, selectedBy, deathsByPhase, deathTimings, positionSamples, deathPositionSamples, heroAverage, objectivePlaybackSummary };
+  return { normalized, selectedBy, deathsByPhase, deathTimings, positionSamples, deathPositionSamples, heroAverage, objectivePlaybackSummary, eventPlayers, allPlayerDeaths, eventCoverage, deathMetrics, fightMetrics };
 }

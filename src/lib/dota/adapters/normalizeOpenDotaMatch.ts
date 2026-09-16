@@ -69,7 +69,8 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
       }))
     : [];
 
-  const rawObjectives = Array.isArray((payload as Record<string, unknown>).objectives) ? ((payload as Record<string, unknown>).objectives as Array<Record<string, unknown>>) : [];
+  const hasObjectiveData = Array.isArray((payload as Record<string, unknown>).objectives);
+  const rawObjectives = hasObjectiveData ? ((payload as Record<string, unknown>).objectives as Array<Record<string, unknown>>) : [];
   const objectiveEvents = rawObjectives
     .filter((o) => typeof o.time === 'number' && typeof o.type === 'string')
     .map((o) => {
@@ -189,6 +190,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
     fightParticipationByPhaseSource: 'unavailable',
     deathsAfterItemTimings,
     objectiveEvents,
+    objectiveDataSource: hasObjectiveData ? 'objectives' : 'unavailable',
     itemObjectiveWindows,
     economyByPhaseSource,
     economyByPhase, economyCheckpoints, farmProfile,
