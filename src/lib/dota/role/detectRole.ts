@@ -12,6 +12,8 @@ export type DetectedRole = 'carry' | 'support' | 'offlane' | 'mid' | 'unknown';
 export type RoleDetectionResult = {
   role: DetectedRole;
   confidence: 'high' | 'medium' | 'low';
+  source: 'stratz' | 'opendota' | 'fallback';
+  fallbackKind?: 'missing-signals' | 'conflicting-signals';
   reasons: string[];
 };
 
@@ -28,31 +30,38 @@ export function detectRole(input: RoleDetectionInput): RoleDetectionResult {
 
   if (position === 'POSITION_1') {
     reasons.push('stratz.position=POSITION_1');
-    return { role: 'carry', confidence: 'high', reasons };
+    return { role: 'carry', confidence: 'high', source: 'stratz', reasons };
   }
+
+  if (position === 'POSITION_2') return { role: 'mid', confidence: 'medium', source: 'stratz', reasons: ['stratz.position=POSITION_2'] };
+  if (position === 'POSITION_3') return { role: 'offlane', confidence: 'medium', source: 'stratz', reasons: ['stratz.position=POSITION_3'] };
+  if (position === 'POSITION_4' || position === 'POSITION_5') return { role: 'support', confidence: 'medium', source: 'stratz', reasons: [`stratz.position=${position}`] };
 
   if (role === 'CORE' && lane === 'SAFE_LANE') {
     reasons.push('stratz.role=CORE + stratz.lane=SAFE_LANE');
-    return { role: 'carry', confidence: 'high', reasons };
+    return { role: 'carry', confidence: 'high', source: 'stratz', reasons };
   }
 
   if (roleBasic === 'CORE' && lane === 'SAFE_LANE') {
     reasons.push('stratz.roleBasic=CORE + stratz.lane=SAFE_LANE');
-    return { role: 'carry', confidence: 'medium', reasons };
+    return { role: 'carry', confidence: 'medium', source: 'stratz', reasons };
   }
 
   if (input.openDotaLaneRole === 1) {
     reasons.push('opendota.lane_role=1 (safe lane core)');
-    return { role: 'carry', confidence: 'medium', reasons };
+    return { role: 'carry', confidence: 'medium', source: 'opendota', reasons };
   }
 
-  if (position === 'POSITION_2') return { role: 'mid', confidence: 'medium', reasons: ['stratz.position=POSITION_2'] };
-  if (position === 'POSITION_3') return { role: 'offlane', confidence: 'medium', reasons: ['stratz.position=POSITION_3'] };
-  if (position === 'POSITION_4' || position === 'POSITION_5') return { role: 'support', confidence: 'medium', reasons: [`stratz.position=${position}`] };
-
+  const hasRoleSignals = Object.values(input).some((value) => value !== undefined && value !== '');
   return {
     role: 'unknown',
     confidence: 'low',
-    reasons: ['role signals are missing or conflicting']
+    source: 'fallback',
+    fallbackKind: hasRoleSignals ? 'conflicting-signals' : 'missing-signals',
+    reasons: [hasRoleSignals ? 'role signals are conflicting or unsupported' : 'role signals are missing']
   };
+}
+
+export function canApplyCarryRules(result: RoleDetectionResult): boolean {
+  return result.role === 'carry' || (result.role === 'unknown' && result.fallbackKind === 'missing-signals');
 }

@@ -5,9 +5,17 @@ export type PostMatchErrorCode =
   | 'OPENDOTA_NOT_FOUND'
   | 'OPENDOTA_RATE_LIMIT'
   | 'OPENDOTA_UNAVAILABLE'
+  | 'UNSUPPORTED_POST_MATCH_ROLE'
   | 'POST_MATCH_FAILED';
 
 export type PublicPostMatchError = { errorCode: PostMatchErrorCode; error: string; status: number };
+
+export class UnsupportedPostMatchRoleError extends Error {
+  constructor(role: string) {
+    super(`Post-match rules are not available for detected role: ${role}`);
+    this.name = 'UnsupportedPostMatchRoleError';
+  }
+}
 
 function errorChain(error: unknown): string {
   const messages: string[] = [];
@@ -22,6 +30,9 @@ function errorChain(error: unknown): string {
 }
 
 export function toPublicPostMatchError(error: unknown): PublicPostMatchError {
+  if (error instanceof UnsupportedPostMatchRoleError) {
+    return { errorCode: 'UNSUPPORTED_POST_MATCH_ROLE', error: 'Пока разбор доступен только для игроков, надёжно определённых как carry.', status: 422 };
+  }
   const chain = errorChain(error);
   if (chain.includes('invalid json') || chain.includes('empty response body')) return { errorCode: 'OPENDOTA_INVALID_RESPONSE', error: 'OpenDota вернул некорректный ответ. Попробуйте ещё раз через несколько секунд.', status: 502 };
   if (chain.includes('not found') || chain.includes('status 404')) return { errorCode: 'OPENDOTA_NOT_FOUND', error: 'Матч не найден или ещё не обработан OpenDota.', status: 404 };

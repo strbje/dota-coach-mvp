@@ -1,4 +1,4 @@
-export type HeroName = 'Lifestealer';
+export type HeroName = string;
 export type RoleName = 'carry';
 export type MatchPhase = 'laning' | 'earlyMid' | 'midGame' | 'lateGame';
 

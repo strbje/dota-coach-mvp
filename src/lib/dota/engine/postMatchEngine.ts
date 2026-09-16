@@ -2,8 +2,10 @@ import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMat
 import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
-import { detectRole } from '@/lib/dota/role/detectRole';
-import { runLifestealerCarryPostMatchRules } from '@/lib/dota/rules/postMatch/lifestealerCarry';
+import { canApplyCarryRules, detectRole } from '@/lib/dota/role/detectRole';
+import { UnsupportedPostMatchRoleError } from '@/lib/dota/errors/postMatchError';
+import { lifestealerCarryOverride } from '@/lib/dota/rules/heroOverrides/lifestealer';
+import { runCarryPostMatchRules } from '@/lib/dota/rules/roleRules/carryRules';
 import { getHeroBenchmarks } from '@/lib/dota/data/benchmarks';
 import { getStratzHeroAverage } from '@/lib/dota/data/stratzHeroAverages';
 import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingScenarios';
@@ -118,7 +120,20 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
     itemTimingScenarios
   };
 
-  const analysis = runLifestealerCarryPostMatchRules(normalized, stratz, benchmarkContext);
+  const roleDetection = detectRole({
+    stratzRole: stratz?.selectedPlayer?.role,
+    stratzRoleBasic: stratz?.selectedPlayer?.roleBasic,
+    stratzPosition: stratz?.selectedPlayer?.position,
+    stratzLane: stratz?.selectedPlayer?.lane,
+    openDotaLaneRole: normalized.player?.laneReview?.laneRole,
+    openDotaLane: normalized.player?.laneReview?.lane
+  });
+  // Carry is the first role rule set. Preserve the previous result when role
+  // telemetry is absent; known or ambiguous roles must not be mislabeled as carry.
+  if (!canApplyCarryRules(roleDetection)) {
+    throw new UnsupportedPostMatchRoleError(roleDetection.role);
+  }
+  const analysis = runCarryPostMatchRules(normalized, stratz, benchmarkContext, lifestealerCarryOverride);
   const itemAnalysis = analysis.itemAnalysis ?? [];
 
   return {
@@ -131,20 +146,13 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
         stratzEnrichment: Boolean(stratz?.deathsByPhase || stratz?.deathTimings?.length)
       },
       summary: {
-        roleDetection: detectRole({
-          stratzRole: stratz?.selectedPlayer?.role,
-          stratzRoleBasic: stratz?.selectedPlayer?.roleBasic,
-          stratzPosition: stratz?.selectedPlayer?.position,
-          stratzLane: stratz?.selectedPlayer?.lane,
-          openDotaLaneRole: normalized.player?.laneReview?.laneRole,
-          openDotaLane: normalized.player?.laneReview?.lane
-        }),
+        roleDetection,
         itemAnalysisAvailable: itemAnalysis.length > 0,
         itemPopularityStatus: itemAnalysis.some((it) => it.popularityStatus !== 'unknown') ? 'available' : 'unavailable',
-        itemTimingScenariosStatus: itemAnalysis.some((it) => it.timingStatus !== 'unknown') ? 'available' : 'unavailable',
-        itemBenchmarkedItemsCount: itemAnalysis.filter((it) => it.popularityStatus !== 'unknown' || it.timingStatus !== 'unknown').length,
-        appliedRuleSet: 'lifestealerCarry',
-        heroOverride: 'lifestealer',
+        itemTimingScenariosStatus: itemAnalysis.some((it) => it.scenarioContext !== undefined) ? 'available' : 'unavailable',
+        itemBenchmarkedItemsCount: itemAnalysis.filter((it) => it.popularityStatus !== 'unknown' || it.timingStatus !== 'unknown' || it.scenarioContext !== undefined).length,
+        appliedRuleSet: 'carryRules',
+        heroOverride: lifestealerCarryOverride.key,
         hasPlayer: Boolean(normalized.player),
         durationSeconds: normalized.durationSeconds,
         didRadiantWin: normalized.didRadiantWin,

@@ -13,6 +13,8 @@ test('localizes every controlled post-match error code', () => {
   assert.equal(getPostMatchErrorCopy('en', 'OPENDOTA_NOT_FOUND'), 'The match was not found or has not been processed by OpenDota yet.');
   assert.equal(getPostMatchErrorCopy('en', 'OPENDOTA_RATE_LIMIT'), 'OpenDota has temporarily limited requests. Please try again later.');
   assert.equal(getPostMatchErrorCopy('en', 'OPENDOTA_UNAVAILABLE'), 'OpenDota is temporarily unavailable. Please try again later.');
+  assert.equal(getPostMatchErrorCopy('ru', 'UNSUPPORTED_POST_MATCH_ROLE'), 'Пока разбор доступен только для игроков, надёжно определённых как carry.');
+  assert.equal(getPostMatchErrorCopy('en', 'UNSUPPORTED_POST_MATCH_ROLE'), 'Match review currently supports only players reliably identified as carry.');
   assert.equal(getPostMatchErrorCopy('en', 'POST_MATCH_FAILED'), 'Could not review the match. Please try again.');
   assert.equal(getPostMatchErrorCopy('en', 'INVALID_MATCH_ID'), 'Enter a valid Match ID.');
 });

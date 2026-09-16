@@ -1,4 +1,4 @@
-export { getItemIconUrlByKey, getItemKeyById, getItemNameById, getItemNameByKey, humanizeItemKey } from '@/lib/dota/data/itemConstants';
+export { getItemIconUrlByKey, getItemKeyById, getItemNameById, getItemNameByKey, humanizeItemKey } from '../data/itemConstants';
 
 export function formatGameTime(seconds: number): string {
   if (typeof seconds !== 'number' || Number.isNaN(seconds)) return 'n/a';
