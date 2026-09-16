@@ -43,15 +43,52 @@ test('HTTP 404 does not invoke the fallback', async () => {
   try { await withFetch('', 404, async () => { await assert.rejects(fetchOpenDotaMatch(126), /match not found/); assert.equal(fallback.calls(), 0); }); } finally { fallback.restore(); }
 });
 
-test('a hanging response body aborts with a controlled timeout', async () => {
-  const original = global.fetch;
-  global.fetch = ((_input, init) => new Promise((_resolve, reject) => {
-    init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
-  })) as typeof fetch;
+test('HTTP 200 with a hanging body aborts and starts fallback within the remaining budget', async () => {
+  const originalFetch = global.fetch;
+  const originalRequest = https.request;
+  let fallbackCalls = 0;
+  let fallbackTimeoutMs: number | undefined;
+  let primarySignalAborted = false;
+
+  global.fetch = (async (_input, init) => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"match_id":'));
+        init?.signal?.addEventListener('abort', () => {
+          primarySignalAborted = true;
+          controller.error(new DOMException('aborted', 'AbortError'));
+        });
+      }
+    });
+    return new Response(body, { status: 200 });
+  }) as typeof fetch;
+  https.request = ((_url: URL, options: { timeout?: number }, callback: (response: EventEmitter & { statusCode: number }) => void) => {
+    fallbackCalls += 1;
+    fallbackTimeoutMs = options.timeout;
+    const request = new EventEmitter() as EventEmitter & { end: () => void; destroy: (error: Error) => void };
+    request.end = () => {
+      const response = new EventEmitter() as EventEmitter & { statusCode: number };
+      response.statusCode = 200;
+      callback(response);
+      queueMicrotask(() => {
+        response.emit('data', Buffer.from('{"match_id":127}'));
+        response.emit('end');
+      });
+    };
+    request.destroy = (error) => request.emit('error', error);
+    return request;
+  }) as unknown as typeof https.request;
+
   try {
-    await assert.rejects(fetchOpenDotaMatch(127, { totalBudgetMs: 20, primaryTimeoutMs: 20 }), /timed out/);
+    const result = await fetchOpenDotaMatch(127, { totalBudgetMs: 80, primaryTimeoutMs: 20 });
+    assert.equal(result.match_id, 127);
+    assert.equal(primarySignalAborted, true);
+    assert.equal(fallbackCalls, 1);
+    assert.ok(fallbackTimeoutMs !== undefined && fallbackTimeoutMs > 0);
+    assert.ok(fallbackTimeoutMs <= 60, 'fallback must receive only the remaining total budget');
   } finally {
-    global.fetch = original;
+    global.fetch = originalFetch;
+    https.request = originalRequest;
   }
 });
 

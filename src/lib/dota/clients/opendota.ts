@@ -12,6 +12,7 @@ const RETRYABLE_NETWORK_ERRORS = [
   'UND_ERR_BODY_TIMEOUT',
   'ETIMEDOUT',
   'EAI_AGAIN',
+  'OpenDota request timed out',
   'OpenDota returned empty response body',
   'OpenDota returned invalid JSON payload'
 ];
@@ -88,7 +89,7 @@ async function requestOpenDotaWithFetch(url: URL, timeoutMs: number): Promise<st
       throw buildOpenDotaError(response.status);
     }
 
-    return response.text();
+    return await response.text();
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('OpenDota request timed out');
