@@ -302,7 +302,12 @@ function buildNormalizedSummary(queryMode: QueryMode, pack: ReturnType<typeof no
         firstAssistEventsPreview: (selected?.assistEvents ?? []).slice(0, 5),
         deathEventsTimeAvailable: pack.deathTimings.length > 0,
         deathTimings: pack.deathTimings,
-        deathsByPhase: pack.deathsByPhase
+        deathsByPhase: pack.deathsByPhase,
+        normalizedMetrics: {
+          death: pack.deathMetrics,
+          fight: pack.fightMetrics
+        },
+        eventCoverage: pack.eventCoverage
       }
     };
   }
