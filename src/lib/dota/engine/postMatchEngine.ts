@@ -1,8 +1,8 @@
 import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMatch';
-import { normalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
+import { tryNormalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
-import { canApplyCarryRules, detectRole } from '@/lib/dota/role/detectRole';
+import { canApplyCarryRulesForSelector, detectRole } from '@/lib/dota/role/detectRole';
 import { UnsupportedPostMatchRoleError } from '@/lib/dota/errors/postMatchError';
 import { lifestealerCarryOverride } from '@/lib/dota/rules/heroOverrides/lifestealer';
 import { runCarryPostMatchRules } from '@/lib/dota/rules/roleRules/carryRules';
@@ -12,8 +12,21 @@ import { getHeroItemTimingScenariosResearch } from '@/lib/dota/data/itemTimingSc
 import type { PostMatchBenchmarkContext, StratzPostMatchData } from '@/lib/dota/types/domain';
 import { evaluateDeathRules } from '@/lib/dota/rules/deathRules';
 import { withTimeout } from '@/lib/dota/async/withTimeout';
+import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
+import type { CarryHeroOverride } from '@/lib/dota/rules/roleRules/carryRules';
 
 const OPTIONAL_SOURCE_TIMEOUT_MS = 4_000;
+
+function genericCarryOverride(heroId: number, heroName: string): CarryHeroOverride {
+  return {
+    key: 'generic-carry', heroId, heroName, position: 'POSITION_1',
+    earlyItemKey: '', timingItemKey: '', getFallbackItemTarget: () => undefined,
+    coreItems: [], suspiciousItems: [],
+    timingItemLateFinding: (time) => `${heroName}: ключевой предмет куплен к ${time}.`,
+    timingItemOnTimeFinding: (time) => `${heroName}: ключевой предмет куплен к ${time}.`,
+    suspiciousItemFinding: (labels) => `${labels}: нет hero-specific оценки для этого героя.`,
+  };
+}
 
 type StratzFetchDebug = {
   attempted: boolean;
@@ -26,7 +39,7 @@ type StratzFetchDebug = {
   error?: string;
 };
 
-async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMatchData; debug: StratzFetchDebug }> {
+async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Promise<{ data?: StratzPostMatchData; debug: StratzFetchDebug }> {
   const token = process.env.STRATZ_API_TOKEN;
   if (!token) return { debug: { attempted: false } };
 
@@ -50,12 +63,16 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
   const payload = queryResult.json;
   if (!payload || typeof payload !== 'object') return { debug };
 
-  const normalized = normalizeStratzMatch(payload);
+  const selection = tryNormalizeStratzMatch(payload, selector);
+  if (!selection.normalized) return { debug: { ...debug, error: `STRATZ player mismatch: ${selection.selectionError}` } };
+  const normalized = selection.normalized;
   return {
     data: {
       deathTimings: normalized.deathTimings,
       deathsByPhase: normalized.deathsByPhase,
       selectedPlayer: {
+        accountId: normalized.normalized.selectedPlayer?.steamAccountId,
+        playerSlot: normalized.normalized.selectedPlayer?.playerSlot,
         heroId: normalized.normalized.selectedPlayer?.heroId,
         role: normalized.normalized.selectedPlayer?.role,
         roleBasic: normalized.normalized.selectedPlayer?.roleBasic,
@@ -71,7 +88,7 @@ async function fetchStratzDeaths(matchId: number): Promise<{ data?: StratzPostMa
   };
 }
 
-export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
+export async function analyzePostMatch(matchId: number, selector: PlayerSelector) {
   let openDotaPayload: Awaited<ReturnType<typeof fetchOpenDotaMatch>>;
 
   try {
@@ -83,7 +100,7 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
 
   let normalized;
   try {
-    normalized = await normalizeOpenDotaMatch(openDotaPayload, hero);
+    normalized = await normalizeOpenDotaMatch(openDotaPayload, selector);
   } catch (error) {
     const parsed = error instanceof Error ? error : new Error(String(error));
     throw new Error(`Post-match normalize stage failed: ${parsed.message}`, { cause: parsed });
@@ -91,7 +108,12 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
 
   const safeStratzDeaths = async () => {
     try {
-      return await withTimeout(fetchStratzDeaths(matchId), OPTIONAL_SOURCE_TIMEOUT_MS, 'STRATZ events');
+      const providerSelector = {
+        accountId: normalized.selectedPlayer.accountId,
+        playerSlot: normalized.selectedPlayer.playerSlot,
+        heroId: normalized.selectedPlayer.heroId
+      };
+      return await withTimeout(fetchStratzDeaths(matchId, providerSelector), OPTIONAL_SOURCE_TIMEOUT_MS, 'STRATZ events');
     } catch (error) {
       return {
         data: undefined,
@@ -105,9 +127,9 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
 
   const [stratzResult, heroBenchmarks, heroAverage, itemTimingScenarios] = await Promise.all([
     safeStratzDeaths(),
-    getHeroBenchmarks(54),
-    getStratzHeroAverage(matchId, 54),
-    getHeroItemTimingScenariosResearch(54)
+    getHeroBenchmarks(normalized.selectedPlayer.heroId),
+    getStratzHeroAverage(matchId, normalized.selectedPlayer.heroId),
+    getHeroItemTimingScenariosResearch(normalized.selectedPlayer.heroId)
   ]);
   const stratz = stratzResult.data;
   const stratzFetch = stratzResult.debug;
@@ -142,10 +164,14 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
   });
   // Carry is the first role rule set. Preserve the previous result when role
   // telemetry is absent; known or ambiguous roles must not be mislabeled as carry.
-  if (!canApplyCarryRules(roleDetection)) {
+  if (!canApplyCarryRulesForSelector(roleDetection, selector)) {
     throw new UnsupportedPostMatchRoleError(roleDetection.role);
   }
-  const analysis = runCarryPostMatchRules(normalized, stratz, benchmarkContext, lifestealerCarryOverride);
+  normalized.selectedPlayer.role = roleDetection.role;
+  const heroOverride = normalized.selectedPlayer.heroId === lifestealerCarryOverride.heroId
+    ? lifestealerCarryOverride
+    : genericCarryOverride(normalized.selectedPlayer.heroId, normalized.selectedPlayer.heroName);
+  const analysis = runCarryPostMatchRules(normalized, stratz, benchmarkContext, heroOverride);
   const itemAnalysis = analysis.itemAnalysis ?? [];
 
   return {
@@ -164,7 +190,8 @@ export async function analyzePostMatch(matchId: number, hero = 'Lifestealer') {
         itemTimingScenariosStatus: itemAnalysis.some((it) => it.scenarioContext !== undefined) ? 'available' : 'unavailable',
         itemBenchmarkedItemsCount: itemAnalysis.filter((it) => it.popularityStatus !== 'unknown' || it.timingStatus !== 'unknown' || it.scenarioContext !== undefined).length,
         appliedRuleSet: 'carryRules',
-        heroOverride: lifestealerCarryOverride.key,
+        heroOverride: heroOverride.key,
+        selectedPlayer: normalized.selectedPlayer,
         hasPlayer: Boolean(normalized.player),
         durationSeconds: normalized.durationSeconds,
         didRadiantWin: normalized.didRadiantWin,

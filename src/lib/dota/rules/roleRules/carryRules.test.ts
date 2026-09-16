@@ -10,6 +10,7 @@ function match(lhAt10?: number): NormalizedOpenDotaMatch {
     matchId: 8781054570,
     didRadiantWin: true,
     durationSeconds: 2400,
+    selectedPlayer: { heroId: 54, heroName: 'Lifestealer' },
     player: {
       heroName: 'Lifestealer',
       isRadiant: true,
@@ -117,6 +118,21 @@ test('generic early item copy uses the override item and arbitrary hero name', (
   assert.equal(analysis.hero, 'Test Carry');
   assert.match(allCopy(analysis), /Boots of Speed/);
   assert.doesNotMatch(allCopy(analysis), /Phase Boots/);
+});
+
+test('generic carry without a hero timing override emits no timing adjustment', () => {
+  const override: CarryHeroOverride = {
+    ...lifestealerCarryOverride,
+    heroId: 1,
+    heroName: 'Anti-Mage',
+    earlyItemKey: '',
+    timingItemKey: '',
+    postTimingAdjustment: undefined
+  };
+
+  const analysis = runCarryPostMatchRules(match(), undefined, {}, override);
+  assert.equal(analysis.nextGameAdjustments.length, 2);
+  assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /ключев.*тайминг/i);
 });
 
 test('lane death risk uses STRATZ then OpenDota and ignores normalized phase fallback', () => {

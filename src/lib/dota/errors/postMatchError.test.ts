@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { toPublicPostMatchError, UnsupportedPostMatchRoleError } from './postMatchError';
+import { PlayerSelectionError } from '../selection/playerSelector';
 
 test('maps known OpenDota failures without exposing the internal chain', () => {
   const cases = [
@@ -25,6 +26,17 @@ test('maps unsupported or ambiguous roles to a controlled response', () => {
   assert.deepEqual(toPublicPostMatchError(new UnsupportedPostMatchRoleError('unknown')), {
     errorCode: 'UNSUPPORTED_POST_MATCH_ROLE',
     error: 'Пока разбор доступен только для игроков, надёжно определённых как carry.',
+    status: 422
+  });
+});
+
+test('maps wrapped player selection failures to a controlled response', () => {
+  const error = new Error('Post-match normalize stage failed', {
+    cause: new PlayerSelectionError('Selected player was not found in OpenDota payload')
+  });
+  assert.deepEqual(toPublicPostMatchError(error), {
+    errorCode: 'INVALID_PLAYER_SELECTOR',
+    error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.',
     status: 422
   });
 });

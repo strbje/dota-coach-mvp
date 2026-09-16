@@ -249,7 +249,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const isOk = stratzResult.ok && errors.length === 0;
 
-    const normalizedPack = parsed?.data ? normalizeStratzMatch(parsed.data) : null;
+    const normalizedPack = parsed?.data ? normalizeStratzMatch(parsed.data, { heroId: 54 }) : null;
     const normalizedSummary = normalizedPack ? buildNormalizedSummary(queryMode, normalizedPack) : null;
 
     return NextResponse.json({

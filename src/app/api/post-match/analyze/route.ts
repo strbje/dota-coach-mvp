@@ -16,7 +16,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await analyzePostMatch(body.matchId, body.hero ?? 'Lifestealer');
+    const selector = body.selector ?? (body.hero === undefined || body.hero === 'Lifestealer' ? { heroId: 54 } : undefined);
+    if (!selector) {
+      return NextResponse.json(
+        { error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.', errorCode: 'INVALID_PLAYER_SELECTOR' },
+        { status: 422 }
+      );
+    }
+    const result = await analyzePostMatch(body.matchId, selector);
     if (!isPostMatchSuccessPayload(result)) {
       throw new Error('Post-match analysis missing from successful result');
     }

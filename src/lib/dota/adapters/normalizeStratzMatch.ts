@@ -15,10 +15,10 @@ import type {
 import { normalizeStratzCoordinates } from '../normalize/stratzCoordinates';
 import { evaluateDeathRules } from '../rules/deathRules';
 import { evaluateFightRules } from '../rules/fightRules';
+import { selectPlayer, type PlayerSelector } from '../selection/playerSelector';
 
 type UnknownRecord = Record<string, unknown>;
 
-const LIFESTEALER_HERO_ID = 54;
 const PREVIEW_LIMIT = 5;
 const MATCH_ROSTER_SIZE = 10;
 const TEAM_ROSTER_SIZE = 5;
@@ -76,17 +76,15 @@ function positionConfidence(deltaSeconds: number | undefined) {
   return 'low' as const;
 }
 
-export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; heroId?: number }) {
+export function normalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
   const match = getStratzMatchPayload(raw);
   const players = asArray<UnknownRecord>(match?.players);
-  const targetAccountId = opts?.accountId;
-  const targetHeroId = opts?.heroId ?? LIFESTEALER_HERO_ID;
-
-  const byAccount = targetAccountId ? players.find((p) => asNumber(p.steamAccountId) === targetAccountId) : undefined;
-  const byHeroId = players.find((p) => asNumber(p.heroId) === targetHeroId);
-  const fallback = players[0];
-  const selected = byAccount ?? byHeroId ?? fallback;
-  const selectedBy = byAccount ? 'accountId' : byHeroId ? 'heroId' : 'fallback';
+  const selected = selectPlayer(players, selector, (player) => ({
+    accountId: asNumber(player.steamAccountId),
+    playerSlot: asNumber(player.playerSlot),
+    heroId: asNumber(player.heroId)
+  }), 'STRATZ');
+  const selectedBy = selector.accountId !== undefined ? 'accountId' : selector.playerSlot !== undefined ? 'playerSlot' : 'heroId';
 
   const selectedStats = (selected?.stats as UnknownRecord | undefined) ?? {};
   const playbackData = (selected?.playbackData as UnknownRecord | undefined) ?? {};
@@ -212,6 +210,7 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
 
   const selectedPlayer: NormalizedStratzPlayer | undefined = selected ? {
     steamAccountId: asNumber(selected.steamAccountId),
+    playerSlot: asNumber(selected.playerSlot),
     heroId: asNumber(selected.heroId),
     isRadiant: selected.isRadiant as boolean | undefined,
     isVictory: selected.isVictory as boolean | undefined,
@@ -295,4 +294,15 @@ export function normalizeStratzMatch(raw: unknown, opts?: { accountId?: number; 
   };
 
   return { normalized, selectedBy, deathsByPhase, deathTimings, positionSamples, deathPositionSamples, deathEventSource, farmPositionSamples, heroAverage, objectivePlaybackSummary, eventPlayers, allPlayerDeaths, eventCoverage, deathMetrics, fightMetrics };
+}
+
+export function tryNormalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
+  try {
+    return { normalized: normalizeStratzMatch(raw, selector), selectionError: undefined };
+  } catch (error) {
+    if (error instanceof Error && error.name === 'PlayerSelectionError') {
+      return { normalized: undefined, selectionError: error.message };
+    }
+    throw error;
+  }
 }

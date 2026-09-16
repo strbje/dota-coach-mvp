@@ -1,5 +1,6 @@
 export type PostMatchErrorCode =
   | 'INVALID_MATCH_ID'
+  | 'INVALID_PLAYER_SELECTOR'
   | 'OPENDOTA_INVALID_RESPONSE'
   | 'OPENDOTA_TIMEOUT'
   | 'OPENDOTA_NOT_FOUND'
@@ -30,10 +31,12 @@ function errorChain(error: unknown): string {
 }
 
 export function toPublicPostMatchError(error: unknown): PublicPostMatchError {
+  if (error instanceof Error && error.name === 'PlayerSelectionError') return { errorCode: 'INVALID_PLAYER_SELECTOR', error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.', status: 422 };
   if (error instanceof UnsupportedPostMatchRoleError) {
     return { errorCode: 'UNSUPPORTED_POST_MATCH_ROLE', error: 'Пока разбор доступен только для игроков, надёжно определённых как carry.', status: 422 };
   }
   const chain = errorChain(error);
+  if (chain.includes('playerselectionerror')) return { errorCode: 'INVALID_PLAYER_SELECTOR', error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.', status: 422 };
   if (chain.includes('invalid json') || chain.includes('empty response body')) return { errorCode: 'OPENDOTA_INVALID_RESPONSE', error: 'OpenDota вернул некорректный ответ. Попробуйте ещё раз через несколько секунд.', status: 502 };
   if (chain.includes('not found') || chain.includes('status 404')) return { errorCode: 'OPENDOTA_NOT_FOUND', error: 'Матч не найден или ещё не обработан OpenDota.', status: 404 };
   if (chain.includes('rate limit') || chain.includes('status 429')) return { errorCode: 'OPENDOTA_RATE_LIMIT', error: 'OpenDota временно ограничил число запросов. Попробуйте немного позже.', status: 429 };

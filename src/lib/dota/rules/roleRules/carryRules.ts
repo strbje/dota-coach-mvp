@@ -20,7 +20,7 @@ export type CarryHeroOverride = {
   timingItemLateFinding: (time: string) => string;
   timingItemOnTimeFinding: (time: string) => string;
   suspiciousItemFinding: (labels: string) => string;
-  postTimingAdjustment: string;
+  postTimingAdjustment?: string;
 };
 
 export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: StratzPostMatchData | undefined, benchmarkContext: PostMatchBenchmarkContext = {}, heroOverride: CarryHeroOverride): PostMatchAnalysis {
@@ -285,7 +285,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       'После 35:00 цель — не умирать перед Roshan/объектами: играй от вижена, buyback и позиции команды.',
       laneLhTarget !== undefined ? `На линии цель — 0 смертей до 10:00 при сохранении не менее ${laneLhTarget} LH.` : 'На линии цель — 0 смертей до 10:00 без потери доступного фарма.',
       heroOverride.postTimingAdjustment
-    ].slice(0, 3),
+    ].filter((adjustment): adjustment is string => Boolean(adjustment)).slice(0, 3),
     finalVerdict: { mainReason: gpm !== undefined && heroDamage !== undefined ? (result === 'win' ? `Победа за счёт темпа экономики и драк: ${Math.round(gpm)} GPM и ${Math.round(heroDamage).toLocaleString('ru-RU')} урона.` : `Поражение при ${Math.round(gpm)} GPM и ${Math.round(heroDamage).toLocaleString('ru-RU')} урона: не хватило стабильной конвертации темпа.`) : `${result === 'win' ? 'Победа' : 'Поражение'}: часть данных об экономике и уроне недоступна, вывод основан на подтверждённых событиях матча.`, biggestRisk, nextMatchFocus: 'После 35:00 играй от вижена и позиции команды: не начинай драку первым, сохраняй buyback и заходи в драку после раскрытия ключевых кнопок врага.' },
     meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75 }
   };

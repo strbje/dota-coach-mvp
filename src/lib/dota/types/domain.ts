@@ -77,6 +77,13 @@ export type NormalizedOpenDotaMatch = {
   matchId: number;
   didRadiantWin: boolean;
   durationSeconds: number;
+  selectedPlayer: {
+    accountId?: number;
+    playerSlot?: number;
+    heroId: number;
+    heroName: string;
+    role?: string;
+  };
   player?: {
     heroName?: string;
     isRadiant?: boolean;
@@ -196,6 +203,8 @@ export type StratzPostMatchData = {
     lateGame: number;
   };
   selectedPlayer?: {
+    accountId?: number;
+    playerSlot?: number;
     heroId?: number;
     role?: string;
     roleBasic?: string;
@@ -348,6 +357,7 @@ export type StratzHeroAverageBenchmark = {
 
 export type NormalizedStratzPlayer = {
   steamAccountId?: number;
+  playerSlot?: number;
   heroId?: number;
   isRadiant?: boolean;
   isVictory?: boolean;
