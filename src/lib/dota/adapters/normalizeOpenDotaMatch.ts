@@ -4,6 +4,7 @@ import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/
 import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
+import { normalizeOptionalNumber } from './normalizeOptionalNumber';
 
 const TRACKED_ITEM_KEYS = new Set([
   'phase_boots', 'armlet', 'desolator', 'basher', 'black_king_bar', 'sange_and_yasha', 'assault', 'abyssal_blade', 'satanic',
@@ -131,12 +132,12 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
     }))
     : undefined;
   const farmProfile = {
-    laneKills: toNumber(playerRaw.lane_kills, 0),
-    neutralKills: toNumber(playerRaw.neutral_kills, 0),
-    ancientKills: toNumber(playerRaw.ancient_kills, 0),
-    heroKills: toNumber(playerRaw.hero_kills, 0),
-    roshanKills: toNumber(playerRaw.roshan_kills, 0),
-    towerKills: toNumber(playerRaw.tower_kills, 0)
+    laneKills: normalizeOptionalNumber(playerRaw.lane_kills),
+    neutralKills: normalizeOptionalNumber(playerRaw.neutral_kills),
+    ancientKills: normalizeOptionalNumber(playerRaw.ancient_kills),
+    heroKills: normalizeOptionalNumber(playerRaw.hero_kills),
+    roshanKills: normalizeOptionalNumber(playerRaw.roshan_kills),
+    towerKills: normalizeOptionalNumber(playerRaw.tower_kills)
   };
 
   const rawGoldReasons = playerRaw && typeof playerRaw.gold_reasons === 'object' && playerRaw.gold_reasons ? playerRaw.gold_reasons as Record<string, unknown> : {};

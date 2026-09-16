@@ -2,7 +2,8 @@ import https from 'node:https';
 import type { OpenDotaMatchResponse } from '../types/providers';
 
 const OPENDOTA_BASE = 'https://api.opendota.com/api';
-const OPENDOTA_TIMEOUT_MS = 60_000;
+const OPENDOTA_TOTAL_BUDGET_MS = 20_000;
+const OPENDOTA_PRIMARY_TIMEOUT_MS = 15_000;
 const RETRYABLE_NETWORK_ERRORS = [
   'terminated',
   'fetch failed',
@@ -68,9 +69,9 @@ function isRetryableNetworkError(error: unknown): boolean {
   return RETRYABLE_NETWORK_ERRORS.some((marker) => haystack.includes(marker.toLowerCase()));
 }
 
-async function requestOpenDotaWithFetch(url: URL): Promise<string> {
+async function requestOpenDotaWithFetch(url: URL, timeoutMs: number): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), OPENDOTA_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -99,13 +100,20 @@ async function requestOpenDotaWithFetch(url: URL): Promise<string> {
   }
 }
 
-function requestOpenDotaWithHttps(url: URL): Promise<string> {
+function requestOpenDotaWithHttps(url: URL, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      callback();
+    };
     const request = https.request(
       url,
       {
         method: 'GET',
-        timeout: OPENDOTA_TIMEOUT_MS,
+        timeout: timeoutMs,
         headers: {
           Accept: 'application/json',
           'User-Agent': 'dota-coach-mvp/0.1 local-dev',
@@ -121,28 +129,31 @@ function requestOpenDotaWithHttps(url: URL): Promise<string> {
         });
 
         response.on('error', (error) => {
-          reject(error);
+          finish(() => reject(error));
         });
 
         response.on('end', () => {
           if (statusCode < 200 || statusCode >= 300) {
-            reject(buildOpenDotaError(statusCode));
+            finish(() => reject(buildOpenDotaError(statusCode)));
             return;
           }
 
-          resolve(Buffer.concat(chunks).toString('utf8'));
+          finish(() => resolve(Buffer.concat(chunks).toString('utf8')));
         });
       }
     );
 
     request.on('timeout', () => {
-      request.destroy(new Error('OpenDota https request timed out after 60s'));
+      request.destroy(new Error('OpenDota https request timed out'));
     });
 
     request.on('error', (error) => {
-      reject(error);
+      finish(() => reject(error));
     });
 
+    const timeoutId = setTimeout(() => {
+      request.destroy(new Error('OpenDota https request timed out'));
+    }, timeoutMs);
     request.end();
   });
 }
@@ -171,7 +182,7 @@ async function fetchOpenDotaJson(path: string): Promise<unknown> {
   const url = new URL(`${OPENDOTA_BASE}${path}`);
   if (key) url.searchParams.set('api_key', key);
 
-  const text = await requestOpenDotaWithFetch(url);
+  const text = await requestOpenDotaWithFetch(url, OPENDOTA_PRIMARY_TIMEOUT_MS);
   return JSON.parse(text);
 }
 
@@ -185,15 +196,20 @@ export async function fetchOpenDotaConstants(resource: string): Promise<Record<s
   }
 }
 
-export async function fetchOpenDotaMatch(matchId: number): Promise<OpenDotaMatchResponse> {
+export async function fetchOpenDotaMatch(
+  matchId: number,
+  timeoutOptions: { totalBudgetMs?: number; primaryTimeoutMs?: number } = {}
+): Promise<OpenDotaMatchResponse> {
   const key = process.env.OPENDOTA_API_KEY;
   const url = new URL(`${OPENDOTA_BASE}/matches/${matchId}`);
   if (key) url.searchParams.set('api_key', key);
 
   const fetchStart = Date.now();
+  const totalBudgetMs = timeoutOptions.totalBudgetMs ?? OPENDOTA_TOTAL_BUDGET_MS;
+  const primaryTimeoutMs = Math.min(timeoutOptions.primaryTimeoutMs ?? OPENDOTA_PRIMARY_TIMEOUT_MS, totalBudgetMs);
 
   try {
-    const text = await requestOpenDotaWithFetch(url);
+    const text = await requestOpenDotaWithFetch(url, primaryTimeoutMs);
 
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[opendota] request succeeded', {
@@ -224,9 +240,13 @@ export async function fetchOpenDotaMatch(matchId: number): Promise<OpenDotaMatch
     }
 
     const fallbackStart = Date.now();
+    const remainingBudgetMs = totalBudgetMs - (fallbackStart - fetchStart);
+    if (remainingBudgetMs <= 0) {
+      throw new Error('OpenDota request timed out');
+    }
 
     try {
-      const text = await requestOpenDotaWithHttps(url);
+      const text = await requestOpenDotaWithHttps(url, remainingBudgetMs);
 
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[opendota] request succeeded', {

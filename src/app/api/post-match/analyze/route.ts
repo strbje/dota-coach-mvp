@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { analyzePostMatch } from '@/lib/dota/engine/postMatchEngine';
 import type { PostMatchAnalyzeRequest } from '@/lib/dota/types/api';
 import { toPublicPostMatchError } from '@/lib/dota/errors/postMatchError';
+import { isPostMatchSuccessPayload } from '@/lib/dota/validation/postMatchResponse';
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,9 @@ export async function POST(request: Request) {
     }
 
     const result = await analyzePostMatch(body.matchId, body.hero ?? 'Lifestealer');
+    if (!isPostMatchSuccessPayload(result)) {
+      throw new Error('Post-match analysis missing from successful result');
+    }
     return NextResponse.json(result);
   } catch (error) {
     console.error('[post-match] analysis failed', error);
