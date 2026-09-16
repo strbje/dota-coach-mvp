@@ -1,3 +1,5 @@
+import type { PlayerSelector } from '../selection/playerSelector';
+
 export type RoleDetectionInput = {
   stratzRole?: string;
   stratzRoleBasic?: string;
@@ -64,4 +66,12 @@ export function detectRole(input: RoleDetectionInput): RoleDetectionResult {
 
 export function canApplyCarryRules(result: RoleDetectionResult): boolean {
   return result.role === 'carry' || (result.role === 'unknown' && result.fallbackKind === 'missing-signals');
+}
+
+export function canApplyCarryRulesForSelector(result: RoleDetectionResult, selector: PlayerSelector): boolean {
+  const legacyLifestealer = selector.heroId === 54
+    && selector.accountId === undefined
+    && selector.playerSlot === undefined;
+  if (result.role === 'carry') return result.source !== 'opendota' || legacyLifestealer;
+  return legacyLifestealer && canApplyCarryRules(result);
 }

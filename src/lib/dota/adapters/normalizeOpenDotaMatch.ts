@@ -5,6 +5,8 @@ import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
 import { normalizeOptionalNumber } from './normalizeOptionalNumber';
+import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
+import { getOpenDotaSelectedPlayerMetadata, selectOpenDotaPlayer } from './selectOpenDotaPlayer';
 
 const TRACKED_ITEM_KEYS = new Set([
   'phase_boots', 'armlet', 'desolator', 'basher', 'black_king_bar', 'sange_and_yasha', 'assault', 'abyssal_blade', 'satanic',
@@ -20,13 +22,13 @@ function initPhaseCounts() { return { laning: 0, earlyMid: 0, midGame: 0, lateGa
 type EconomyByPhase = NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase']>;
 type EconomyPhaseValue = EconomyByPhase[MatchPhase];
 
-
-export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, heroName = 'Lifestealer'): Promise<NormalizedOpenDotaMatch> {
+export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, selector: PlayerSelector): Promise<NormalizedOpenDotaMatch> {
   await ensureOpenDotaConstantsLoaded();
   const goldReasonConstants = await getGoldReasonConstants();
   const players = Array.isArray(payload.players) ? payload.players : [];
-  const playerRaw = players.find((p) => toNumber((p as Record<string, unknown>).hero_id, -1) === 54) as Record<string, unknown> | undefined;
-  if (!playerRaw) throw new Error('Target hero/player not found in OpenDota payload');
+  const playerRaw = selectOpenDotaPlayer(players, selector);
+  const selectedPlayer = getOpenDotaSelectedPlayerMetadata(playerRaw);
+  const heroName = selectedPlayer.heroName;
 
   const durationSeconds = toNumber(payload.duration);
   const durationMinutes = durationSeconds > 0 ? durationSeconds / 60 : 0;
@@ -179,7 +181,8 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, her
   const teamKillsRaw = payload[teamKey as keyof OpenDotaMatchResponse];
   const teamKills = typeof teamKillsRaw === 'number' && teamKillsRaw > 0 ? teamKillsRaw : null;
 
-  return { matchId: toNumber(payload.match_id), didRadiantWin: toBoolean(payload.radiant_win), durationSeconds, player: {
+  return { matchId: toNumber(payload.match_id), didRadiantWin: toBoolean(payload.radiant_win), durationSeconds,
+    selectedPlayer, player: {
     heroName, isRadiant: toBoolean(playerRaw.isRadiant), durationMinutes, kills, deaths, assists, lastHits,
     lastHitsPerMin: durationMinutes > 0 ? lastHits / durationMinutes : 0, heroDamage, heroDamagePerMin: durationMinutes > 0 ? heroDamage / durationMinutes : 0, towerDamage,
     gpm: toNumber(playerRaw.gold_per_min), xpm: toNumber(playerRaw.xp_per_min), killParticipation: teamKills ? (kills + assists) / teamKills : undefined,

@@ -36,6 +36,7 @@ export function getUiCopy(locale: Locale) {
 const postMatchErrors = {
   ru: {
     INVALID_MATCH_ID: 'Введите корректный Match ID.',
+    INVALID_PLAYER_SELECTOR: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.',
     OPENDOTA_INVALID_RESPONSE: 'OpenDota вернул некорректный ответ. Попробуйте ещё раз через несколько секунд.',
     OPENDOTA_TIMEOUT: 'OpenDota сейчас отвечает слишком долго. Попробуйте ещё раз.',
     OPENDOTA_NOT_FOUND: 'Матч не найден или ещё не обработан OpenDota.',
@@ -46,6 +47,7 @@ const postMatchErrors = {
   },
   en: {
     INVALID_MATCH_ID: 'Enter a valid Match ID.',
+    INVALID_PLAYER_SELECTOR: 'We could not identify the selected player unambiguously. Please select the player again.',
     OPENDOTA_INVALID_RESPONSE: 'OpenDota returned an invalid response. Please try again in a few seconds.',
     OPENDOTA_TIMEOUT: 'OpenDota is taking too long to respond. Please try again.',
     OPENDOTA_NOT_FOUND: 'The match was not found or has not been processed by OpenDota yet.',
