@@ -1,12 +1,14 @@
 import { formatGameTime, getItemIconUrlByKey, getItemNameById, getItemNameByKey } from '@/lib/dota/constants/items';
-import { ensureOpenDotaConstantsLoaded, getGoldReasonConstants, type GoldReasonGroup } from '@/lib/dota/providers/opendotaConstantsProvider';
-import { getMatchPhase, getPhaseLabel, type MatchPhase } from '@/lib/dota/rules/postMatch/phases';
+import { ensureOpenDotaConstantsLoaded, getGoldReasonConstants } from '@/lib/dota/providers/opendotaConstantsProvider';
+import { normalizeGoldReasons } from '@/lib/dota/normalize/goldReasons';
+import { getMatchPhase, getPhaseLabel } from '@/lib/dota/rules/postMatch/phases';
 import { normalizeObjectiveType } from '@/lib/dota/rules/postMatch/objectives';
 import type { NormalizedOpenDotaMatch } from '@/lib/dota/types/domain';
 import type { OpenDotaMatchResponse } from '@/lib/dota/types/providers';
 import { normalizeOptionalNumber } from './normalizeOptionalNumber';
 import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
 import { getOpenDotaSelectedPlayerMetadata, selectOpenDotaPlayer } from './selectOpenDotaPlayer';
+import { normalizeEconomyTimeline, normalizeLaneEconomyAt10 } from '@/lib/dota/normalize/economyByPhase';
 
 const TRACKED_ITEM_KEYS = new Set([
   'phase_boots', 'armlet', 'desolator', 'basher', 'black_king_bar', 'sange_and_yasha', 'assault', 'abyssal_blade', 'satanic',
@@ -20,8 +22,6 @@ function initPhaseCounts() { return { laning: 0, earlyMid: 0, midGame: 0, lateGa
 
 
 type EconomyByPhase = NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase']>;
-type EconomyPhaseValue = EconomyByPhase[MatchPhase];
-
 export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, selector: PlayerSelector): Promise<NormalizedOpenDotaMatch> {
   await ensureOpenDotaConstantsLoaded();
   const goldReasonConstants = await getGoldReasonConstants();
@@ -97,42 +97,14 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
 
   const laneEfficiency = typeof playerRaw.lane_efficiency === 'number' ? toNumber(playerRaw.lane_efficiency) : undefined;
   const laneEfficiencyPct = typeof playerRaw.lane_efficiency_pct === 'number' ? toNumber(playerRaw.lane_efficiency_pct) : undefined;
-  const lhAt10 = lhT && lhT.length ? lhT[Math.min(10, lhT.length - 1)] : undefined;
-  const goldAt10 = goldT && goldT.length ? goldT[Math.min(10, goldT.length - 1)] : undefined;
+  const { lhAt10, goldAt10 } = normalizeLaneEconomyAt10(goldT, lhT, durationSeconds);
   const deathsBefore10 = deathTimings.length ? deathTimings.filter((d) => d.timeSeconds <= 600).length : undefined;
   const laneSource = laneEfficiencyPct !== undefined || (lhAt10 !== undefined && goldAt10 !== undefined) ? 'opendota' : (laneEfficiency !== undefined || lhAt10 !== undefined || goldAt10 !== undefined || deathsBefore10 !== undefined ? 'partial' : 'unavailable');
-  function buildEconomyPhase(phase: MatchPhase, start: number, end: number | null): EconomyPhaseValue {
-    const startIdx = Math.min(start, goldT!.length - 1);
-    const endMinute = end ?? Math.max(start + 1, Math.floor(durationSeconds / 60));
-    const endIdx = Math.min(endMinute, goldT!.length - 1);
-    const goldStart = goldT![startIdx]; const goldEnd = goldT![endIdx]; const lhStart = lhT![startIdx]; const lhEnd = lhT![endIdx];
-    const xpStart = xpT![startIdx]; const xpEnd = xpT![endIdx];
-    const duration = Math.max(1, endIdx - startIdx);
-
-    return {
-      startMinute: startIdx, endMinute: endIdx, durationMinutes: duration,
-      goldStart, goldEnd, goldDelta: goldEnd - goldStart, goldPerMinuteInPhase: (goldEnd - goldStart) / duration,
-      lhStart, lhEnd, lhDelta: lhEnd - lhStart, lhPerMinuteInPhase: (lhEnd - lhStart) / duration,
-      xpStart, xpEnd, xpDelta: xpEnd - xpStart, xpPerMinuteInPhase: (xpEnd - xpStart) / duration,
-      deaths: deathsByPhase?.[phase] ?? undefined
-    };
-  }
-
-  const economyByPhase: EconomyByPhase | undefined = economyByPhaseSource === 'gold_t/lh_t'
-    ? {
-      laning: buildEconomyPhase('laning', 0, 10),
-      earlyMid: buildEconomyPhase('earlyMid', 10, 20),
-      midGame: buildEconomyPhase('midGame', 20, 35),
-      lateGame: buildEconomyPhase('lateGame', 35, null)
-    }
+  const economyTimeline = economyByPhaseSource === 'gold_t/lh_t'
+    ? normalizeEconomyTimeline(goldT!, lhT!, xpT!, durationSeconds, deathsByPhase)
     : undefined;
-  const economyCheckpoints = economyByPhaseSource === 'gold_t/lh_t'
-    ? [10, 20, 35].map((minute) => ({
-      minute,
-      cs: lhT![Math.min(minute, lhT!.length - 1)],
-      totalGold: goldT![Math.min(minute, goldT!.length - 1)]
-    }))
-    : undefined;
+  const economyByPhase: EconomyByPhase | undefined = economyTimeline?.economyByPhase;
+  const economyCheckpoints = economyTimeline?.checkpoints;
   const farmProfile = {
     laneKills: normalizeOptionalNumber(playerRaw.lane_kills),
     neutralKills: normalizeOptionalNumber(playerRaw.neutral_kills),
@@ -143,36 +115,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
   };
 
   const rawGoldReasons = playerRaw && typeof playerRaw.gold_reasons === 'object' && playerRaw.gold_reasons ? playerRaw.gold_reasons as Record<string, unknown> : {};
-  const decodedGoldReasons = Object.entries(rawGoldReasons)
-    .map(([key, rawAmount]) => {
-      const amount = toNumber(rawAmount, 0);
-      const constant = goldReasonConstants[key];
-      return {
-        key,
-        amount,
-        label: constant?.label ?? `unknown_${key}`,
-        group: constant?.group ?? 'unknown' as GoldReasonGroup,
-        known: Boolean(constant)
-      };
-    })
-    .filter((x) => x.amount !== 0);
-  const groupedGold = decodedGoldReasons.reduce<Record<string, number>>((acc, entry) => {
-    const groupKey = entry.group;
-    acc[groupKey] = (acc[groupKey] ?? 0) + entry.amount;
-    return acc;
-  }, {});
-  const constantsAvailable = decodedGoldReasons.some((x) => x.known);
-  const unknownKeys = decodedGoldReasons.filter((x) => !x.known).map((x) => x.key);
-  const unknownAmount = decodedGoldReasons.filter((x) => !x.known).reduce((sum, x) => sum + x.amount, 0);
-  const totalPositiveGold = decodedGoldReasons.filter((x) => x.amount > 0).reduce((sum, x) => sum + x.amount, 0);
-  const totalNegativeGold = decodedGoldReasons.filter((x) => x.amount < 0).reduce((sum, x) => sum + Math.abs(x.amount), 0);
-
-  const groupLabels: Record<string, string> = {
-    creeps: 'Лейн-крипы', neutral: 'Нейтралы', heroes: 'Герои', buildings: 'Объекты', roshan: 'Рошан', courier: 'Курьеры', starting: 'Стартовое золото', purchase: 'Покупки/потери', other: 'Другое', unknown: 'Другое / нераспознано'
-  };
-  const productGroups = (Object.entries(groupedGold)
-    .filter(([group, amount]) => amount !== 0 && group !== 'unknown')
-    .map(([group, amount]) => ({ group, label: groupLabels[group] ?? 'Другое', amount })));
+  const goldReasons = normalizeGoldReasons(rawGoldReasons, goldReasonConstants);
 
   const rawItemIds = [0, 1, 2, 3, 4, 5].map((slot) => toNumber(playerRaw[`item_${slot}`]));
   const unknownItemIds = rawItemIds.filter((id) => id > 0 && !getItemNameById(id));
@@ -198,16 +141,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
     itemObjectiveWindows,
     economyByPhaseSource,
     economyByPhase, economyCheckpoints, farmProfile,
-    goldReasons: {
-      constantsAvailable,
-      totalPositiveGold,
-      totalNegativeGold,
-      groups: productGroups,
-      unknownAmount,
-      unknownKeys,
-      decoded: decodedGoldReasons,
-      grouped: groupedGold
-    },
+    goldReasons,
     laneReview: { lane: typeof playerRaw.lane === 'number' ? toNumber(playerRaw.lane) : undefined, laneRole: typeof playerRaw.lane_role === 'number' ? toNumber(playerRaw.lane_role) : undefined, laneEfficiency, laneEfficiencyPct, lhAt10, goldAt10, deathsBefore10, source: laneSource }
   }};
 }

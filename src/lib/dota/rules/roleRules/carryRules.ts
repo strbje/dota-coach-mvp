@@ -131,8 +131,6 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const killsPerMin = durationMinutes !== undefined && durationMinutes > 0 && p?.kills !== undefined ? p.kills / durationMinutes : undefined;
   const kpmBench = killsPerMin === undefined ? unavailableBenchmark : getPercentileForValue(benchmarkMetrics.kills_per_min, killsPerMin);
 
-  const stratzAvg = benchmarkContext.heroAverage;
-  const atMinute = (minute: number) => stratzAvg?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position));
   const actualAtMinute = (minute: number) => p?.economyCheckpoints?.find((sample) => sample.minute === minute);
   const benchmarkScore = (comparison: ReturnType<typeof getPercentileForValue>): number | undefined => {
     if (comparison.lowerPercentile !== undefined) return comparison.lowerPercentile;
@@ -166,13 +164,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const laneFindings: AnalysisFinding[] = [];
   if (lanePct !== undefined) laneFindings.push({ text: `${Math.round(lanePct)}% эффективности линии.`, evidence: ['по данным линии OpenDota'], severity: 'info' });
   if (p?.laneReview?.lhAt10 !== undefined) {
-    const avg10 = atMinute(10)?.cs;
-    if (avg10 !== undefined) {
-      const delta = p.laneReview.lhAt10 - avg10;
-      const comparison = Math.abs(delta) < 1 ? 'примерно на уровне' : delta > 0 ? 'выше' : 'ниже';
-      laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00 — ${comparison} среднего ориентира STRATZ для ${heroOverride.heroName} Position 1: ${fmt(avg10, 1)}.`, evidence: ['ориентир, а не абсолютный рейтинг'], severity: delta >= 0 ? 'good' : 'warning' });
-    }
-    else laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00.`, evidence: [], severity: 'info' });
+    laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00.`, evidence: [], severity: 'info' });
   }
   if (laneDeaths >= 2) laneFindings.push({ text: `${laneDeaths} смерти до 10:00 сильно снижают оценку линии.`, evidence: [], severity: 'warning' });
   if (laneDeaths > 0) {
@@ -223,16 +215,32 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   ];
   if (p?.economyByPhaseSource === 'gold_t/lh_t' && p.economyByPhase) {
     const phaseLabels: Record<MatchPhase, string> = { laning: '0–10 мин', earlyMid: '10–20 мин', midGame: '20–35 мин', lateGame: 'после 35 мин' };
-    const best = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined).sort((a, b) => b[1].lhPerMinuteInPhase! - a[1].lhPerMinuteInPhase!)[0];
-    if (best) mapFindings.push({ text: `Лучший отрезок фарма: ${phaseLabels[best[0]]}, ${fmt(best[1].lhPerMinuteInPhase!)} LH/мин.`, evidence: [], severity: 'info' });
-    const lateLh = p.economyByPhase.lateGame?.lhPerMinuteInPhase;
-    if (lateLh !== undefined && deathsByPhase?.lateGame !== undefined) mapFindings.push({ text: `Лейт: ${fmt(lateLh)} LH/мин, но высокий темп экономики не компенсирует ${deathsByPhase.lateGame} смертей после 35:00.`, evidence: [], severity: deathsByPhase.lateGame >= 3 ? 'warning' : 'info' });
+    const phases = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined).sort((a, b) => b[1].lhPerMinuteInPhase! - a[1].lhPerMinuteInPhase!);
+    const best = phases[0];
+    const worst = phases.at(-1);
+    if (phases.length >= 2 && best && worst) mapFindings.unshift({ text: `Лучший темп фарма — ${phaseLabels[best[0]]} (${fmt(best[1].lhPerMinuteInPhase!)} LH/мин), худший — ${phaseLabels[worst[0]]} (${fmt(worst[1].lhPerMinuteInPhase!)} LH/мин).`, evidence: ['темп по фазам'], severity: 'info' });
+    const phaseOrder: MatchPhase[] = ['laning', 'earlyMid', 'midGame', 'lateGame'];
+    const phaseWithMostDeaths = deathsByPhase && (Object.entries(deathsByPhase) as Array<[MatchPhase, number]>).sort((a, b) => b[1] - a[1])[0];
+    if (phaseWithMostDeaths?.[1]) {
+      const phaseFarm = p.economyByPhase[phaseWithMostDeaths[0]]?.lhPerMinuteInPhase;
+      const nextPhase = phaseOrder.slice(phaseOrder.indexOf(phaseWithMostDeaths[0]) + 1).find((phase) => p.economyByPhase?.[phase]?.lhPerMinuteInPhase !== undefined);
+      const nextFarm = nextPhase ? p.economyByPhase[nextPhase]?.lhPerMinuteInPhase : undefined;
+      if (phaseFarm !== undefined && nextFarm !== undefined) {
+        const direction = nextFarm > phaseFarm ? 'вырос' : nextFarm < phaseFarm ? 'снизился' : 'не изменился';
+        mapFindings.unshift({ text: `В отрезке ${phaseLabels[phaseWithMostDeaths[0]]} было ${phaseWithMostDeaths[1]} смерт. После него темп фарма ${direction} с ${fmt(phaseFarm)} до ${fmt(nextFarm)} LH/мин.`, evidence: ['смерти и темп по фазам'], severity: nextFarm < phaseFarm ? 'warning' : 'info' });
+      }
+    }
   } else mapFindings.push({ text: 'Фазовый темп экономики недоступен: OpenDota не вернул минутные срезы фарма для этого матча.', evidence: ['нет минутных срезов фарма'], severity: 'info' });
-  const csAt10Delta = (actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10) !== undefined && atMinute(10)?.cs !== undefined
-    ? (actualAtMinute(10)?.cs ?? p!.laneReview!.lhAt10!) - atMinute(10)!.cs!
-    : undefined;
-  const laneScore = score(60, csAt10Delta === undefined ? 0 : Math.max(-10, Math.min(10, csAt10Delta)));
-  const laneScoreWithEfficiency = score(laneScore, lanePct === undefined ? 0 : lanePct >= 70 ? 8 : lanePct >= 60 ? 2 : -4);
+  if (p?.goldReasons?.breakdownComplete) {
+    const sourceGroups = new Set(['creeps', 'neutral', 'heroes', 'buildings', 'roshan', 'courier']);
+    const dominant = p.goldReasons.groups.filter((entry) => entry.amount > 0 && sourceGroups.has(entry.group)).sort((a, b) => b.amount - a.amount)[0];
+    if (dominant) mapFindings.unshift({ text: `Главный подтверждённый источник экономики — ${dominant.label.toLowerCase()}: ${Math.round(dominant.amount).toLocaleString('ru-RU')} золота.`, evidence: ['разбивка источников экономики'], severity: 'info' });
+  } else if (p?.farmProfile) {
+    const countSources: Array<[string, number | undefined]> = [['лейн-крипы', p.farmProfile.laneKills], ['нейтралы', p.farmProfile.neutralKills], ['древние', p.farmProfile.ancientKills]];
+    const dominant = countSources.filter((entry): entry is [string, number] => entry[1] !== undefined).sort((a, b) => b[1] - a[1])[0];
+    if (dominant) mapFindings.unshift({ text: `По резервному профилю чаще всего игрок добивал категорию «${dominant[0]}» (${dominant[1]}). Это счётчик событий, не сумма золота.`, evidence: ['профиль добиваний'], severity: 'info' });
+  }
+  const laneScoreWithEfficiency = score(60, lanePct === undefined ? 0 : lanePct >= 70 ? 8 : lanePct >= 60 ? 2 : -4);
   const laneFinalScore = score(laneScoreWithEfficiency, -(laneDeaths * 6));
   const itemsScore = suspiciousItems.length > 0
     ? 58
@@ -262,10 +270,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       ? { actual, percentileRange: comparison.percentileRange, lowerPercentile: comparison.lowerPercentile, upperPercentile: comparison.upperPercentile, label: comparison.label }
       : undefined;
   const actualLhAt10 = actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10;
-  const averageLhAt10 = atMinute(10)?.cs;
-  const laneLhTarget = actualLhAt10 === undefined && averageLhAt10 === undefined
-    ? undefined
-    : Math.round(Math.max(actualLhAt10 ?? -Infinity, averageLhAt10 ?? -Infinity));
+  const laneLhTarget = actualLhAt10 === undefined ? undefined : Math.round(actualLhAt10);
   const knownLateDeaths = deathsByPhase?.lateGame ?? (deathTimings !== undefined ? lateDeathsAfter35 : undefined);
   const biggestRisk = deaths === undefined && deathsByPhase === undefined && deathTimings === undefined
     ? 'Недостаточно данных о смертях, чтобы надёжно оценить риск в поздней игре.'
@@ -277,7 +282,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
         ? `Главный риск — поздние смерти core-героя: подтверждено ${knownLateDeaths} после 35:00. В лейте такие смерти дают сопернику окна на Roshan, buyback pressure и строения.`
         : `${deaths} смертей всего, но данных по фазам недостаточно для оценки риска в поздней игре.`;
 
-  return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: { source: 'stratz', methodologyStatus: 'research', selectedPosition: stratzAvg?.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = atMinute(minute)?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) }, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
+  return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz,
     grades: { lane: { score: laneFinalScore, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : score(60, gpm === undefined ? 0 : gpm >= 650 ? 10 : -5), summary: mapSummary, findings: mapFindings.slice(0, 3) } },
     scoreBreakdown: { fights: { baseBenchmarkScore: fightBaseBenchmarkScore, deathRiskAdjustment, finalScore: fightScore } },
     topMistakes: safeTopMistakes,

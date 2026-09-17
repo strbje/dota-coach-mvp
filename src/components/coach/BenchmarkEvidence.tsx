@@ -17,12 +17,11 @@ function formatValue(value: number, digits = 0) {
 
 export function BenchmarkEvidence({
   benchmarkSummary,
-  heroAverageComparison
-}: Pick<PostMatchAnalysis, 'benchmarkSummary' | 'heroAverageComparison'>) {
+  hero
+}: Pick<PostMatchAnalysis, 'benchmarkSummary' | 'hero'>) {
   const metrics = Object.entries(benchmarkSummary?.metrics ?? {}).filter(([, metric]) => metric && metric.percentileRange !== 'n/a');
-  const checkpoints = heroAverageComparison?.checkpoints.filter((checkpoint) => checkpoint.actualCs !== undefined && checkpoint.averageCs !== undefined) ?? [];
 
-  if (!metrics.length && !checkpoints.length) return null;
+  if (!metrics.length) return null;
 
   return <Panel>
     <h3>Ориентиры по герою</h3>
@@ -31,16 +30,7 @@ export function BenchmarkEvidence({
       const copy = METRIC_LABELS[key] ?? { name: key, suffix: '' };
       const percentileCopy = formatPercentileRange(metric.lowerPercentile, metric.upperPercentile);
       if (!percentileCopy) return null;
-      return <li key={key}><strong>{formatValue(metric.actual, copy.digits)} {copy.name}</strong> — {percentileCopy} для Lifestealer. {metric.label}.</li>;
+      return <li key={key}><strong>{formatValue(metric.actual, copy.digits)} {copy.name}</strong> — {percentileCopy} для {hero}. {metric.label}.</li>;
     })}</ul> : null}
-    {checkpoints.length ? <>
-      <h4 className="subsection">Темп фарма по ходу матча</h4>
-      <ul>{checkpoints.map((checkpoint) => {
-        const delta = checkpoint.deltaCs ?? 0;
-        const comparison = Math.abs(delta) < 1 ? 'на уровне' : delta > 0 ? 'выше' : 'ниже';
-        return <li key={checkpoint.minute}><strong>{formatValue(checkpoint.actualCs!)} LH к {checkpoint.minute}:00</strong> — {comparison} среднего ориентира STRATZ для Lifestealer Position 1: {formatValue(checkpoint.averageCs!, 1)}.</li>;
-      })}</ul>
-      <p className="muted supporting-copy">Средние значения STRATZ — ориентир для сравнения темпа, а не абсолютный рейтинг игры.</p>
-    </> : null}
   </Panel>;
 }

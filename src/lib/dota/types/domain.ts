@@ -164,26 +164,27 @@ export type NormalizedOpenDotaMatch = {
       source: 'opendota' | 'partial' | 'unavailable';
     };
     economyByPhaseSource?: 'gold_t/lh_t' | 'unavailable';
-    economyByPhase?: Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
+    economyByPhase?: Partial<Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
       startMinute: number; endMinute: number; durationMinutes: number;
       goldStart?: number; goldEnd?: number; goldDelta?: number; goldPerMinuteInPhase?: number;
       lhStart?: number; lhEnd?: number; lhDelta?: number; lhPerMinuteInPhase?: number;
       xpStart?: number; xpEnd?: number; xpDelta?: number; xpPerMinuteInPhase?: number;
       deaths?: number;
-    }>;
+    }>>;
     economyCheckpoints?: Array<{ minute: number; cs?: number; totalGold?: number }>;
     farmProfile?: {
       laneKills?: number; neutralKills?: number; ancientKills?: number; heroKills?: number; roshanKills?: number; towerKills?: number;
     };
     goldReasons?: {
       constantsAvailable: boolean;
+      breakdownComplete: boolean;
       totalPositiveGold: number;
       totalNegativeGold: number;
       groups: Array<{ group: string; label: string; amount: number }>;
       unknownAmount: number;
       unknownKeys: string[];
       decoded: Array<{ key: string; label: string; amount: number; group: string; known: boolean }>;
-      grouped: Record<string, number>;
+      grouped: Array<{ group: string; label: string; amount: number }>;
     };
   };
 };
@@ -333,13 +334,8 @@ export type StratzFarmPositionSample = {
 } & Partial<import('../normalize/stratzCoordinates').StratzCoordinates>;
 
 export type StratzFarmDistribution = {
-  laneFarm?: number;
-  neutralFarm?: number;
-  ancientFarm?: number;
-  heroFarm?: number;
-  objectiveFarm?: number;
-  unknown?: number;
-  rawPreview?: Record<string, unknown>;
+  methodologyStatus: 'research';
+  rawPreview: Record<string, unknown>;
 };
 
 export type StratzHeroAverageBenchmark = {
