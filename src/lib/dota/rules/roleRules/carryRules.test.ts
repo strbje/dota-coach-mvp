@@ -32,6 +32,26 @@ function allCopy(analysis: ReturnType<typeof runCarryPostMatchRules>): string {
   ].filter(Boolean).join(' ');
 }
 
+function withPhaseEconomy(input: NormalizedOpenDotaMatch, rates: [number, number, number, number], deaths: [number, number, number, number]) {
+  const phaseKeys = ['laning', 'earlyMid', 'midGame', 'lateGame'] as const;
+  input.player!.economyByPhaseSource = 'gold_t/lh_t';
+  input.player!.economyByPhase = Object.fromEntries(phaseKeys.map((phase, index) => [phase, {
+    startMinute: index === 0 ? 0 : index === 1 ? 10 : index === 2 ? 20 : 35,
+    endMinute: index === 0 ? 10 : index === 1 ? 20 : index === 2 ? 35 : 40,
+    durationMinutes: index === 2 ? 15 : index === 3 ? 5 : 10,
+    lhPerMinuteInPhase: rates[index]
+  }])) as NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>['economyByPhase']>;
+  input.player!.deathsByPhase = Object.fromEntries(phaseKeys.map((phase, index) => [phase, deaths[index]])) as NonNullable<NonNullable<NormalizedOpenDotaMatch['player']>['deathsByPhase']>;
+}
+
+function withAvailablePhaseEconomy(input: NormalizedOpenDotaMatch, rates: Partial<Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', number>>, deaths: [number, number, number, number]) {
+  withPhaseEconomy(input, [0, 0, 0, 0], deaths);
+  for (const phase of ['laning', 'earlyMid', 'midGame', 'lateGame'] as const) {
+    if (rates[phase] === undefined) delete input.player!.economyByPhase![phase];
+    else input.player!.economyByPhase![phase]!.lhPerMinuteInPhase = rates[phase];
+  }
+}
+
 test('does not present absent lane metrics as zero', () => {
   const input = match();
   delete input.player!.deaths;
@@ -158,6 +178,83 @@ test('LH target never drops below the achieved checkpoint', () => {
   };
   const analysis = runCarryPostMatchRules(match(62), undefined, context, lifestealerCarryOverride);
   assert.ok(analysis.nextGameAdjustments.some((item) => item.includes('не менее 62 LH')));
+});
+
+test('research-only heroAverage does not affect product lane score or copy', () => {
+  const baseline = runCarryPostMatchRules(match(42), undefined, {}, lifestealerCarryOverride);
+  const withResearch = runCarryPostMatchRules(match(42), undefined, {
+    heroAverage: { available: true, selectedPosition: 'POSITION_1', samples: [{ time: 10, position: 'POSITION_1', cs: 90 }] }
+  }, lifestealerCarryOverride);
+
+  assert.equal(withResearch.grades.lane.score, baseline.grades.lane.score);
+  assert.deepEqual(withResearch.grades.lane.findings, baseline.grades.lane.findings);
+  assert.deepEqual(withResearch.nextGameAdjustments, baseline.nextGameAdjustments);
+  assert.doesNotMatch(allCopy(withResearch), /STRATZ|среднего ориентира/);
+  assert.equal(withResearch.heroAverageComparison?.methodologyStatus, 'research');
+});
+
+test('reports a factual farm-tempo decline after the death-heavy phase', () => {
+  const input = match();
+  withPhaseEconomy(input, [5, 7.1, 4.2, 6], [0, 3, 1, 0]);
+  const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
+  const copy = analysis.grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.match(copy, /10–20 мин было 3 смерт.*снизился с 7.1 до 4.2 LH\/мин/);
+  assert.doesNotMatch(copy, /восстанов|компенсировал/);
+});
+
+test('reports a factual farm-tempo increase in the phase after deaths', () => {
+  const input = match();
+  withPhaseEconomy(input, [5, 4.2, 7.1, 6], [0, 3, 1, 0]);
+  const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
+  assert.match(analysis.grades.map.findings.map((finding) => finding.text).join(' '), /10–20 мин было 3 смерт.*вырос с 4.2 до 7.1 LH\/мин/);
+});
+
+test('does not make a recovery claim when late game is death-heavy', () => {
+  const input = match();
+  withPhaseEconomy(input, [5, 6, 7, 8], [0, 0, 1, 3]);
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.doesNotMatch(copy, /После него|восстанов|компенсировал/);
+});
+
+test('a short match does not invent a zero-LH late phase in best/worst copy', () => {
+  const input = match();
+  withAvailablePhaseEconomy(input, { laning: 5, earlyMid: 6, midGame: 4 }, [0, 0, 0, 0]);
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.match(copy, /Лучший темп фарма/);
+  assert.doesNotMatch(copy, /после 35 мин/);
+});
+
+test('the last real death-heavy phase has no after-phase comparison', () => {
+  const input = match();
+  withAvailablePhaseEconomy(input, { laning: 5, earlyMid: 6, midGame: 4 }, [0, 0, 3, 0]);
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.doesNotMatch(copy, /После него/);
+});
+
+test('uses the kill-count profile when gold reasons are incomplete', () => {
+  const input = match();
+  input.player!.farmProfile = { laneKills: 80, neutralKills: 120, ancientKills: 20 };
+  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: false, totalPositiveGold: 1000, totalNegativeGold: 0, groups: [{ group: 'creeps', label: 'Лейн-крипы', amount: 1000 }], unknownAmount: 100, unknownKeys: ['21'], decoded: [], grouped: [] };
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.match(copy, /резервному профилю.*нейтралы.*120.*не сумма золота/);
+  assert.doesNotMatch(copy, /Главный подтверждённый источник/);
+});
+
+test('uses the dominant confirmed gold source when the breakdown is complete', () => {
+  const input = match();
+  input.player!.farmProfile = { laneKills: 80, neutralKills: 120 };
+  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: true, totalPositiveGold: 3000, totalNegativeGold: 0, groups: [{ group: 'creeps', label: 'Лейн-крипы', amount: 1000 }, { group: 'neutral', label: 'Нейтралы', amount: 2000 }], unknownAmount: 0, unknownKeys: [], decoded: [], grouped: [] };
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.match(copy, /Главный подтверждённый источник экономики — нейтралы: 2\s?000 золота/);
+  assert.doesNotMatch(copy, /резервному профилю/);
+});
+
+test('non-source gold groups cannot override the dominant confirmed economy source', () => {
+  const input = match();
+  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: true, totalPositiveGold: 11000, totalNegativeGold: 0, groups: [{ group: 'neutral', label: 'Нейтралы', amount: 1000 }, { group: 'other', label: 'Другие источники', amount: 10000 }], unknownAmount: 0, unknownKeys: [], decoded: [], grouped: [] };
+  const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
+  assert.match(copy, /Главный подтверждённый источник экономики — нейтралы: 1\s?000 золота/);
+  assert.doesNotMatch(copy, /другие источники/);
 });
 
 test('deathless telemetry produces a neutral verdict', () => {

@@ -32,13 +32,16 @@
 - product use only after type translation and cautious team attribution.
 - raw objective types must not be shown in product UI.
 
+## Partial / guarded product use
+
+1. **Economy source breakdown**
+- confirmed ids are normalized into separate lane creeps, neutrals, heroes, buildings, Roshan and courier groups;
+- observed ids `0`, `6` and `21` have no confirmed mapping in the current constants/schema research and remain unknown;
+- product UI never exposes unknown ids and falls back to the kill-count farm profile whenever unknown reasons make the breakdown incomplete;
+- debug and product data use the same grouping function; there is no implicit creeps/neutrals/objectives roll-up.
+
 ## Research/debug only
 
-1. **gold_reasons**
-- current `constantsAvailable = false`;
-- observed raw keys: `0,1,6,11,12,13,14,15,16,17,21`;
-- do not productize gold source breakdown until constants are decoded.
-
-2. **death timings**
+1. **death timings**
 - unavailable in current match snapshot;
 - product UI can only show total deaths when timing/event arrays are absent.

@@ -75,6 +75,12 @@
 - STRATZ likely can provide benchmarks through heroAverage.
 - All of these still require data probes and field-level validation before product use.
 
+### Farm probe boundary
+- `csEvents` and `goldEvents`: only the queried `time` field is currently normalized for research; event value/source semantics are not inferred.
+- `farmDistributionReport`: retained as a raw research preview. Keys such as lane/neutral/objective are not normalized until an actual response and schema field meanings are captured.
+- `networthPerMinute`: its type is known from schema research, but no validated match payload is available to align it with `heroAverage.networth` checkpoints.
+- Therefore phase hero+position comparisons remain research-only and are not rendered in product UI.
+
 ## Product readiness
 Ready for debug:
 - basic player stats

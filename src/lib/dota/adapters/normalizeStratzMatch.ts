@@ -186,12 +186,7 @@ export function normalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
 
   const farmRaw = selectedStats.farmDistributionReport as UnknownRecord | undefined;
   const farmDistribution: StratzFarmDistribution | null = farmRaw ? {
-    laneFarm: asNumber(farmRaw.laneFarm),
-    neutralFarm: asNumber(farmRaw.neutralFarm),
-    ancientFarm: asNumber(farmRaw.ancientFarm),
-    heroFarm: asNumber(farmRaw.heroFarm),
-    objectiveFarm: asNumber(farmRaw.objectiveFarm),
-    unknown: asNumber(farmRaw.unknown),
+    methodologyStatus: 'research',
     rawPreview: farmRaw
   } : null;
 

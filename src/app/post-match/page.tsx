@@ -133,7 +133,7 @@ export default function PostMatchPage() {
 <summary>Показать доказательства и подробности</summary>
 
 <div className="details-content">
-<BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} heroAverageComparison={analysis.heroAverageComparison} />
+<BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
 <ItemTimeline items={analysis.itemTimings} />
 <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={deaths} itemTimings={analysis.itemTimings} />{deaths ? <Panel>
 <h3>Смерти по фазам</h3>
@@ -145,9 +145,16 @@ export default function PostMatchPage() {
  : <Alert tone="unknown">Недостаточно данных о смертях по фазам.</Alert>
 }{analysis.farmProfile ? <Panel>
 <h3>Профиль фарма</h3>
-{analysis.goldReasons?.constantsAvailable ? <ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>
+{analysis.goldReasons?.constantsAvailable ? <><ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>
 )}{analysis.goldReasons.unknownAmount > 0 ? <li>Другое / нераспознано: {Math.round(analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li>
  : null}</ul>
+{!analysis.goldReasons.breakdownComplete ? <><Alert tone="unknown">Разбивка по источникам неполная. Ниже показан резервный профиль по числу добиваний и убийств — это не сумма золота.</Alert>
+<ul>
+<li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
+<li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li>
+<li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li>
+<li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
+</ul></> : null}</>
  : <>
 <ul>
 <li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
@@ -158,7 +165,7 @@ export default function PostMatchPage() {
 
 <li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
 </ul>
-<Alert tone="unknown">Разбивка золота по источникам недоступна.</Alert>
+<Alert tone="unknown">Разбивка золота по источникам недоступна. Показаны количества событий, а не золото.</Alert>
 </>}</Panel>
  : <Alert tone="unknown">Недостаточно данных о профиле фарма.</Alert>
 }</div>
