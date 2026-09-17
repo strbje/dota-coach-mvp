@@ -1,5 +1,5 @@
 'use client';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { BenchmarkEvidence } from '@/components/coach/BenchmarkEvidence';
 import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
 import { GradesGrid } from '@/components/coach/GradesGrid';
@@ -8,7 +8,8 @@ import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useLocale } from '@/components/layout/LocaleProvider';
-import { Alert, Badge, Button, Panel } from '@/components/ui';
+import { Alert, Badge, Button, Field, Panel, Select } from '@/components/ui';
+import type { MatchPlayerOption } from '@/lib/dota/selection/matchPlayers';
 import type { MatchPhase } from '@/lib/dota/types/domain';
 import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 import { isPostMatchSuccessPayload, type PostMatchSuccessPayload as Payload } from '@/lib/dota/validation/postMatchResponse';
@@ -18,28 +19,79 @@ export default function PostMatchPage() {
   const { locale } = useLocale();
   const [matchId, setMatchId] = useState('8781054570');
   const [data, setData] = useState<Payload | null>(null);
+  const [players, setPlayers] = useState<MatchPlayerOption[]>([]);
+  const [playersLoaded, setPlayersLoaded] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState('');
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [playersErrorCode, setPlayersErrorCode] = useState<string | null>(null);
+  const [analysisErrorCode, setAnalysisErrorCode] = useState<string | null>(null);
+  const playersRequestSequence = useRef(0);
+  const analysisRequestSequence = useRef(0);
+  const playersAbortController = useRef<AbortController | null>(null);
+  const analysisAbortController = useRef<AbortController | null>(null);
   const analysis = data?.analysis;
   // Keep the result consistently Russian until rules expose stable message IDs.
   const copy = getUiCopy(analysis ? 'ru' : locale).postMatch;
 
-  async function submit(event: FormEvent) {
+  async function loadPlayers(event: FormEvent) {
     event.preventDefault();
     setData(null);
-    setErrorCode(null);
+    setPlayers([]);
+    setPlayersLoaded(false);
+    setSelectedSlot('');
+    setPlayersErrorCode(null);
+    setAnalysisErrorCode(null);
+    analysisAbortController.current?.abort();
+    analysisRequestSequence.current += 1;
+    setLoading(false);
+    setLoadingPlayers(true);
+    playersAbortController.current?.abort();
+    const controller = new AbortController();
+    playersAbortController.current = controller;
+    const requestSequence = ++playersRequestSequence.current;
+
+    try {
+      const response = await fetch(`/api/post-match/players?matchId=${encodeURIComponent(matchId)}`, { signal: controller.signal });
+      const payload = await response.json() as { players?: MatchPlayerOption[]; errorCode?: unknown };
+      if (requestSequence !== playersRequestSequence.current) return;
+      if (!response.ok || !Array.isArray(payload.players)) {
+        setPlayersErrorCode(typeof payload.errorCode === 'string' ? payload.errorCode : 'POST_MATCH_FAILED');
+        return;
+      }
+      setPlayers(payload.players);
+      setPlayersLoaded(true);
+    } catch {
+      if (controller.signal.aborted || requestSequence !== playersRequestSequence.current) return;
+      setPlayersErrorCode('POST_MATCH_FAILED');
+    } finally {
+      if (requestSequence === playersRequestSequence.current) setLoadingPlayers(false);
+    }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (selectedSlot === '') return;
+    setData(null);
+    setAnalysisErrorCode(null);
     setLoading(true);
+    analysisAbortController.current?.abort();
+    const controller = new AbortController();
+    analysisAbortController.current = controller;
+    const requestSequence = ++analysisRequestSequence.current;
 
     try {
       const response = await fetch('/api/post-match/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: Number(matchId), hero: 'Lifestealer' })
+        body: JSON.stringify({ matchId: Number(matchId), selector: { playerSlot: Number(selectedSlot) } }),
+        signal: controller.signal
       });
       const payload = await response.json() as Payload | { errorCode?: unknown };
+      if (requestSequence !== analysisRequestSequence.current) return;
       if (!response.ok) {
         const responseError = payload as { errorCode?: unknown };
-        setErrorCode(
+        setAnalysisErrorCode(
           typeof responseError.errorCode === 'string'
             ? responseError.errorCode
             : 'POST_MATCH_FAILED'
@@ -47,18 +99,49 @@ export default function PostMatchPage() {
         return;
       }
       if (!isPostMatchSuccessPayload(payload)) {
-        setErrorCode('POST_MATCH_FAILED');
+        setAnalysisErrorCode('POST_MATCH_FAILED');
         return;
       }
       setData(payload);
     } catch {
-      setErrorCode('POST_MATCH_FAILED');
+      if (controller.signal.aborted || requestSequence !== analysisRequestSequence.current) return;
+      setAnalysisErrorCode('POST_MATCH_FAILED');
     } finally {
-      setLoading(false);
+      if (requestSequence === analysisRequestSequence.current) setLoading(false);
     }
   }
 
   const deaths = analysis?.stratz?.deathsByPhase ?? analysis?.deathsByPhase;
+  const changeMatchId = (value: string) => {
+    playersAbortController.current?.abort();
+    analysisAbortController.current?.abort();
+    playersRequestSequence.current += 1;
+    analysisRequestSequence.current += 1;
+    setMatchId(value);
+    setPlayers([]);
+    setPlayersLoaded(false);
+    setSelectedSlot('');
+    setData(null);
+    setPlayersErrorCode(null);
+    setAnalysisErrorCode(null);
+    setLoadingPlayers(false);
+    setLoading(false);
+  };
+  const changeSelectedSlot = (value: string) => {
+    analysisAbortController.current?.abort();
+    analysisRequestSequence.current += 1;
+    setSelectedSlot(value);
+    setData(null);
+    setAnalysisErrorCode(null);
+    setLoading(false);
+  };
+  const playerOptionLabel = (player: MatchPlayerOption) => {
+    const identity = player.playerName ? ` · ${player.playerName}` : '';
+    const kda = player.kills !== undefined && player.deaths !== undefined && player.assists !== undefined
+      ? ` · ${player.kills}/${player.deaths}/${player.assists}`
+      : '';
+    return `${player.isRadiant ? 'Radiant' : 'Dire'} · ${player.heroName}${identity}${kda}`;
+  };
 
   return (
     <PageContainer className="page-stack">
@@ -68,18 +151,32 @@ export default function PostMatchPage() {
 <p className="muted">{copy.lead}</p>
 </header>
 <Panel>
-<form className="stack" onSubmit={submit} aria-busy={loading}>
+<form className="stack" onSubmit={loadPlayers} aria-busy={loadingPlayers}>
 <MatchIdForm
   matchId={matchId}
   label={copy.matchIdLabel}
   hint={copy.matchIdHint}
-  onChange={setMatchId}
+  onChange={changeMatchId}
 />
-<Button type="submit" loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
-{loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
-{errorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, errorCode)}</Alert>
- : null}{!analysis && !loading && !errorCode ? <Alert tone="unknown">{copy.initial}</Alert>
+<Button type="submit" loading={loadingPlayers} loadingLabel="Загружаем игроков…">Загрузить игроков</Button>
+{loadingPlayers ? <Alert tone="info">Загружаем состав матча…</Alert> : null}
+{playersErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, playersErrorCode)}</Alert>
+ : null}{!analysis && !loading && !loadingPlayers && !playersErrorCode && !playersLoaded ? <Alert tone="unknown">{copy.initial}</Alert>
  : null}</form>
+{playersLoaded && players.length === 0 ? <Alert tone="unknown">В матче не найдены игроки, доступные для выбора.</Alert> : null}
+{players.length > 0 && players.length < 10 ? <Alert tone="unknown">OpenDota вернул неполный состав: доступно игроков — {players.length}.</Alert> : null}
+{players.length > 0 ? <form className="stack subsection" onSubmit={submit} aria-busy={loading}>
+<Field id="match-player" label="Игрок" hint="Выберите героя и сторону из состава матча.">
+<Select value={selectedSlot} onChange={(event) => changeSelectedSlot(event.target.value)}>
+<option value="">Выберите игрока</option>
+{players.map((player) => <option key={player.playerSlot} value={player.playerSlot}>{playerOptionLabel(player)}</option>)}
+</Select>
+</Field>
+<p className="muted">Сейчас полный тренерский разбор доступен для carry.</p>
+<Button type="submit" disabled={selectedSlot === ''} loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
+{loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
+{analysisErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, analysisErrorCode)}</Alert> : null}
+</form> : null}
 </Panel>
 {analysis ? <div className="page-stack">
 <Panel>
