@@ -536,3 +536,130 @@ No OpenDota benchmark, death/fight rule, or score changes as a result of this re
 Issue #59 can proceed independently, and factual economy values from #34 remain usable
 without normative `heroAverage` claims. Reconsider C only after authoritative field/cohort
 definitions and a targeted repeat capture explain, or safely bound, the observed differences.
+
+## Repeat validation and cohort-field probe extension (2026-09-30 MSK)
+
+### Repeat artifact provenance
+
+The owner supplied a successful repeat after the earlier `ECONNRESET`. Both raw files were
+shared out of band and are intentionally not committed:
+
+| Artifact | `capturedAt` (UTC) | Bytes | SHA-256 |
+|---|---|---:|---|
+| `stratz-hero-average-live.json` | `2026-09-29T18:08:33.928Z` | 205,735 | `e1fbaa3ab52d6fa2e6fd1a680a01bda540071452ae875315d9d19c6456253901` |
+| `stratz-hero-average-repeat.json` | `2026-09-29T21:49:00.536Z` | 223,891 | `104f4a9e621680dd45b67c748f272a0a2b43e73f2129f8e0fd7047a0a7ad5978` |
+
+The completion timestamps are 3 h 40 min 26.608 s apart. They are capture completion
+times, not STRATZ refresh timestamps. The cause of the prior connection reset remains
+unknown; the successful retry does not identify whether STRATZ, OpenDota, a VPN or another
+network component reset that connection.
+
+### Observed benchmark changes
+
+Comparison used the provider's raw `heroAverage.time` and every provider field. The local
+export rename from `minute` to `rawTime` / `candidateArrayIndex` was not treated as a
+provider-data change.
+
+| Match / hero | Changed rows | `matchCount` at raw time 10, first → repeat |
+|---|---:|---:|
+| `8781054570`, Lifestealer | 0 / 66 | 20,623 → 20,623 |
+| `9019592113`, Wraith King | 38 / 38 | 6,564 → 6,788 |
+| `9003795847`, Wraith King | 0 / 30 | 7,766 → 7,766 |
+
+For match `9019592113`, `matchCount`, `winCount` and `networth` changed in every row and
+`cs` changed in 29/38 rows. At raw time 10, `winCount` changed 3,563 → 3,675, `cs` remained
+44.36 and `networth` changed 3,608.55 → 3,608.47. At raw time 20, `matchCount` changed
+6,529 → 6,751, `cs` 144.14 → 144.09 and `networth` 9,155.59 → 9,153.93. At raw time 37,
+`matchCount` changed 3,816 → 3,959, `cs` 324.81 → 324.91 and `networth` 21,497.17 →
+21,507.52.
+
+This confirms that the returned benchmark for a match ID is not an immutable snapshot. Two
+captures do not establish why: sample growth/recalculation, cache behavior and other
+mechanisms remain hypotheses. In particular, a `matchCount` increase of 224 is not proof
+that exactly 224 newly played matches entered the population. In the repeat, the two Wraith
+King curves still differed in all 30 common complete rows despite matching hero, position,
+game version, lobby and mode. Those metadata therefore do not explain the population
+difference.
+
+### Actual-series stability and complete-series boundary
+
+Match metadata and final statistics did not change. All 536 previously exported non-null
+actual values matched the corresponding values in the complete repeat arrays: 268, 150 and
+118 values for the three matches. Complete repeat lengths were:
+
+| Match | STRATZ interval LH | OpenDota cumulative `lh_t` | STRATZ net worth | STRATZ GPM |
+|---|---:|---:|---:|---:|
+| `8781054570` | 78 | 79 | 79 | 78 |
+| `9019592113` | 37 | 38 | 38 | 37 |
+| `9003795847` | 29 | 30 | 30 | 29 |
+
+The Lifestealer interval-LH sum is 676, equal to both final LH and the last OpenDota
+checkpoint. The old export covered indexes 0–66 and summed to 562; indexes 67–77 add 114.
+`heroAverage` still ends at raw time 65, confirming that actual arrays must remain independent
+of benchmark coverage.
+
+For match `9019592113`, 37 intervals sum to 295 while the last OpenDota checkpoint is 295
+and final LH is 302. The match ended at 37:58 and there is no separate interval element for
+the final partial minute. The probe must neither append a zero nor present 295 as the final
+match total. For match `9003795847`, 29 intervals sum to the final 281; that equality alone
+does not prove that a partial-minute bucket was exported.
+
+Across the complete rows, `STRATZ[i]` equaled `OpenDota[i+1] - OpenDota[i]` for 72/78,
+37/37 and 27/29 intervals respectively; each mismatch was ±1 and the running difference
+remained within 0–1. Sums of the first ten STRATZ intervals again equaled the OpenDota
+checkpoint at index 10: 45, 51 and 52. This remains an empirical observation, not a provider
+contract.
+
+### New schema fields and capture status
+
+The supplied `HeroPositionTimeDetailType` introspection confirms these transport types. The
+type and all 74 field descriptions were `null`:
+
+| Field | Introspected type | Confirmed meaning |
+|---|---|---|
+| `week` | `Int!` | None; format, period boundary and relationship to the population are unknown. |
+| `bracketBasicIds` | nullable `RankBracketBasicEnum` | None; despite its name it is one enum value, not a list. |
+| `remainingMatchCount` | nullable `Long` | None; relationship to row-level `matchCount` is unknown. |
+
+The probe now requests and preserves all three values inside each raw `heroAverage` row,
+including nullable values. The schema debug route also returns `RankBracketBasicEnum`
+values, descriptions and deprecation metadata when introspection makes them available:
+
+```text
+GET /api/debug/stratz/schema?type=RankBracketBasicEnum
+```
+
+No authoritative textual field definitions were found in the accessible official STRATZ
+material. That failed lookup does not establish that definitions do not exist. Enum names
+also do not establish bracket semantics without descriptions or provider documentation.
+
+Neither owner-supplied artifact queried the three fields, so their historical values cannot
+be reconstructed and no stability claim can be made. An expanded live capture could not be
+produced in this checkout because `STRATZ_API_TOKEN` and `.env.local` are absent. This is a
+local credential limitation, not a null or error response from STRATZ. Run the expanded
+probe once with the same three targets; another run of the old query is unnecessary:
+
+```powershell
+node --env-file=.env.local scripts/probe-stratz-hero-average.mjs `
+  "8781054570:54" "9019592113:42" "9003795847:42" `
+  --out=stratz-hero-average-cohort-fields.json
+```
+
+The probe applies a 30-second timeout through response-body reading, reports provider and
+match context on transport/parse failures without logging authorization data, emits progress
+to stderr, and writes the artifact only after every target succeeds. A partial run is not a
+successful capture.
+
+### Remaining unknowns and decision
+
+- `heroAverage.goldPerMinute` remained null in all 134 repeat rows.
+- Values and longitudinal behavior of `week`, `bracketBasicIds` and
+  `remainingMatchCount` remain unavailable pending the expanded authenticated capture.
+- The definition and clock boundary of `time`, definitions of `cs` / `networth`, and full
+  population rules remain unconfirmed.
+- New cohort fields, even when captured, cannot by themselves prove clock alignment or
+  metric equivalence.
+
+The decision remains **C — research-only**. No STRATZ norm, grade or actual-to-average
+comparison is added to product UI or scoring. Factual economy work and unrelated role rules
+remain independent of this unresolved benchmark methodology.

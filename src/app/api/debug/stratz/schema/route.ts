@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const typeName = new URL(request.url).searchParams.get('type') ?? 'MatchType';
 
   if (!token) {
-    return NextResponse.json({ ok: false, hasToken: false, endpoint: STRATZ_GRAPHQL_URL, typeName, errors: ['STRATZ_API_TOKEN missing'], notes: ['Schema discovery is optional research flow and must never block product UI.'] }, { status: 200 });
+    return NextResponse.json({ ok: false, hasToken: false, endpoint: STRATZ_GRAPHQL_URL, typeName, fields: [], enumValues: [], errors: ['STRATZ_API_TOKEN missing'], notes: ['Schema discovery is optional research flow and must never block product UI.'] }, { status: 200 });
   }
 
   const query = `query IntrospectType($typeName: String!) {
@@ -27,6 +27,12 @@ export async function GET(request: Request) {
             name
           }
         }
+      }
+      enumValues(includeDeprecated: true) {
+        name
+        description
+        isDeprecated
+        deprecationReason
       }
     }
   }`;
@@ -46,10 +52,11 @@ export async function GET(request: Request) {
     const text = await response.text();
     const contentType = response.headers.get('content-type') ?? '';
     const mayBeJson = contentType.includes('application/json') || contentType.includes('application/graphql-response+json') || text.trim().startsWith('{');
-    type IntrospectionResponse = { data?: { __type?: { name?: string; description?: string; fields?: Array<{ name?: string; description?: string; type?: { kind?: string; name?: string; ofType?: { kind?: string; name?: string } } }> } }; errors?: Array<{ message?: string }> };
+    type IntrospectionResponse = { data?: { __type?: { name?: string; description?: string; fields?: Array<{ name?: string; description?: string; type?: { kind?: string; name?: string; ofType?: { kind?: string; name?: string } } }>; enumValues?: Array<{ name?: string; description?: string; isDeprecated?: boolean; deprecationReason?: string }> } }; errors?: Array<{ message?: string }> };
     const parsed = mayBeJson ? JSON.parse(text) as IntrospectionResponse : null;
     const errors = parsed?.errors?.map((entry) => entry.message ?? 'Unknown GraphQL error') ?? [];
     const fields = parsed?.data?.__type?.fields?.map((field) => ({ name: field.name, description: field.description ?? null, type: field.type })) ?? [];
+    const enumValues = parsed?.data?.__type?.enumValues?.map((value) => ({ ...value, description: value.description ?? null, deprecationReason: value.deprecationReason ?? null })) ?? [];
 
     return NextResponse.json({
       ok: response.ok && errors.length === 0,
@@ -58,6 +65,7 @@ export async function GET(request: Request) {
       typeName: parsed?.data?.__type?.name ?? typeName,
       typeDescription: parsed?.data?.__type?.description ?? null,
       fields,
+      enumValues,
       errors,
       notes: [
         'Schema discovery is for research/debug only and must not be used directly by product UI.',
@@ -66,6 +74,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const parsed = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ ok: false, hasToken: true, endpoint: STRATZ_GRAPHQL_URL, typeName, fields: [], errors: [parsed], notes: ['Introspection call failed; fallback to GraphQL Explorer manual verification.'] }, { status: 502 });
+    return NextResponse.json({ ok: false, hasToken: true, endpoint: STRATZ_GRAPHQL_URL, typeName, fields: [], enumValues: [], errors: [parsed], notes: ['Introspection call failed; fallback to GraphQL Explorer manual verification.'] }, { status: 502 });
   }
 }
