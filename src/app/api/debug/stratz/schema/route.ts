@@ -15,8 +15,10 @@ export async function GET(request: Request) {
   const query = `query IntrospectType($typeName: String!) {
     __type(name: $typeName) {
       name
+      description
       fields {
         name
+        description
         type {
           kind
           name
@@ -44,16 +46,17 @@ export async function GET(request: Request) {
     const text = await response.text();
     const contentType = response.headers.get('content-type') ?? '';
     const mayBeJson = contentType.includes('application/json') || contentType.includes('application/graphql-response+json') || text.trim().startsWith('{');
-    type IntrospectionResponse = { data?: { __type?: { name?: string; fields?: Array<{ name?: string; type?: { kind?: string; name?: string; ofType?: { kind?: string; name?: string } } }> } }; errors?: Array<{ message?: string }> };
+    type IntrospectionResponse = { data?: { __type?: { name?: string; description?: string; fields?: Array<{ name?: string; description?: string; type?: { kind?: string; name?: string; ofType?: { kind?: string; name?: string } } }> } }; errors?: Array<{ message?: string }> };
     const parsed = mayBeJson ? JSON.parse(text) as IntrospectionResponse : null;
     const errors = parsed?.errors?.map((entry) => entry.message ?? 'Unknown GraphQL error') ?? [];
-    const fields = parsed?.data?.__type?.fields?.map((field) => ({ name: field.name, type: field.type })) ?? [];
+    const fields = parsed?.data?.__type?.fields?.map((field) => ({ name: field.name, description: field.description ?? null, type: field.type })) ?? [];
 
     return NextResponse.json({
       ok: response.ok && errors.length === 0,
       hasToken: true,
       endpoint: STRATZ_GRAPHQL_URL,
       typeName: parsed?.data?.__type?.name ?? typeName,
+      typeDescription: parsed?.data?.__type?.description ?? null,
       fields,
       errors,
       notes: [

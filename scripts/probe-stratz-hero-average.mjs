@@ -7,7 +7,7 @@ const query = `query HeroAverageMethodologyProbe($id: Long!) {
   match(id: $id) {
     id durationSeconds gameVersionId lobbyType gameMode
     players {
-      steamAccountId playerSlot heroId position role roleBasic numLastHits goldPerMinute
+      playerSlot heroId position role roleBasic numLastHits goldPerMinute
       stats { lastHitsPerMinute networthPerMinute goldPerMinute }
       heroAverage { heroId time position matchCount winCount cs networth goldPerMinute }
     }
@@ -32,6 +32,11 @@ function windowAtIndex(series, index) {
     const candidateIndex = index + offset;
     return { index: candidateIndex, value: valueAtIndex(series, candidateIndex) ?? null };
   });
+}
+
+function numericSeries(series) {
+  if (!Array.isArray(series)) return [];
+  return series.map((value) => typeof value === 'number' ? value : null);
 }
 
 export function parseTargets(args) {
@@ -73,8 +78,33 @@ export function summarizeProbe(matchId, heroId, stratzBody, openDotaBody) {
     roleBasic: player.roleBasic,
     finalLastHits: player.numLastHits,
     finalGoldPerMinute: player.goldPerMinute,
+    actualSeries: {
+      stratzLastHitsPerMinute: {
+        semantics: 'interval-count-observed-in-live-validation-not-a-product-contract',
+        values: numericSeries(player.stats?.lastHitsPerMinute)
+      },
+      openDotaLhT: {
+        semantics: 'cumulative-count',
+        values: numericSeries(openDotaPlayer?.lh_t)
+      },
+      stratzNetworthPerMinute: {
+        semantics: 'raw-provider-series-time-alignment-unconfirmed',
+        values: numericSeries(player.stats?.networthPerMinute)
+      },
+      stratzGoldPerMinute: {
+        semantics: 'raw-provider-series-no-hero-average-comparison',
+        values: numericSeries(player.stats?.goldPerMinute)
+      }
+    },
+    actualSeriesLengths: {
+      stratzLastHitsPerMinute: numericSeries(player.stats?.lastHitsPerMinute).length,
+      openDotaLhT: numericSeries(openDotaPlayer?.lh_t).length,
+      stratzNetworthPerMinute: numericSeries(player.stats?.networthPerMinute).length,
+      stratzGoldPerMinute: numericSeries(player.stats?.goldPerMinute).length
+    },
     checkpoints: samples.map((sample) => ({
-      minute: sample.time,
+      rawTime: sample.time,
+      candidateArrayIndex: sample.time,
       actualCsStratzWindow: windowAtIndex(player.stats?.lastHitsPerMinute, sample.time),
       actualCsOpenDotaWindow: windowAtIndex(openDotaPlayer?.lh_t, sample.time),
       actualNetworthStratzWindow: windowAtIndex(player.stats?.networthPerMinute, sample.time),
@@ -83,6 +113,8 @@ export function summarizeProbe(matchId, heroId, stratzBody, openDotaBody) {
     })),
     caveats: [
       'Array indexes are recorded as candidate minute alignment, not asserted as equivalent.',
+      'Full actual arrays are preserved independently of heroAverage coverage; a missing final partial-minute bucket is not replaced with zero.',
+      'STRATZ interval last-hit values and OpenDota cumulative last-hit values are explicitly separate and are not directly compared.',
       'OpenDota gold_t is deliberately not requested or compared.',
       'Cohort filters absent from the payload remain unknown.'
     ]

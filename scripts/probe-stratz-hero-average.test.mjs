@@ -20,7 +20,53 @@ test('keeps provider metrics separate and records the adjacent-index window', ()
   assert.equal(result.finalLastHits, 123);
   assert.equal(result.finalGoldPerMinute, 620);
   assert.equal(result.checkpoints[0].heroAverage.networth, 1000);
+  assert.equal(result.checkpoints[0].rawTime, 1);
+  assert.equal(result.checkpoints[0].candidateArrayIndex, 1);
+  assert.equal('minute' in result.checkpoints[0], false);
+  assert.deepEqual(result.actualSeries.stratzLastHitsPerMinute.values, [0, 7, 15]);
+  assert.deepEqual(result.actualSeries.openDotaLhT.values, [0, 7]);
+  assert.deepEqual(result.actualSeriesLengths, {
+    stratzLastHitsPerMinute: 3,
+    openDotaLhT: 2,
+    stratzNetworthPerMinute: 3,
+    stratzGoldPerMinute: 3
+  });
   assert.equal('actualGoldOpenDota' in result.checkpoints[0], false);
+});
+
+test('preserves full actual series beyond heroAverage coverage', () => {
+  const result = summarizeProbe(1, 54, { data: { match: {
+    durationSeconds: 180, players: [{ heroId: 54, numLastHits: 12,
+      stats: { lastHitsPerMinute: [2, 4, 6], networthPerMinute: [600, 900, 1200, 1500], goldPerMinute: [0, 300, 350] },
+      heroAverage: [{ time: 0, cs: 1 }] }]
+  } } }, { players: [{ hero_id: 54, lh_t: [0, 2, 6, 12] }] });
+
+  assert.equal(result.checkpoints.length, 1);
+  assert.deepEqual(result.actualSeries.stratzLastHitsPerMinute.values, [2, 4, 6]);
+  assert.deepEqual(result.actualSeries.openDotaLhT.values, [0, 2, 6, 12]);
+  assert.equal(result.actualSeriesLengths.stratzNetworthPerMinute, 4);
+});
+
+test('keeps null heroAverage GPM and missing partial-minute values explicit', () => {
+  const result = summarizeProbe(1, 54, { data: { match: {
+    durationSeconds: 119, players: [{ heroId: 54, numLastHits: 8,
+      stats: { lastHitsPerMinute: [8], networthPerMinute: [600], goldPerMinute: [null] },
+      heroAverage: [{ time: 0, cs: 0, goldPerMinute: null }] }]
+  } } }, { players: [{ hero_id: 54, lh_t: [0] }] });
+
+  assert.equal(result.checkpoints[0].heroAverage.goldPerMinute, null);
+  assert.deepEqual(result.actualSeries.stratzGoldPerMinute.values, [null]);
+  assert.equal(result.checkpoints[0].actualCsStratzWindow[0].value, null);
+  assert.equal(result.checkpoints[0].actualCsStratzWindow[2].value, null);
+});
+
+test('does not calculate unsupported actual-to-average deltas', () => {
+  const result = summarizeProbe(1, 54, { data: { match: {
+    players: [{ heroId: 54, stats: { lastHitsPerMinute: [8], networthPerMinute: [600] }, heroAverage: [{ time: 0, cs: 44 }] }]
+  } } }, { players: [{ hero_id: 54, lh_t: [51] }] });
+
+  assert.equal('delta' in result.checkpoints[0], false);
+  assert.equal('comparison' in result.checkpoints[0], false);
 });
 
 test('accepts three unique positive targets including the control', () => {

@@ -396,3 +396,143 @@ cohort construction is still opaque. Promotion to A additionally requires author
 cohort documentation (hero/position, version/window, bracket, region/mode and exclusions),
 a defensible minimum-sample policy, and stability validation. No future integration formula
 is proposed under the interim decision C because doing so would encode unsupported methodology.
+
+## Live validation update (2026-09-29)
+
+This section supersedes the live-probe blocker and the provisional evidence summary dated
+2026-09-17. The raw capture was supplied out of band and is intentionally not committed
+because it contains provider payload data. Its provenance is fixed here so the reviewed
+result is reproducible:
+
+- `capturedAt`: `2026-09-29T18:08:33.928Z`;
+- file: `stratz-hero-average-live.json`, 205,735 bytes;
+- SHA-256: `e1fbaa3ab52d6fa2e6fd1a680a01bda540071452ae875315d9d19c6456253901`.
+
+### Successful probes
+
+| Match | Selected hero | Duration | Position | Game version | Average rows |
+|---|---|---:|---|---:|---:|
+| `8781054570` | Lifestealer (`54`) | 78:52 | `POSITION_1` | 186 | 66 (`time` 0–65) |
+| `9019592113` | Wraith King (`42`) | 37:58 | `POSITION_1` | 190 | 38 (`time` 0–37) |
+| `9003795847` | Wraith King (`42`) | 29:53 | `POSITION_1` | 190 | 30 (`time` 0–29) |
+
+All three subject matches were `RANKED` / `ALL_PICK_RANKED`; selected players had
+`role=CORE` and `roleBasic=CORE`. In all 134 returned average rows, `heroId` and `position`
+matched the selected player. This confirms the observed rows only. It does not establish
+that position is the complete population filter, and this capture did not exercise another
+position.
+
+### Actual last hits are interval values; OpenDota `lh_t` is cumulative
+
+| Match | OpenDota `lh_t[10]` | Sum of STRATZ `lastHitsPerMinute[0..9]` | STRATZ bucket `[10]` |
+|---|---:|---:|---:|
+| `8781054570` | 45 | 45 | 3 |
+| `9019592113` | 51 | 51 | 8 |
+| `9003795847` | 52 | 52 | 16 |
+
+For the available comparable intervals, the hypothesis
+`STRATZ[i] ≈ OpenDota[i+1] - OpenDota[i]` produced 62/66 exact matches for Lifestealer
+(the other four differed by ±1), 37/37 for Wraith King `9019592113`, and 27/29 for Wraith
+King `9003795847` (the other two differed by ±1). The running provider difference stayed
+within 0–1, and all three sums through index 9 equalled OpenDota `lh_t[10]`.
+
+This is empirical evidence that this capture's STRATZ `lastHitsPerMinute` entries are
+interval counts and OpenDota `lh_t` entries are cumulative counts. It is not a universal
+cross-provider identity or permission to add tolerance/scoring. A single STRATZ interval
+must never be compared directly with cumulative LH or `heroAverage.cs`.
+
+### Benchmark population is not a fixed hero + position + version table
+
+The two Wraith King matches share hero, `POSITION_1`, game version 190, lobby and mode, but
+none of their 30 common complete `heroAverage` rows are identical.
+
+| Raw `time` | Field | Match `9019592113` | Match `9003795847` |
+|---:|---|---:|---:|
+| 10 | `matchCount` | 6,564 | 7,766 |
+| 10 | `winCount` | 3,563 | 4,230 |
+| 10 | `cs` | 44.36 | 44.33 |
+| 10 | `networth` | 3,608.55 | 3,616.83 |
+| 20 | `cs` | 144.14 | 143.48 |
+| 20 | `networth` | 9,155.59 | 9,144.76 |
+| 20 | `matchCount` | 6,529 | 7,747 |
+
+The cause is unknown. Additional filters, historical windows, cache state and refreshes are
+possibilities, not findings. In particular, `cs=44.36` at raw `time=10` is not a confirmed
+10:00 norm and must not be compared with an actual value of 51 in product copy.
+
+`matchCount` also changes by row: 20,623 at raw time 10 to 13,719 at 35 and 357 at 65 for
+Lifestealer; 6,564 at 10 to 4,382 at 35 and 3,816 at 37 for Wraith King `9019592113`; and
+7,766 at 10 to 7,069 at 29 for Wraith King `9003795847`. The denominator is therefore not
+constant across the curve. A survivor cohort is plausible but not documented and must not
+be asserted.
+
+### Metric and clock findings
+
+- `heroAverage.goldPerMinute` was `null` in all 134/134 rows. Actual per-minute and final GPM
+  do not replace a missing benchmark. Null must remain null, and GPM average comparison is
+  unavailable for this capture.
+- Each actual STRATZ net-worth series begins at 600. Average rows at raw `time=0` were
+  127.77, 161.67 and 154.36; at raw `time=1` they were 606.51, 611.08 and 608.80, with
+  `cs=0.01`. This warrants testing a pre-game point/index offset, but proves neither one.
+- The old artifact called `sample.time` “minute”. The probe now exports it as `rawTime` plus
+  a separate `candidateArrayIndex`; it makes no silent ±1 correction.
+- Net-worth resemblance does not establish snapshot alignment or equivalence. Net worth is
+  still evaluated separately from the interval/cumulative last-hit observation.
+
+### Probe correction and safe reproduction
+
+The reviewed capture stored actual windows only around returned average rows. Consequently
+its Lifestealer actual export ended at index 66 although the match lasted 78:52. Its visible
+LH sum of 562 cannot be compared with final LH 676 as evidence of provider data loss. For
+Wraith King `9019592113`, 295 LH through 37:00 versus final 302 requires explicit treatment
+of the last partial minute; it must not be filled with zero. Wraith King `9003795847` had
+281 through 29:00 and 281 final LH.
+
+The probe now preserves complete actual provider arrays and their lengths independently of
+average-row coverage, names interval and cumulative series separately, retains raw average
+time, and never queries Steam/account identifiers. It still records adjacent-index windows
+for inspection but calculates no unsupported benchmark delta. Run the same targets again to
+investigate stability:
+
+```powershell
+node --env-file=.env.local scripts/probe-stratz-hero-average.mjs `
+  "8781054570:54" "9019592113:42" "9003795847:42" `
+  --out=stratz-hero-average-repeat.json
+```
+
+A repeat can distinguish some time-of-capture changes from subject-match differences, but a
+single repeat cannot reveal every hidden filter. Keep tokens in `.env.local`; do not commit
+raw captures before checking them for identifiers.
+
+The debug schema endpoint now requests type and field `description` values in addition to
+names and types. The accessible STRATZ pages did not provide definitions for these fields in
+text available during this review, and direct introspection returned HTTP 403. That is an
+access limitation, not evidence that STRATZ has no documentation. The semantics of
+`HeroPositionTimeDetailType.time`, `cs`, and `heroAverage` on the player type therefore
+remain unconfirmed.
+
+### Per-metric readiness after live validation
+
+| Candidate | Status | Decision |
+|---|---|---|
+| `heroAverage.cs` | **research-only** | Average field exists, but clock and CS definition are unconfirmed; actual STRATZ LH is interval data while OpenDota LH is cumulative. |
+| `heroAverage.networth` | **research-only** | Values exist, but raw-time alignment, snapshot boundary and population equivalence are unconfirmed. |
+| `heroAverage.goldPerMinute` | **research-only / unavailable in capture** | All 134 values are null; never coerce them to zero or substitute actual GPM. |
+| `matchCount` / `winCount` guardrails | **research-only** | Denominator varies with raw time and cohort construction is unknown. |
+| `position` filtering | **research-only** | All observed rows matched `POSITION_1`, but no other role was tested and hidden cohort filters are unknown. |
+
+### Decision: **C — research-only**
+
+The three-live-probe acceptance condition is now met, but the result does not justify B or
+A. `heroAverage` remains excluded from numeric scoring and product conclusions because:
+
+1. the meaning and boundary of `time` are not authoritatively established;
+2. actual and average CS/net-worth metric equivalence is not established;
+3. two otherwise matching Wraith King subjects received different curves and populations;
+4. row-level sample denominators vary and cohort methodology remains undocumented; and
+5. the GPM benchmark is absent in every captured row.
+
+No OpenDota benchmark, death/fight rule, or score changes as a result of this research.
+Issue #59 can proceed independently, and factual economy values from #34 remain usable
+without normative `heroAverage` claims. Reconsider C only after authoritative field/cohort
+definitions and a targeted repeat capture explain, or safely bound, the observed differences.
