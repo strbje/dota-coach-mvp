@@ -4,7 +4,6 @@ import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, PostM
 import { formatPercentileRange, getPercentileForValue } from '../../analyze/compareToBenchmarks';
 import { findNearestUsableItemTimingBucket } from '../../analyze/itemTimingBenchmarks';
 
-function score(base: number, delta: number): number { return Math.round(Math.max(1, Math.min(99, base + delta))); }
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
 
 export type CarryHeroOverride = {
@@ -45,7 +44,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     : stratz;
   const lanePct = p?.laneReview?.laneEfficiencyPct;
 
-  const laneDeaths = deaths === 0 ? 0 : stratz?.deathsByPhase?.laning ?? p?.laneReview?.deathsBefore10 ?? 0;
+  const laneDeaths = deaths === 0 ? 0 : stratz?.deathsByPhase?.laning ?? p?.laneReview?.deathsBefore10;
   const coreItemsSeen = (p?.buildPlayed ?? []).filter((item) => heroOverride.coreItems.includes(item));
   const suspiciousItems = (p?.buildPlayed ?? []).filter((item) => heroOverride.suspiciousItems.includes(item));
   const timings = benchmarkContext.itemTimingScenarios;
@@ -65,32 +64,30 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     timingStatus: 'unknown' as const
   }));
 
-  const laneSummary = laneDeaths >= 2
-    ? 'Линия испорчена смертями'
-    : lanePct === undefined
-      ? 'Линия без полной телеметрии'
-      : lanePct >= 70
-      ? 'Сильная линия'
+  const laneSummary = lanePct === undefined
+    ? 'Линия без полной телеметрии'
+    : lanePct >= 70
+      ? 'Сильный показатель эффективности линии'
       : lanePct >= 60
-        ? 'Рабочая линия без преимущества'
-        : 'Линия просела';
+        ? 'Рабочий показатель эффективности линии'
+        : 'Есть направление для улучшения фарма на линии';
 
   const itemsSummary = !trackedTimings.length
-    ? 'Тайминги недоступны'
+    ? 'Нет данных о ключевых покупках'
     : suspiciousItems.length > 0
       ? 'В билде есть спорные слоты'
     : earlyItemStatus === 'late' || timingItemStatus === 'late'
       ? 'Есть задержка по таймингу'
     : earlyItemHasExternalContext || timingItemHasExternalContext
-      ? 'Тайминги сопоставлены с контекстом OpenDota'
+      ? 'Покупки зафиксированы, оценка недоступна'
       : earlyItem && timingItem && isPositiveTiming(earlyItemStatus) && isPositiveTiming(timingItemStatus)
         ? 'Ранние ключевые предметы в темпе'
         : earlyItem || timingItem
           ? 'Тайминги зафиксированы без подтверждённой оценки'
-        : 'Тайминги недоступны';
+        : 'Покупки зафиксированы, оценка недоступна';
 
   const itemsFindings: AnalysisFinding[] = [];
-  if (!trackedTimings.length) itemsFindings.push({ text: 'Тайминги ключевых предметов в этом матче недоступны.', evidence: [], severity: 'info' });
+  if (!trackedTimings.length) itemsFindings.push({ text: 'OpenDota не вернул данные о ключевых покупках этого игрока.', evidence: [], severity: 'info' });
   if (earlyItem && !earlyItemHasExternalContext) {
     const status = earlyItemStatus;
     itemsFindings.push({ text: status === 'late' ? `${earlyItem.item} — ${earlyItem.time}: предмет куплен поздновато.` : isPositiveTiming(status) ? `${earlyItem.item} — ${earlyItem.time}: ранний темп хороший.` : `${earlyItem.item} — ${earlyItem.time}: тайминг зафиксирован, но подтверждённого ориентира для оценки нет.`, evidence: [], severity: status === 'late' ? 'warning' : isPositiveTiming(status) ? 'good' : 'info' });
@@ -126,8 +123,8 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       winRate: nearest.winRate,
       sampleSizeStatus: nearest.sampleSize === 'standard' ? 'standard' : 'weak'
     };
-    const confidence = nearest.sampleSize === 'standard' ? 'нормальная выборка' : 'слабый контекст';
-    itemsFindings.push({ text: `${status.name} ${status.time}: ближайший timing context OpenDota — ${nearest.timeLabel} (${nearest.games} игр, ${nearest.winRate !== null ? (nearest.winRate * 100).toFixed(1) : 'n/a'}% winrate; ${confidence}). Это контекст, а не оценка качества тайминга.`, evidence: [], severity: 'info' });
+    // The nearest scenario remains available in itemAnalysis for research/debug,
+    // but is deliberately not presented as a product recommendation or norm.
   }
 
 
@@ -151,59 +148,38 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     const value = benchmarkScore(comparison);
     return value === undefined ? 'info' : value >= 70 ? 'good' : value < 50 ? 'warning' : 'info';
   };
+  const deathRiskKind = deaths === 0 ? 'deathless' : deaths === undefined ? 'unavailable' : 'events-only';
   const heroDamagePercentile = benchmarkScore(hdBench);
-  const hasHighTotalDeaths = deaths !== undefined && deaths >= 8;
-  const deathRiskKind = deaths === 0
-    ? 'deathless'
-    : knownLateDeaths !== undefined && knownLateDeaths >= 3
-      ? 'late'
-      : hasHighTotalDeaths && knownLateDeaths === undefined
-        ? 'high-total-unknown-phase'
-        : hasHighTotalDeaths
-          ? 'high-total'
-          : 'normal';
-  const totalDeathRiskDetail = knownLateDeaths === undefined
-    ? 'Фазу смертей определить нельзя.'
-    : knownLateDeaths === 0
-      ? 'Смертей после 35:00 не зафиксировано.'
-      : `Из них ${knownLateDeaths} после 35:00; повышенного late-game риска не выявлено.`;
-  const fightsSummary = deathRiskKind === 'late'
-    ? heroDamagePercentile !== undefined && heroDamagePercentile >= 70
-      ? 'Сильный урон, но высокий риск смертей в лейте'
-      : heroDamagePercentile !== undefined && heroDamagePercentile < 50
-        ? 'Низкий вклад в драках и высокий риск смертей'
-        : 'Высокий риск смертей в лейте'
-    : deathRiskKind === 'high-total' || deathRiskKind === 'high-total-unknown-phase'
-      ? 'Много смертей для core'
-      : heroDamagePercentile !== undefined && heroDamagePercentile >= 70
-        ? 'Сильный вклад в драках'
-        : heroDamagePercentile !== undefined && heroDamagePercentile < 50
-          ? 'Вклад в драках ниже ориентира'
-          : 'Рабочий вклад в драки';
+  const fightsSummary = heroDamagePercentile !== undefined && heroDamagePercentile >= 70
+    ? 'Сильный вклад в драках'
+    : heroDamagePercentile !== undefined && heroDamagePercentile < 50
+      ? 'Вклад в драках ниже ориентира'
+      : heroDamagePercentile !== undefined
+        ? 'Рабочий вклад в драках'
+        : 'Данные о драках без надёжной оценки';
   const economyPercentile = benchmarkScore(gpmBench);
   const mapSummary = economyPercentile !== undefined && economyPercentile >= 70
-    ? deathRiskKind === 'late' ? 'Экономика выше ориентира, но лейт рискованный' : 'Экономика выше ориентира'
+    ? 'Экономика выше ориентира'
     : economyPercentile !== undefined && economyPercentile >= 50 ? 'Экономика на среднем уровне'
       : economyPercentile !== undefined ? 'Темп экономики ниже ориентира' : 'Темп экономики по данным матча';
   
   const laneFindings: AnalysisFinding[] = [];
   if (lanePct !== undefined) laneFindings.push({ text: `${Math.round(lanePct)}% эффективности линии.`, evidence: ['по данным линии OpenDota'], severity: 'info' });
   if (p?.laneReview?.lhAt10 !== undefined) {
-    laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} LH к 10:00.`, evidence: [], severity: 'info' });
+    laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} добитых крипов к 10:00.`, evidence: [], severity: 'info' });
   }
-  if (laneDeaths >= 2) laneFindings.push({ text: `${laneDeaths} смерти до 10:00 сильно снижают оценку линии.`, evidence: [], severity: 'warning' });
-  if (laneDeaths > 0) {
+  if (laneDeaths !== undefined && laneDeaths > 0) {
     const availableLaneMetrics = [
-      p?.laneReview?.lhAt10 !== undefined ? `${Math.round(p.laneReview.lhAt10)} LH к 10:00` : undefined,
+      p?.laneReview?.lhAt10 !== undefined ? `${Math.round(p.laneReview.lhAt10)} добитых крипов к 10:00` : undefined,
       lanePct !== undefined ? `${Math.round(lanePct)}% эффективности линии` : undefined
     ].filter((value): value is string => Boolean(value));
     laneFindings.push({
-      text: `${availableLaneMetrics.length ? `${availableLaneMetrics.join(' и ')} — рабочий старт, но ` : ''}${laneDeaths} смерти до 10:00 мешают назвать линию выигранной.`,
-      evidence: [],
-      severity: 'warning'
+      text: `${availableLaneMetrics.length ? `${availableLaneMetrics.join(' и ')}. ` : ''}До 10:00 зафиксировано смертей: ${laneDeaths}. Причины и влияние этих эпизодов по данным матча не установлены.`,
+      evidence: [], severity: 'info'
     });
   }
-  if (!laneFindings.length) laneFindings.push({ text: 'Подробная оценка линии недоступна: OpenDota не вернул lane efficiency или минутные срезы для этого матча.', evidence: ['lane data unavailable'], severity: 'info' });
+  if (laneDeaths === undefined) laneFindings.push({ text: 'OpenDota не вернул число смертей до 10:00.', evidence: [], severity: 'info' });
+  if (!laneFindings.length) laneFindings.push({ text: 'Подробная оценка линии недоступна: OpenDota не вернул показатель эффективности или минутные срезы для этого матча.', evidence: [], severity: 'info' });
 
 
   const damageFinding: AnalysisFinding = heroDamagePerMin === undefined ? {
@@ -216,39 +192,23 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     severity: benchmarkSeverity(hdBench)
   };
 
-  const fightsFindings: AnalysisFinding[] = deathsByPhase
-    ? [
-        ...(deathsByPhase.lateGame >= 3
-          ? [{ text: deaths === undefined ? `${deathsByPhase.lateGame} смертей пришлись на лейт — для core это главный риск, потому что каждая смерть после 35:00 открывает окно на Roshan, buyback pressure или строения.` : `${deathsByPhase.lateGame} из ${deaths} смертей пришлись на лейт — для core это главный риск, потому что каждая смерть после 35:00 открывает окно на Roshan, buyback pressure или строения.`, evidence: [], severity: 'bad' as const }]
-          : []),
-        ...(laneDeaths >= 2
-          ? [{ text: `${laneDeaths} смерти до 10:00 замедлили старт и первый ключевой предмет.`, evidence: [], severity: 'warning' as const }]
-          : []),
-        ...(deathRiskKind === 'high-total'
-          ? [{ text: `${deaths} смертей за матч — высокий общий риск для core. ${totalDeathRiskDetail}`, evidence: [`${deaths} смертей`], severity: 'bad' as const }]
-          : []),
-        damageFinding
-      ].slice(0, 3)
-    : deathRiskKind === 'high-total-unknown-phase'
-      ? [
-          { text: `${deaths} смертей — высокий общий риск для carry.`, evidence: [`${deaths} смертей`], severity: 'bad' as const },
-          { text: 'Фазу смертей определить нельзя.', evidence: [], severity: 'info' as const },
-          damageFinding
-        ]
-      : [damageFinding];
+  const fightsFindings: AnalysisFinding[] = [
+    deaths !== undefined
+      ? { text: `Смертей за матч: ${deaths}${knownLateDeaths !== undefined ? `; после 35:00: ${knownLateDeaths}` : ''}. Эти значения не оценивают качество решений без контекста эпизодов.`, evidence: [], severity: 'info' }
+      : { text: 'Число смертей недоступно.', evidence: [], severity: 'info' },
+    damageFinding
+  ];
 
 
   const mapFindings: AnalysisFinding[] = [
-    ...(gpm !== undefined && formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile) ? [{ text: `${Math.round(gpm)} GPM — ${formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile)} по ориентиру OpenDota для ${heroOverride.heroName}.`, evidence: ['общая экономика матча'], severity: benchmarkSeverity(gpmBench) }] : []),
-    ...(xpm !== undefined && formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} XPM — ${formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
-    ...(lastHitsPerMin !== undefined && formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} LH/мин — ${formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile)} по ориентиру OpenDota.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
+    ...(gpm !== undefined && formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile) ? [{ text: `${Math.round(gpm)} золота в минуту — ${formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile)} по ориентиру OpenDota для ${heroOverride.heroName}.`, evidence: ['общая экономика матча'], severity: benchmarkSeverity(gpmBench) }] : []),
+    ...(xpm !== undefined && formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} опыта в минуту — ${formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
+    ...(lastHitsPerMin !== undefined && formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добитых крипов в минуту — ${formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile)} по ориентиру OpenDota.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
   ];
   if (p?.economyByPhaseSource === 'gold_t/lh_t' && p.economyByPhase) {
     const phaseLabels: Record<MatchPhase, string> = { laning: '0–10 мин', earlyMid: '10–20 мин', midGame: '20–35 мин', lateGame: 'после 35 мин' };
-    const phases = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined).sort((a, b) => b[1].lhPerMinuteInPhase! - a[1].lhPerMinuteInPhase!);
-    const best = phases[0];
-    const worst = phases.at(-1);
-    if (phases.length >= 2 && best && worst) mapFindings.unshift({ text: `Лучший темп фарма — ${phaseLabels[best[0]]} (${fmt(best[1].lhPerMinuteInPhase!)} LH/мин), худший — ${phaseLabels[worst[0]]} (${fmt(worst[1].lhPerMinuteInPhase!)} LH/мин).`, evidence: ['темп по фазам'], severity: 'info' });
+    const phases = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined);
+    if (phases.length >= 2) mapFindings.unshift({ text: phases.map(([phase, value]) => `${phaseLabels[phase]}: ${fmt(value.lhPerMinuteInPhase!)} крипа/мин`).join('; ') + '.', evidence: ['темп по фазам'], severity: 'info' });
     const phaseOrder: MatchPhase[] = ['laning', 'earlyMid', 'midGame', 'lateGame'];
     const phaseWithMostDeaths = deathsByPhase && (Object.entries(deathsByPhase) as Array<[MatchPhase, number]>).sort((a, b) => b[1] - a[1])[0];
     if (phaseWithMostDeaths?.[1]) {
@@ -257,7 +217,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       const nextFarm = nextPhase ? p.economyByPhase[nextPhase]?.lhPerMinuteInPhase : undefined;
       if (phaseFarm !== undefined && nextFarm !== undefined) {
         const direction = nextFarm > phaseFarm ? 'вырос' : nextFarm < phaseFarm ? 'снизился' : 'не изменился';
-        mapFindings.unshift({ text: `В отрезке ${phaseLabels[phaseWithMostDeaths[0]]} было ${phaseWithMostDeaths[1]} смерт. После него темп фарма ${direction} с ${fmt(phaseFarm)} до ${fmt(nextFarm)} LH/мин.`, evidence: ['смерти и темп по фазам'], severity: nextFarm < phaseFarm ? 'warning' : 'info' });
+        mapFindings.unshift({ text: `В отрезке ${phaseLabels[phaseWithMostDeaths[0]]} было ${phaseWithMostDeaths[1]} смерт. В следующей доступной фазе темп фарма ${direction} с ${fmt(phaseFarm)} до ${fmt(nextFarm)} крипа/мин; причинная связь не установлена.`, evidence: ['смерти и темп по фазам'], severity: 'info' });
       }
     }
   } else mapFindings.push({ text: 'Фазовый темп экономики недоступен: OpenDota не вернул минутные срезы фарма для этого матча.', evidence: ['нет минутных срезов фарма'], severity: 'info' });
@@ -268,85 +228,70 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   } else if (p?.farmProfile) {
     const countSources: Array<[string, number | undefined]> = [['лейн-крипы', p.farmProfile.laneKills], ['нейтралы', p.farmProfile.neutralKills], ['древние', p.farmProfile.ancientKills]];
     const dominant = countSources.filter((entry): entry is [string, number] => entry[1] !== undefined).sort((a, b) => b[1] - a[1])[0];
-    if (dominant) mapFindings.unshift({ text: `По резервному профилю чаще всего игрок добивал категорию «${dominant[0]}» (${dominant[1]}). Это счётчик событий, не сумма золота.`, evidence: ['профиль добиваний'], severity: 'info' });
+    if (dominant) mapFindings.unshift({ text: `Добито больше всего в категории «${dominant[0]}»: ${dominant[1]}.`, evidence: ['профиль добиваний'], severity: 'info' });
   }
-  const laneScoreWithEfficiency = score(60, lanePct === undefined ? 0 : lanePct >= 70 ? 8 : lanePct >= 60 ? 2 : -4);
-  const laneFinalScore = score(laneScoreWithEfficiency, -(laneDeaths * 6));
   const itemsScore = suspiciousItems.length > 0
     ? 58
     : earlyItem && timingItem && !earlyItemHasExternalContext && !timingItemHasExternalContext && isPositiveTiming(earlyItemStatus) && isPositiveTiming(timingItemStatus)
       ? 73
-      : 64;
-
-  const topMistakes = [
-    ...(deathRiskKind === 'late' ? [`${knownLateDeaths} смертей после 35:00 — главный риск. В лейте смерть core-героя даёт сопернику окно на Roshan, buyback pressure или строения.`] : []),
-    ...(laneDeaths >= 2 ? [`${laneDeaths} смерти до 10:00 снизили качество линии${p?.laneReview?.lhAt10 !== undefined ? ` при ${Math.round(p.laneReview.lhAt10)} LH` : ''}${lanePct !== undefined ? ` и ${Math.round(lanePct)}% эффективности` : ''}.`] : []),
-    ...(deathRiskKind === 'high-total' || deathRiskKind === 'high-total-unknown-phase' ? [`${deaths} смертей за матч — высокий общий риск для core. ${totalDeathRiskDetail}`] : []),
-    ...(lanePct !== undefined && lanePct < 60 ? [`Линия просела по эффективности (${Math.round(lanePct)}%).`] : [])
-  ].slice(0, 3);
+      : undefined;
   if (towerDamage !== undefined && towerDamage > 0 && formatPercentileRange(tdBench.lowerPercentile, tdBench.upperPercentile)) mapFindings.push({ text: `${Math.round(towerDamage).toLocaleString('ru-RU')} урона по строениям — ${formatPercentileRange(tdBench.lowerPercentile, tdBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(tdBench) });
 
-  const safeTopMistakes = topMistakes.length > 0
-    ? topMistakes
-    : ['Критичных ошибок по доступным данным не найдено.'];
-
-  const previousFightScore = score(58, heroDamagePerMin === undefined ? 0 : heroDamagePerMin >= 700 ? 10 : -5);
-  const fightBaseBenchmarkScore = benchmarkScore(hdBench) ?? previousFightScore;
-  const deathRiskAdjustment = -((knownLateDeaths ?? 0) * 4 + laneDeaths * 2);
-  const fightScore = score(fightBaseBenchmarkScore, deathRiskAdjustment);
   const benchmarkMetric = (actual: number | undefined, comparison: ReturnType<typeof getPercentileForValue>) =>
     actual !== undefined && (comparison.lowerPercentile !== undefined || comparison.upperPercentile !== undefined)
       ? { actual, percentileRange: comparison.percentileRange, lowerPercentile: comparison.lowerPercentile, upperPercentile: comparison.upperPercentile, label: comparison.label }
       : undefined;
   const actualLhAt10 = actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10;
   const laneLhTarget = actualLhAt10 === undefined ? undefined : Math.round(actualLhAt10);
-  const biggestRisk = deathRiskKind === 'deathless'
-    ? 'По данным о смертях явного риска не выявлено.'
-    : deaths === undefined && knownLateDeaths === undefined
-    ? 'Недостаточно данных о смертях, чтобы надёжно оценить риск в поздней игре.'
-    : deathRiskKind === 'late' && deaths !== undefined
-      ? `Главный риск — смерти core-героя: ${deaths} смертей всего, из них ${knownLateDeaths} после 35:00. В лейте такие смерти дают сопернику окна на Roshan, buyback pressure и строения.`
-      : deathRiskKind === 'high-total' || deathRiskKind === 'high-total-unknown-phase'
-        ? `Главный риск — общая смертность core-героя: ${deaths} смертей всего. ${totalDeathRiskDetail}`
-      : deathRiskKind === 'normal' && deaths !== undefined
-        ? 'По данным о смертях повышенного риска не выявлено.'
-      : knownLateDeaths !== undefined
-        ? `Главный риск — поздние смерти core-героя: подтверждено ${knownLateDeaths} после 35:00. В лейте такие смерти дают сопернику окна на Roshan, buyback pressure и строения.`
-        : `${deaths} смертей всего, но данных по фазам недостаточно для оценки риска в поздней игре.`;
+  const hasPhaseEconomy = p?.economyByPhaseSource === 'gold_t/lh_t'
+    && Object.values(p.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
+  const priorities: PostMatchAnalysis['priorities'] = [];
 
-  const deathAdjustment = deathRiskKind === 'late'
-    ? 'После 35:00 цель — не умирать перед Roshan/объектами: играй от вижена, buyback и позиции команды.'
-    : deathRiskKind === 'high-total' || deathRiskKind === 'high-total-unknown-phase'
-      ? 'Сократи общее число смертей: не входи в драку первым и играй от вижена и позиции команды.'
-      : undefined;
-  const laneAdjustment = laneDeaths > 0
-    ? laneLhTarget !== undefined ? `На линии цель — 0 смертей до 10:00 при сохранении не менее ${laneLhTarget} LH.` : 'На линии цель — 0 смертей до 10:00 без потери доступного фарма.'
-    : lanePct !== undefined && lanePct < 60
-      ? `Подними эффективность линии выше текущих ${Math.round(lanePct)}%, сохраняя доступный фарм.`
-      : undefined;
-  const neutralFocus = laneDeaths >= 2
-    ? 'Стабилизируй линию: избегай ранних смертей и сохраняй доступный фарм.'
-    : lanePct !== undefined && lanePct < 60
-      ? 'Улучши эффективность линии, сохраняя доступный фарм и безопасные размены.'
-      : economyPercentile !== undefined && economyPercentile < 50
-        ? 'Подними темп экономики относительно доступного ориентира OpenDota.'
-        : heroDamagePercentile !== undefined && heroDamagePercentile < 50
-          ? 'Ищи более надёжные окна для участия в драках, чтобы повысить вклад по героям.'
-          : earlyItemStatus === 'late' || timingItemStatus === 'late'
-            ? 'Сфокусируйся на подтверждённом запаздывающем тайминге ключевого предмета.'
-            : 'Сохрани текущую дисциплину и ориентируйся на подтверждённые данные следующего матча.';
-  const deathFocus = deathRiskKind === 'late' ? 'После 35:00 играй от вижена и позиции команды: не начинай драку первым, сохраняй buyback и заходи в драку после раскрытия ключевых кнопок врага.' : deathRiskKind === 'high-total' || deathRiskKind === 'high-total-unknown-phase' ? 'Снизь общее число смертей: не начинай драку первым и заходи после раскрытия ключевых кнопок врага.' : neutralFocus;
+  if (lanePct !== undefined && lanePct < 60) priorities.push({
+    id: 'lane-farm', title: 'Улучшить фарм на линии',
+    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов к 10:00; ` : ''}эффективность линии — ${Math.round(lanePct)}%${laneDeaths !== undefined ? `; смертей до 10:00 — ${laneDeaths}` : '; число смертей до 10:00 недоступно'}.`,
+    meaning: 'Доступный показатель эффективности отмечает фарм на линии как направление для улучшения. Он не устанавливает причину результата матча.',
+    action: 'Пересмотри первые 10 минут и отметь пропущенные добивания и отрезки, когда не удавалось фармить.',
+    dataState: laneDeaths === undefined || actualLhAt10 === undefined ? 'partial' : 'available', severity: 'warning'
+  });
+  if (laneDeaths !== undefined && laneDeaths > 0 && priorities.length < 2) priorities.push({
+    id: 'lane-events', title: laneDeaths === 1 ? 'Сохранить темп линии' : 'Проверить ранние эпизоды',
+    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов и ` : ''}${laneDeaths} ${laneDeaths === 1 ? 'смерть' : 'смерти'} к 10:00${lanePct !== undefined ? `; эффективность линии — ${Math.round(lanePct)}%` : ''}.`,
+    meaning: laneDeaths === 1 ? 'Один эпизод не доказывает ошибку или проигранную линию, но его можно проверить.' : 'Данные отмечают несколько эпизодов для проверки, но не устанавливают их причины или влияние на линию.',
+    action: 'Открой запись первых 10 минут и проверь решение перед каждым отмеченным эпизодом.',
+    target: laneLhTarget !== undefined ? { text: `Сохранить свой результат — ${laneLhTarget} добитых крипов — и попробовать пройти линию без смерти.`, source: 'personal' } : { text: 'Попробовать пройти первые 10 минут без смерти.', source: 'training' },
+    dataState: actualLhAt10 === undefined ? 'partial' : 'available', severity: 'info'
+  });
+  if (economyPercentile !== undefined && economyPercentile < 50 && priorities.length < 2) priorities.push({
+    id: 'economy', title: 'Проверить темп экономики',
+    fact: `В этой игре: ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'значение золота в минуту недоступно'}; показатель ниже доступного ориентира OpenDota.`,
+    meaning: hasPhaseEconomy
+      ? 'Сравнение отмечает темп экономики как направление для разбора, но не объясняет причину результата.'
+      : 'Сравнение отмечает темп экономики как направление для разбора, но данных по фазам недостаточно, чтобы указать конкретный отрезок.',
+    action: hasPhaseEconomy
+      ? 'Сравни отрезки фарма по фазам и выбери один период, где можно сократить время без получения золота.'
+      : 'Посмотри запись матча и отметь один продолжительный отрезок без получения золота.',
+    dataState: gpm === undefined || !hasPhaseEconomy ? 'partial' : 'available', severity: 'warning'
+  });
+
+  const topMistakes = priorities.filter((priority) => priority.severity === 'warning').map((priority) => priority.fact);
+  const safeTopMistakes = topMistakes.length ? topMistakes : ['Критичных ошибок по доступным данным не найдено.'];
+  const nextGameAdjustments = priorities.map((priority) => priority.target?.text ?? priority.action);
+  const biggestRisk = priorities[0]?.meaning ?? (deathRiskKind === 'unavailable'
+    ? 'Недостаточно данных, чтобы обосновать приоритет для разбора.'
+    : 'По доступным данным приоритетная проблема не установлена.');
+  const nextMatchFocus = priorities[0]?.target?.text ?? priorities[0]?.action ?? 'Сохрани сильные стороны и сравни подтверждённые показатели следующего матча.';
+  const fightBaseBenchmarkScore = benchmarkScore(hdBench);
+  const fightScore = fightBaseBenchmarkScore;
+  const deathRiskAdjustment = 0;
 
   return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,
-    grades: { lane: { score: laneFinalScore, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : score(60, gpm === undefined ? 0 : gpm >= 650 ? 10 : -5), summary: mapSummary, findings: mapFindings.slice(0, 3) } },
-    scoreBreakdown: { fights: { baseBenchmarkScore: fightBaseBenchmarkScore, deathRiskAdjustment, finalScore: fightScore } },
+    grades: { lane: { score: undefined, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : undefined, summary: mapSummary, findings: mapFindings.slice(0, 3) } },
+    scoreBreakdown: fightBaseBenchmarkScore === undefined ? undefined : { fights: { baseBenchmarkScore: fightBaseBenchmarkScore, deathRiskAdjustment, finalScore: fightScore! } },
     topMistakes: safeTopMistakes,
-    nextGameAdjustments: [
-      deathAdjustment,
-      laneAdjustment,
-      heroOverride.postTimingAdjustment
-    ].filter((adjustment): adjustment is string => Boolean(adjustment)).slice(0, 3),
-    finalVerdict: { mainReason: gpm !== undefined && heroDamage !== undefined ? (result === 'win' ? `Победа за счёт темпа экономики и драк: ${Math.round(gpm)} GPM и ${Math.round(heroDamage).toLocaleString('ru-RU')} урона.` : `Поражение при ${Math.round(gpm)} GPM и ${Math.round(heroDamage).toLocaleString('ru-RU')} урона: не хватило стабильной конвертации темпа.`) : `${result === 'win' ? 'Победа' : 'Поражение'}: часть данных об экономике и уроне недоступна, вывод основан на подтверждённых событиях матча.`, biggestRisk, nextMatchFocus: deathFocus },
+    nextGameAdjustments,
+    priorities: priorities.slice(0, 2),
+    finalVerdict: { mainReason: `${result === 'win' ? 'Победа' : 'Поражение'}. ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'Темп золота недоступен'}${heroDamage !== undefined ? `, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям` : ''}. Эти показатели описывают игру, но не доказывают причину результата.`, biggestRisk, nextMatchFocus },
     meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75 }
   };
 }

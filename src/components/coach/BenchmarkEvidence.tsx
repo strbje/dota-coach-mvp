@@ -3,9 +3,9 @@ import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { formatPercentileRange } from '@/lib/dota/analyze/compareToBenchmarks';
 
 const METRIC_LABELS: Record<string, { name: string; suffix: string; digits?: number }> = {
-  gpm: { name: 'GPM', suffix: '' },
-  xpm: { name: 'XPM', suffix: '' },
-  lhPerMin: { name: 'LH/мин', suffix: '', digits: 2 },
+  gpm: { name: 'золота в минуту', suffix: '' },
+  xpm: { name: 'опыта в минуту', suffix: '' },
+  lhPerMin: { name: 'добито крипов в минуту', suffix: '', digits: 2 },
   heroDamagePerMin: { name: 'Урон по героям/мин', suffix: '', digits: 1 },
   towerDamage: { name: 'Урон по строениям', suffix: '' },
   killsPerMin: { name: 'Убийства/мин', suffix: '', digits: 2 }

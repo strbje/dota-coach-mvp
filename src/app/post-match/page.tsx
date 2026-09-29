@@ -1,7 +1,6 @@
 'use client';
 import { type FormEvent, useRef, useState } from 'react';
 import { BenchmarkEvidence } from '@/components/coach/BenchmarkEvidence';
-import { CoachSummaryCard } from '@/components/coach/CoachSummaryCard';
 import { GradesGrid } from '@/components/coach/GradesGrid';
 import { ItemTimeline } from '@/components/coach/ItemTimeline';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
@@ -203,16 +202,16 @@ export default function PostMatchPage() {
 </Panel>
 
 <Panel className="verdict">
-<span className="eyebrow">Итог тренера</span>
+<span className="eyebrow">Краткий итог</span>
 
 <div className="verdict-grid">
 <div>
-<h2>Что определило матч</h2>
+<h2>Главное в твоей игре</h2>
 <p>{analysis.finalVerdict.mainReason}</p>
 </div>
 
 <div>
-<h3>Главный риск</h3>
+<h3>Что стоит проверить</h3>
 <p>{analysis.finalVerdict.biggestRisk}</p>
 </div>
 
@@ -222,16 +221,24 @@ export default function PostMatchPage() {
 </div>
 </div>
 </Panel>
-<div className="grid grid-2">
-<CoachSummaryCard title="Главные ошибки" lines={analysis.topMistakes} />
-<CoachSummaryCard title="Что сделать в следующей игре" lines={analysis.nextGameAdjustments} /></div>
+<Panel>
+<h2 className="section-heading">Приоритеты</h2>
+{analysis.priorities.length ? <div className="grid grid-2">{analysis.priorities.map((priority) => <Panel as="article" key={priority.id}>
+<h3>{priority.title}</h3>
+<p><strong>{priority.fact}</strong></p>
+<p>{priority.meaning}</p>
+<p><strong>Что сделать:</strong> {priority.action}</p>
+{priority.target ? <p><strong>Цель:</strong> {priority.target.text} <span className="muted">({priority.target.source === 'personal' ? 'собственный результат, не норма для героя' : priority.target.source === 'external' ? 'подтверждённый внешний ориентир' : 'тренировочная цель'})</span></p> : null}
+{priority.dataState === 'partial' ? <Alert tone="unknown">Для полного вывода данных недостаточно.</Alert> : null}
+</Panel>)}</div> : <Alert tone="unknown">По доступным данным нет приоритета, который можно обосновать фактами матча.</Alert>}
+</Panel>
+<ItemTimeline items={analysis.itemTimings} title="Ключевые покупки" />
 <GradesGrid grades={analysis.grades} />
 <details className="details">
 <summary>Показать доказательства и подробности</summary>
 
 <div className="details-content">
 <BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
-<ItemTimeline items={analysis.itemTimings} />
 <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={deaths} itemTimings={analysis.itemTimings} />{deaths ? <Panel>
 <h3>Смерти по фазам</h3>
 <ul>{Object.entries(deaths).map(([phase, count]) => <li key={phase}>{PHASE_LABELS[phase as MatchPhase]}: <strong>{count}</strong></li>
@@ -241,11 +248,11 @@ export default function PostMatchPage() {
  : null}</Panel>
  : <Alert tone="unknown">Недостаточно данных о смертях по фазам.</Alert>
 }{analysis.farmProfile ? <Panel>
-<h3>Профиль фарма</h3>
+<h3>Фарм и экономика</h3>
 {analysis.goldReasons?.constantsAvailable ? <><ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>
 )}{analysis.goldReasons.unknownAmount > 0 ? <li>Другое / нераспознано: {Math.round(analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li>
  : null}</ul>
-{!analysis.goldReasons.breakdownComplete ? <><Alert tone="unknown">Разбивка по источникам неполная. Ниже показан резервный профиль по числу добиваний и убийств — это не сумма золота.</Alert>
+{!analysis.goldReasons.breakdownComplete ? <><Alert tone="unknown">Разбивка по источникам золота неполная. Ниже отдельно показано количество добиваний и убийств.</Alert>
 <ul>
 <li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
 <li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li>
@@ -262,7 +269,7 @@ export default function PostMatchPage() {
 
 <li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
 </ul>
-<Alert tone="unknown">Разбивка золота по источникам недоступна. Показаны количества событий, а не золото.</Alert>
+<Alert tone="unknown">Разбивка золота по источникам недоступна. Значения выше — количество добиваний и убийств.</Alert>
 </>}</Panel>
  : <Alert tone="unknown">Недостаточно данных о профиле фарма.</Alert>
 }</div>

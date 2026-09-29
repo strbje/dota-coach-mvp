@@ -10,5 +10,7 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
   return Number.isFinite(candidate.matchId)
     && typeof candidate.hero === 'string'
     && Boolean(candidate.grades && typeof candidate.grades === 'object')
-    && Boolean(candidate.finalVerdict && typeof candidate.finalVerdict === 'object');
+    && Boolean(candidate.finalVerdict && typeof candidate.finalVerdict === 'object')
+    && Array.isArray(candidate.priorities)
+    && Array.isArray(candidate.itemTimings);
 }

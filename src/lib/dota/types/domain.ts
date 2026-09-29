@@ -24,6 +24,17 @@ export type AnalysisFinding = {
   severity: 'good' | 'warning' | 'bad' | 'info';
 };
 
+export type CoachingPriority = {
+  id: string;
+  title: string;
+  fact: string;
+  meaning: string;
+  action: string;
+  target?: { text: string; source: 'personal' | 'external' | 'training' };
+  dataState: 'available' | 'partial';
+  severity: AnalysisFinding['severity'];
+};
+
 export type BenchmarkPercentileBucket = { percentile: number; value: number };
 
 export type PostMatchBenchmarkContext = {
@@ -278,16 +289,17 @@ export type PostMatchAnalysis = {
   goldReasons?: NonNullable<NormalizedOpenDotaMatch['player']>['goldReasons'];
   stratz?: StratzPostMatchData;
   grades: {
-    lane: { score: number; summary?: string; findings: AnalysisFinding[] };
-    items: { score: number; summary?: string; findings: AnalysisFinding[] };
-    fights: { score: number; summary?: string; findings: AnalysisFinding[] };
-    map: { score: number; summary?: string; findings: AnalysisFinding[] };
+    lane: { score?: number; summary?: string; findings: AnalysisFinding[] };
+    items: { score?: number; summary?: string; findings: AnalysisFinding[] };
+    fights: { score?: number; summary?: string; findings: AnalysisFinding[] };
+    map: { score?: number; summary?: string; findings: AnalysisFinding[] };
   };
   scoreBreakdown?: {
     fights: { baseBenchmarkScore: number; deathRiskAdjustment: number; finalScore: number };
   };
   topMistakes: string[];
   nextGameAdjustments: string[];
+  priorities: CoachingPriority[];
   finalVerdict: {
     mainReason: string;
     biggestRisk: string;

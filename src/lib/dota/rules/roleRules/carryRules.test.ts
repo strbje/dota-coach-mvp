@@ -56,13 +56,16 @@ function withAvailablePhaseEconomy(input: NormalizedOpenDotaMatch, rates: Partia
 test('does not present absent lane metrics as zero', () => {
   const input = match();
   delete input.player!.deaths;
+  delete input.player!.laneReview!.deathsBefore10;
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   assert.doesNotMatch(allCopy(analysis), /0 LH|0% эффективности/);
   assert.doesNotMatch(allCopy(analysis), /0 смертей (всего|— главный)/);
-  assert.match(analysis.finalVerdict.biggestRisk, /Недостаточно данных о смертях/);
+  assert.doesNotMatch(allCopy(analysis), /0 смертей до 10:00/);
   for (const grade of Object.values(analysis.grades)) {
-    assert.equal(Number.isInteger(grade.score), true);
-    assert.ok(grade.score >= 1 && grade.score <= 99);
+    if (grade.score !== undefined) {
+      assert.equal(Number.isInteger(grade.score), true);
+      assert.ok(grade.score >= 1 && grade.score <= 99);
+    }
   }
 });
 
@@ -80,7 +83,7 @@ test('unknown item timings stay neutral without a benchmark', () => {
     { key: 'unbenchmarked_timing', item: 'Timing Item', time: '15:00', timeSeconds: 900, source: 'purchase_log' }
   ];
   const analysis = runCarryPostMatchRules(input, undefined, {}, override);
-  assert.equal(analysis.grades.items.score, 64);
+  assert.equal(analysis.grades.items.score, undefined);
   assert.notEqual(analysis.grades.items.summary, 'Ранние ключевые предметы в темпе');
   assert.equal(analysis.grades.items.findings.some((finding) => finding.severity === 'good'), false);
   assert.ok(analysis.grades.items.findings.every((finding) => finding.text.includes('подтверждённого ориентира')));
@@ -102,8 +105,8 @@ test('external timing context stays neutral and does not enable the manual posit
     }
   };
   const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
-  assert.equal(analysis.grades.items.score, 64);
-  assert.equal(analysis.grades.items.summary, 'Тайминги сопоставлены с контекстом OpenDota');
+  assert.equal(analysis.grades.items.score, undefined);
+  assert.equal(analysis.grades.items.summary, 'Покупки зафиксированы, оценка недоступна');
   assert.equal(analysis.itemAnalysis?.filter((item) => item.scenarioContext).length, 2);
   assert.ok(analysis.itemAnalysis?.every((item) => item.timingStatus === 'unknown'));
 });
@@ -121,7 +124,7 @@ test('a manual late timing is not hidden by external context for the other item'
     }
   };
   const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
-  assert.equal(analysis.grades.items.score, 64);
+  assert.equal(analysis.grades.items.score, undefined);
   assert.equal(analysis.grades.items.summary, 'Есть задержка по таймингу');
   assert.ok(analysis.grades.items.findings.some((finding) => finding.severity === 'warning' && finding.text.includes('Armlet')));
 });
@@ -152,7 +155,7 @@ test('generic carry without a hero timing override emits no timing adjustment', 
   };
 
   const analysis = runCarryPostMatchRules(match(), undefined, {}, override);
-  assert.deepEqual(analysis.nextGameAdjustments, ['На линии цель — 0 смертей до 10:00 без потери доступного фарма.']);
+  assert.deepEqual(analysis.nextGameAdjustments, ['Попробовать пройти первые 10 минут без смерти.']);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /ключев.*тайминг/i);
 });
 
@@ -164,9 +167,9 @@ test('lane death risk uses STRATZ then OpenDota and ignores normalized phase fal
   const withOpenDota = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   delete input.player!.laneReview!.deathsBefore10;
   const withZeroFallback = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  assert.equal(withStratz.grades.lane.score, 42);
-  assert.equal(withOpenDota.grades.lane.score, 54);
-  assert.equal(withZeroFallback.grades.lane.score, 60);
+  assert.equal(withStratz.grades.lane.score, undefined);
+  assert.equal(withOpenDota.grades.lane.score, undefined);
+  assert.equal(withZeroFallback.grades.lane.score, undefined);
 });
 
 test('LH target never drops below the achieved checkpoint', () => {
@@ -178,7 +181,7 @@ test('LH target never drops below the achieved checkpoint', () => {
     }
   };
   const analysis = runCarryPostMatchRules(match(62), undefined, context, lifestealerCarryOverride);
-  assert.ok(analysis.nextGameAdjustments.some((item) => item.includes('не менее 62 LH')));
+  assert.ok(analysis.nextGameAdjustments.some((item) => item.includes('свой результат — 62 добитых крипов')));
 });
 
 test('research-only heroAverage does not affect product lane score or copy', () => {
@@ -199,7 +202,7 @@ test('reports a factual farm-tempo decline after the death-heavy phase', () => {
   withPhaseEconomy(input, [5, 7.1, 4.2, 6], [0, 3, 1, 0]);
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   const copy = analysis.grades.map.findings.map((finding) => finding.text).join(' ');
-  assert.match(copy, /10–20 мин было 3 смерт.*снизился с 7.1 до 4.2 LH\/мин/);
+  assert.match(copy, /10–20 мин было 3 смерт.*снизился с 7.1 до 4.2 крипа\/мин.*причинная связь не установлена/);
   assert.doesNotMatch(copy, /восстанов|компенсировал/);
 });
 
@@ -207,7 +210,7 @@ test('reports a factual farm-tempo increase in the phase after deaths', () => {
   const input = match();
   withPhaseEconomy(input, [5, 4.2, 7.1, 6], [0, 3, 1, 0]);
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  assert.match(analysis.grades.map.findings.map((finding) => finding.text).join(' '), /10–20 мин было 3 смерт.*вырос с 4.2 до 7.1 LH\/мин/);
+  assert.match(analysis.grades.map.findings.map((finding) => finding.text).join(' '), /10–20 мин было 3 смерт.*вырос с 4.2 до 7.1 крипа\/мин.*причинная связь не установлена/);
 });
 
 test('does not make a recovery claim when late game is death-heavy', () => {
@@ -221,7 +224,8 @@ test('a short match does not invent a zero-LH late phase in best/worst copy', ()
   const input = match();
   withAvailablePhaseEconomy(input, { laning: 5, earlyMid: 6, midGame: 4 }, [0, 0, 0, 0]);
   const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
-  assert.match(copy, /Лучший темп фарма/);
+  assert.match(copy, /0–10 мин: 5 крипа\/мин/);
+  assert.doesNotMatch(copy, /худший|провал|ошибк/i);
   assert.doesNotMatch(copy, /после 35 мин/);
 });
 
@@ -237,7 +241,7 @@ test('uses the kill-count profile when gold reasons are incomplete', () => {
   input.player!.farmProfile = { laneKills: 80, neutralKills: 120, ancientKills: 20 };
   input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: false, totalPositiveGold: 1000, totalNegativeGold: 0, groups: [{ group: 'creeps', label: 'Лейн-крипы', amount: 1000 }], unknownAmount: 100, unknownKeys: ['21'], decoded: [], grouped: [] };
   const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
-  assert.match(copy, /резервному профилю.*нейтралы.*120.*не сумма золота/);
+  assert.match(copy, /Добито больше всего.*нейтралы.*120/);
   assert.doesNotMatch(copy, /Главный подтверждённый источник/);
 });
 
@@ -264,7 +268,7 @@ test('deathless telemetry produces a neutral verdict', () => {
   input.player!.deathsByPhase = { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 };
   input.player!.deathDataSource = 'death_log';
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  assert.equal(analysis.finalVerdict.biggestRisk, 'По данным о смертях явного риска не выявлено.');
+  assert.equal(analysis.finalVerdict.biggestRisk, 'По доступным данным приоритетная проблема не установлена.');
 });
 
 test('deathless total stays neutral when phase telemetry is unavailable', () => {
@@ -275,7 +279,7 @@ test('deathless total stays neutral when phase telemetry is unavailable', () => 
   input.player!.deathDataSource = 'unavailable';
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   const copy = [analysis.grades.fights.summary, ...analysis.grades.fights.findings.map((finding) => finding.text), ...analysis.topMistakes, ...analysis.nextGameAdjustments, analysis.finalVerdict.biggestRisk, analysis.finalVerdict.nextMatchFocus].join(' ');
-  assert.equal(analysis.finalVerdict.biggestRisk, 'По данным о смертях явного риска не выявлено.');
+  assert.equal(analysis.finalVerdict.biggestRisk, 'По доступным данным приоритетная проблема не установлена.');
   assert.doesNotMatch(copy, /высокий риск|Фазу смертей определить нельзя|После 35:00|buyback|бесплатные смерти/);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /смерт/);
 });
@@ -286,9 +290,9 @@ test('deathless total overrides contradictory phase deaths in product findings',
   withPhaseEconomy(input, [5, 6, 7, 8], [0, 0, 0, 3]);
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   const copy = allCopy(analysis);
-  assert.equal(analysis.finalVerdict.biggestRisk, 'По данным о смертях явного риска не выявлено.');
+  assert.equal(analysis.finalVerdict.biggestRisk, 'По доступным данным приоритетная проблема не установлена.');
   assert.deepEqual(analysis.deathsByPhase, { laning: 0, earlyMid: 0, midGame: 0, lateGame: 0 });
-  assert.doesNotMatch(copy, /смерт.*после 35:00|высокий риск смертей в лейте/i);
+  assert.doesNotMatch(copy, /высокий риск смертей в лейте/i);
   assert.doesNotMatch(analysis.grades.map.findings.map((finding) => finding.text).join(' '), /3 смерт|После него/);
 });
 
@@ -297,8 +301,9 @@ test('low lane efficiency without lane deaths produces farm-only adjustment', ()
   input.player!.deaths = 0;
   input.player!.laneReview = { source: 'opendota', deathsBefore10: 0, laneEfficiencyPct: 55, lhAt10: 48 };
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  const adjustment = analysis.nextGameAdjustments.find((item) => item.includes('эффективность линии'));
-  assert.match(adjustment ?? '', /55%.*фарм/);
+  assert.equal(analysis.priorities[0].id, 'lane-farm');
+  assert.match(analysis.priorities[0].fact, /48 добитых крипов.*55%.*смертей до 10:00 — 0/);
+  assert.match(analysis.finalVerdict.nextMatchFocus, /Пересмотри первые 10 минут/);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /смерт/);
 });
 
@@ -312,46 +317,134 @@ test('two ordinary deaths are not promoted to a high-risk coaching problem', () 
   const deathCopy = [analysis.grades.fights.summary, ...analysis.grades.fights.findings.map((finding) => finding.text), ...analysis.topMistakes, analysis.finalVerdict.biggestRisk].join(' ');
   assert.doesNotMatch(deathCopy, /высокий риск|главн.*риск/i);
   assert.deepEqual(analysis.topMistakes, ['Критичных ошибок по доступным данным не найдено.']);
-  assert.equal(analysis.finalVerdict.biggestRisk, 'По данным о смертях повышенного риска не выявлено.');
+  assert.equal(analysis.finalVerdict.biggestRisk, 'По доступным данным приоритетная проблема не установлена.');
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /смерт|После 35:00|buyback/);
 });
 
-test('ten total deaths with zero late deaths consistently coaches total death risk', () => {
+test('death counts alone do not create risk labels or score penalties', () => {
   const input = match();
-  input.player!.deaths = 10;
-  input.player!.laneReview!.deathsBefore10 = 1;
-  input.player!.deathsByPhase = { laning: 1, earlyMid: 5, midGame: 4, lateGame: 0 };
+  input.durationSeconds = 4800;
+  input.player!.durationMinutes = 80;
+  input.player!.deaths = 3;
+  input.player!.laneReview!.deathsBefore10 = 0;
+  input.player!.deathsByPhase = { laning: 0, earlyMid: 0, midGame: 0, lateGame: 3 };
   input.player!.deathDataSource = 'death_log';
-  const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  assert.match(analysis.grades.fights.summary!, /Много смертей/);
-  assert.match(analysis.grades.fights.findings.map((finding) => finding.text).join(' '), /10 смертей.*высокий общий риск/);
-  assert.match(analysis.topMistakes.join(' '), /10 смертей.*общий риск/);
-  assert.match(analysis.nextGameAdjustments.join(' '), /общее число смертей/);
-  assert.match(analysis.finalVerdict.biggestRisk, /общая смертность.*10 смертей всего.*Смертей после 35:00 не зафиксировано/);
-  assert.match(analysis.finalVerdict.nextMatchFocus, /общее число смертей/);
-  assert.doesNotMatch(`${analysis.topMistakes.join(' ')} ${analysis.nextGameAdjustments.join(' ')} ${analysis.finalVerdict.nextMatchFocus}`, /После 35:00 цель|сохраняй buyback/);
+  input.player!.heroDamagePerMin = 800;
+  const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { hero_damage_per_min: [{ percentile: 80, value: 800 }] } } };
+  const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
+  assert.equal(analysis.scoreBreakdown?.fights.deathRiskAdjustment, 0);
+  assert.equal(analysis.grades.fights.score, 80);
+  assert.doesNotMatch(allCopy(analysis), /высокий риск|главный риск/i);
+  assert.equal(analysis.priorities.some((priority) => priority.id === 'deaths'), false);
 });
 
-test('unknown death phases never invent zero late deaths or late-game advice', () => {
-  const input = match();
-  input.player!.deaths = 10;
-  input.player!.deathsByPhase = undefined;
-  input.player!.deathTimings = [];
-  input.player!.deathDataSource = 'unavailable';
+test('unknown lane death data stays unavailable instead of becoming zero', () => {
+  const input = match(30);
+  delete input.player!.deaths;
+  delete input.player!.laneReview!.deathsBefore10;
+  input.player!.laneReview!.laneEfficiencyPct = 50;
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  const copy = [analysis.grades.fights.summary, ...analysis.grades.fights.findings.map((finding) => finding.text), ...analysis.topMistakes, ...analysis.nextGameAdjustments, analysis.finalVerdict.biggestRisk, analysis.finalVerdict.nextMatchFocus].join(' ');
-  assert.match(copy, /Фазу смертей определить нельзя/);
-  assert.doesNotMatch(copy, /0 после 35:00|Смертей после 35:00 не зафиксировано|После 35:00 цель|сохраняй buyback/);
+  assert.match(analysis.priorities[0].fact, /число смертей до 10:00 недоступно/);
+  assert.equal(analysis.priorities[0].dataState, 'partial');
+  assert.doesNotMatch(analysis.priorities[0].fact, /смертей до 10:00 — 0/);
 });
 
-test('two known late deaths use their factual count instead of claiming no late deaths', () => {
-  const input = match();
-  input.player!.deaths = 10;
-  input.player!.deathsByPhase = { laning: 1, earlyMid: 4, midGame: 3, lateGame: 2 };
-  input.player!.deathDataSource = 'deaths_log';
+test('confirmed zero deaths with low lane efficiency produces only a farm recommendation', () => {
+  const input = match(30);
+  input.player!.deaths = 0;
+  input.player!.laneReview = { source: 'opendota', lhAt10: 30, deathsBefore10: 0, laneEfficiencyPct: 50 };
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
-  const copy = [analysis.grades.fights.summary, ...analysis.grades.fights.findings.map((finding) => finding.text), ...analysis.topMistakes, analysis.finalVerdict.biggestRisk].join(' ');
-  assert.match(copy, /2 после 35:00; повышенного late-game риска не выявлено/);
-  assert.doesNotMatch(copy, /без смертей|Смертей после 35:00 не зафиксировано/);
-  assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /После 35:00 цель|buyback/);
+  assert.equal(analysis.priorities[0].id, 'lane-farm');
+  assert.match(analysis.priorities[0].fact, /30 добитых крипов.*50%.*смертей до 10:00 — 0/);
+  assert.doesNotMatch(`${analysis.priorities[0].meaning} ${analysis.priorities[0].action}`, /разобрать смерти|перед каждой смертью|Несколько ранних смертей/i);
+});
+
+test('low benchmarked economy becomes a priority and the shared final focus', () => {
+  const input = match();
+  input.player!.laneReview = { source: 'opendota', deathsBefore10: 0, laneEfficiencyPct: 70, lhAt10: 55 };
+  input.player!.gpm = 400;
+  const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { gold_per_min: [{ percentile: 40, value: 400 }] } } };
+  const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
+  assert.equal(analysis.priorities[0].id, 'economy');
+  assert.match(analysis.priorities[0].fact, /400 золота в минуту.*ниже доступного ориентира/);
+  assert.equal(analysis.priorities[0].dataState, 'partial');
+  assert.match(analysis.priorities[0].meaning, /данных по фазам недостаточно/);
+  assert.match(analysis.priorities[0].action, /Посмотри запись матча/);
+  assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].action);
+});
+
+test('benchmarked fight scores from 50 through 69 have an available assessment', () => {
+  for (const percentile of [50, 60, 69]) {
+    const input = match();
+    input.player!.heroDamagePerMin = 500;
+    const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { hero_damage_per_min: [{ percentile, value: 500 }] } } };
+    const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
+    assert.equal(analysis.grades.fights.score, percentile);
+    assert.equal(analysis.grades.fights.summary, 'Рабочий вклад в драках');
+  }
+});
+
+test('economy priority compares phases only when phase economy is available', () => {
+  const input = match();
+  input.player!.laneReview = { source: 'opendota', deathsBefore10: 0, laneEfficiencyPct: 70, lhAt10: 55 };
+  input.player!.gpm = 400;
+  withAvailablePhaseEconomy(input, { laning: 5, earlyMid: 7 }, [0, 0, 0, 0]);
+  const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { gold_per_min: [{ percentile: 40, value: 400 }] } } };
+  const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
+  assert.equal(analysis.priorities[0].dataState, 'available');
+  assert.match(analysis.priorities[0].action, /Сравни отрезки фарма по фазам/);
+  assert.doesNotMatch(analysis.priorities[0].meaning, /данных по фазам недостаточно/);
+});
+
+test('screen-derived Wraith King fixture keeps personal result beside the training direction', () => {
+  // Synthetic regression fixture reconstructed from the owner screenshot; no live Match ID was supplied.
+  const input = match(51);
+  input.selectedPlayer = { heroId: 42, heroName: 'Wraith King' };
+  input.player!.heroName = 'Wraith King';
+  input.player!.laneReview = { source: 'opendota', lhAt10: 51, deathsBefore10: 1, laneEfficiencyPct: 70 };
+  input.player!.itemTimings = [
+    { key: 'phase_boots', item: 'Phase Boots', time: '05:31', timeSeconds: 331, source: 'purchase_log' },
+    { key: 'radiance', item: 'Radiance', time: '14:26', timeSeconds: 866, source: 'purchase_log' }
+  ];
+  const override: CarryHeroOverride = { ...lifestealerCarryOverride, heroId: 42, heroName: 'Wraith King', earlyItemKey: '', timingItemKey: '', getFallbackItemTarget: () => undefined };
+  const analysis = runCarryPostMatchRules(input, undefined, {}, override);
+  assert.equal(analysis.grades.items.score, undefined);
+  assert.match(analysis.grades.items.summary ?? '', /Покупки зафиксированы, оценка недоступна/);
+  assert.match(analysis.priorities[0].fact, /51 добитых крипов и 1 смерть к 10:00/);
+  assert.match(analysis.priorities[0].target?.text ?? '', /Сохранить свой результат — 51 добитых крипов/);
+  assert.equal(analysis.priorities[0].target?.source, 'personal');
+  assert.equal(analysis.grades.lane.score, undefined);
+  assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].target?.text);
+  assert.doesNotMatch(allCopy(analysis), /Тайминги недоступны|не начинай драку первым|потер.*Рошан/i);
+});
+
+test('screen-derived Spectre fixture exposes purchases without inventing an item grade or outcome cause', () => {
+  // Synthetic regression fixture reconstructed from the owner screenshot; no live Match ID was supplied.
+  const input = match(58);
+  input.didRadiantWin = false;
+  input.selectedPlayer = { heroId: 67, heroName: 'Spectre' };
+  Object.assign(input.player!, { heroName: 'Spectre', isRadiant: true, gpm: 917, heroDamage: 97600, deaths: 8 });
+  input.player!.laneReview = { source: 'opendota', lhAt10: 58, deathsBefore10: 2, laneEfficiencyPct: 79 };
+  input.player!.deathsByPhase = { laning: 2, earlyMid: 0, midGame: 1, lateGame: 5 };
+  input.player!.deathDataSource = 'death_log';
+  input.player!.itemTimings = [
+    { key: 'radiance', item: 'Radiance', time: '18:41', timeSeconds: 1121, source: 'purchase_log' },
+    { key: 'butterfly', item: 'Butterfly', time: '40:13', timeSeconds: 2413, source: 'purchase_log' }
+  ];
+  const override: CarryHeroOverride = { ...lifestealerCarryOverride, heroId: 67, heroName: 'Spectre', earlyItemKey: '', timingItemKey: '', getFallbackItemTarget: () => undefined };
+  const analysis = runCarryPostMatchRules(input, undefined, {}, override);
+  assert.equal(analysis.grades.items.score, undefined);
+  assert.deepEqual(analysis.itemTimings.map(({ item, time }) => ({ item, time })), [{ item: 'Radiance', time: '18:41' }, { item: 'Butterfly', time: '40:13' }]);
+  assert.match(analysis.finalVerdict.mainReason, /не доказывают причину результата/);
+  assert.doesNotMatch(allCopy(analysis), /конвертац|окно на Рошан|buyback pressure|не начинай/i);
+});
+
+test('confirmed manual item targets can produce an item grade while missing purchases stay ungraded', () => {
+  const confirmed = match();
+  confirmed.player!.itemTimings = [
+    { key: 'phase_boots', item: 'Phase Boots', time: '06:00', timeSeconds: 360, source: 'purchase_log' },
+    { key: 'armlet', item: 'Armlet', time: '12:00', timeSeconds: 720, source: 'purchase_log' }
+  ];
+  assert.equal(runCarryPostMatchRules(confirmed, undefined, {}, lifestealerCarryOverride).grades.items.score, 73);
+  assert.equal(runCarryPostMatchRules(match(), undefined, {}, lifestealerCarryOverride).grades.items.score, undefined);
 });
