@@ -10,7 +10,7 @@ test('a successful response without analysis is rejected at the product boundary
 
 test('a response with analysis is accepted', () => {
   assert.equal(isPostMatchSuccessPayload({
-    analysis: { matchId: 123, hero: 'Lifestealer', grades: {}, finalVerdict: {} },
+    analysis: { matchId: 123, hero: 'Lifestealer', grades: {}, finalVerdict: {}, priorities: [], itemTimings: [] },
     debug: {}
   }), true);
 });
