@@ -633,17 +633,10 @@ No authoritative textual field definitions were found in the accessible official
 material. That failed lookup does not establish that definitions do not exist. Enum names
 also do not establish bracket semantics without descriptions or provider documentation.
 
-Neither owner-supplied artifact queried the three fields, so their historical values cannot
-be reconstructed and no stability claim can be made. An expanded live capture could not be
-produced in this checkout because `STRATZ_API_TOKEN` and `.env.local` are absent. This is a
-local credential limitation, not a null or error response from STRATZ. Run the expanded
-probe once with the same three targets; another run of the old query is unnecessary:
-
-```powershell
-node --env-file=.env.local scripts/probe-stratz-hero-average.mjs `
-  "8781054570:54" "9019592113:42" "9003795847:42" `
-  --out=stratz-hero-average-cohort-fields.json
-```
+The first two owner-supplied captures did not query the three fields. The expanded
+capture has now been supplied and validated; its results and provenance follow below.
+Historical values of the three new fields still cannot be reconstructed from the older
+files. Do not request another unchanged capture to rediscover those results.
 
 The probe applies a 30-second timeout through response-body reading, reports provider and
 match context on transport/parse failures without logging authorization data, emits progress
@@ -653,8 +646,8 @@ successful capture.
 ### Remaining unknowns and decision
 
 - `heroAverage.goldPerMinute` remained null in all 134 repeat rows.
-- Values and longitudinal behavior of `week`, `bracketBasicIds` and
-  `remainingMatchCount` remain unavailable pending the expanded authenticated capture.
+- Values of the three cohort fields are now available (below); their definitions and
+  cross-capture stability remain unconfirmed.
 - The definition and clock boundary of `time`, definitions of `cs` / `networth`, and full
   population rules remain unconfirmed.
 - New cohort fields, even when captured, cannot by themselves prove clock alignment or
@@ -663,3 +656,373 @@ successful capture.
 The decision remains **C — research-only**. No STRATZ norm, grade or actual-to-average
 comparison is added to product UI or scoring. Factual economy work and unrelated role rules
 remain independent of this unresolved benchmark methodology.
+
+## Expanded capture received (2026-09-30)
+
+| Artifact | `capturedAt` (UTC) | Bytes | SHA-256 |
+|---|---|---:|---|
+| `stratz-hero-average-cohort-fields.json` | `2026-09-30T00:06:19.740Z` | 238251 | `c6d91efccd0f632ee104ee094742e514440d0769f43e3085e6fbf0d12f31ab3c` |
+| `stratz-bracket-enum.json` | Not recorded by that endpoint version | 980 | `6999522985cf5b18467d78b820fca49da342c507584dd429f784e4da8f4c91e3` |
+
+These owner-supplied raw files remain outside Git.
+
+| Match | Rows | Constant raw `week` | `matchCount` at raw time 10, captures 1 → 2 → 3 |
+|---|---:|---:|---|
+| 8781054570 | 66 | 2937 | 20623 → 20623 → 20623 |
+| 9019592113 | 38 | 2960 | 6564 → 6788 → 6951 |
+| 9003795847 | 30 | 2958 | 7766 → 7766 → 7766 |
+
+In all 134 rows `bracketBasicIds` is null, `remainingMatchCount == matchCount`, and
+`goldPerMinute` is null. Null does not mean ALL; equality does not define either counter.
+Between captures 2 and 3, all 582 actual-series values are identical (314 / 150 / 118).
+Only WK 9019592113 changed its benchmark, in all 38 rows; the other two curves stayed
+identical on their shared fields. Newly requested fields are excluded from that comparison.
+The two WK curves still differ at all 30 common raw times and now have different weeks.
+
+The live enum has UNCALIBRATED, HERALD_GUARDIAN, CRUSADER_ARCHON, LEGEND_ANCIENT,
+DIVINE_IMMORTAL, FILTERED and ALL. Descriptions are null; none is deprecated. The four
+paired categories do not expose separate Ancient, Divine or Immortal selectors through
+this enum. Neither the player's historical rank nor implicit heroAverage rank selection
+has been established.
+
+## External research and controlled experiment (2026-09-30)
+
+### Sources and what they actually support
+
+- [STRATZ, IMP: Decoding Your Performance (2021-01-16)](https://medium.com/stratz/imp-decoding-your-performance-c251dcb42b93):
+  historical graph averages account for hero, rank, position and match duration, without
+  accounting for team compositions. This is not the full current heroAverage resolver
+  contract. An average difference is not an IMP score or proof of a tactical mistake.
+- [STRATZ, Supdate 3 (2019-11-09)](https://medium.com/stratz/supdate-3-the-search-edition-449ae4e104b5):
+  historical weekly statistics updates; not a definition of today's output week encoding.
+- [Public schema snapshot, 2025-09-13](https://github.com/boilingRage/stratz_schema/blob/6223022a7765c033eee13fb5b36b9b5415467afc/schema.graphql):
+  `HeroStatsQuery.stats` returns HeroPositionTimeDetailType with explicit hero, position,
+  bracket, week and time filters. Argument descriptions identify input `week` as an epoch
+  timestamp, with the current week used on omission. This third-party snapshot is not a
+  current authenticated introspection. Its numeric 0–8 rank prose conflicts with its
+  coarse enum type and must not be adopted as a verified rank mapping.
+- [Independent Dota coach implementation](https://github.com/atlonis/dota2-coach-skill/blob/88517196041f5644b27aca303aadc81f870ccffe/dota2-match-coach/scripts/lib/baseline.mjs):
+  uses epoch-week indices and passes `weekIndex * 604800` as input to stats, with explicit
+  hero, position and bracket. This is a primary source for that author's implementation,
+  not an authoritative STRATZ definition. Its direct minute mapping and aggregation
+  weights have not been validated here and are not copied.
+- [Official knowledge base](https://github.com/STRATZ-Esports/knowledge-base):
+  reviewed for definitions; IMP and Legitimate Match documentation cannot automatically
+  be applied to heroAverage. No precise definition of its clock, cs or counters was found.
+
+Descriptions on resolver **arguments** were missing from our introspection query, so null
+field descriptions did not exhaust available documentation. Both the debug route and the
+new probe mode now retain arguments, descriptions, default values and nested type wrappers.
+The debug route treats HTTP failure and a missing type as unavailable, rather than an empty
+successful schema, and bounds fetching/body reading to 30 seconds.
+
+### Week hypothesis, not a product conversion
+
+If output week is `floor(unixSeconds / 604800)`, candidate half-open UTC intervals are:
+
+| Raw week | Candidate start | Candidate end (exclusive) |
+|---:|---|---|
+| 2937 | 2026-04-16 00:00 | 2026-04-23 00:00 |
+| 2958 | 2026-09-10 00:00 | 2026-09-17 00:00 |
+| 2960 | 2026-09-24 00:00 | 2026-10-01 00:00 |
+
+The changing curve would belong to the capture's current week. That is consistent with
+an accumulating weekly sample; it does not establish the mechanism, week-to-match-date
+mapping or immutability of closed weeks. Never pass the raw index as if it were the
+input epoch timestamp. The experiment labels both values and the conversion hypothesis.
+
+### One targeted capture
+
+After applying this patch, with the existing token in `.env.local` and working access to
+STRATZ/OpenDota, run from PowerShell. Next.js does not need to be running:
+
+```powershell
+cd D:\dota-coach
+node --env-file=.env.local scripts/probe-stratz-hero-average.mjs "8781054570:54" "9019592113:42" "9003795847:42" --cohort-study --out=stratz-controlled-study.json
+```
+
+This uses the existing script and dependencies; without `--cohort-study` the original
+capture stays available. The single JSON contains:
+
+1. Authenticated schema descriptions, argument definitions, enum values and request times.
+2. The existing full actual series and unmodified heroAverage rows for the three targets.
+3. OpenDota `times`, `lh_t`, optional `networth_t`, match start and observed creep totals.
+   Collected gold is not substituted for net worth. A missing clock remains missing.
+4. STRATZ match start/rank/bracket (not player rank), the selected player's timestamped
+   `csEvents` flags and net-worth updates, and a separately timestamped heroAverage capture
+   also requesting `neutrals` / `ancients`. These fields exist in the inspected snapshot;
+   an actual schema rejection or unavailable playback is retained as such.
+5. Eleven controlled stats aliases per target: the four paired brackets, explicit ALL,
+   omitted bracket, DIVINE_IMMORTAL with time grouping disabled, the same group with
+   minTime=maxTime=10, and windows 9–11, 9–10 and 10–11. The original live capture used ALL
+   for the last two controls and returned no rows; the corrected queries use a populated group.
+   Hero, position, candidate week and remaining grouping parameters stay fixed.
+   An omitted bracket is documented as omission, not a GraphQL null argument. Schema or
+   selector uncertainty blocks these queries explicitly instead of choosing a fallback.
+
+Requests have the existing 30-second body-inclusive timeout and progress output. Research
+requests retain query/variables, timestamps, errors and partial data, without authorization
+headers. Only the selected player's playback is exported; no account/profile identifiers
+are requested. Unknown options fail before network work.
+
+`captureStatus: complete` means the planned requests returned without the recorded transport,
+GraphQL or missing-cohort failures. It does **not** establish metric validity, non-empty
+populations or complete playback. Null arrays/events and empty lists remain distinct.
+An optional research failure yields a saved `partial` artifact and exit code 1: send that
+JSON as well. A failure of the original STRATZ/OpenDota base capture still aborts without
+writing a replacement output file; send the terminal error and do not mistake an older
+file for a new result. All base targets must finish before the artifact is written.
+
+The owner has supplied both the initial study and the corrected controls (below). This
+checkout still has no STRATZ_API_TOKEN or .env.local; live evidence comes from those owner
+captures. Node regression/CLI tests use explicitly synthetic responses.
+
+### Questions to answer from the capture
+
+| Question | Evidence to inspect | What it cannot prove alone |
+|---|---|---|
+| Is raw time 10 the 10:00 boundary? | Argument docs; exact OpenDota ticks; CS and net-worth event times; 0/1 and 9/10/11 rows; equal-bound query | Similar curve shapes or a successful range filter do not establish the average's sample boundary. Do not shift indexes silently. |
+| Does CS include neutrals? | Actual event flags against interval/cumulative/final counts, plus raw average cs/neutrals/ancients and descriptions | Actual last-hit semantics do not automatically define average CS. Neutral/ancient flags may overlap; an event with unknown flags is not a lane creep. |
+| Which ranks are compared? | Separate explicit bucket responses, ALL/omission, row metadata and counts | A match bracket is not the player's historical rank. A null returned bucket is not ALL. No fabricated fine-rank norms. |
+| What do the counters mean? | Per-time and collapsed-time responses with the same filters; descriptions; end-of-match coverage | Equality/decline does not prove inclusion rules, denominators or population completeness. Do not weight averages by an unverified count. |
+
+If provider definitions remain absent, record the unresolved question and concrete examples
+for STRATZ support. Do not promise that this experiment will recover hidden methodology.
+No support message has been sent. No product grades, benchmark readiness or carry rules
+change in this patch. Factual economy and other-role work need not wait on this research.
+
+## Controlled study received (2026-10-01 MSK)
+
+| Artifact | `capturedAt` (UTC) | Bytes | SHA-256 |
+|---|---|---:|---|
+| `stratz-controlled-study.json` | `2026-09-30T21:48:15.216Z` | 2160774 | `70fc6eb248182d4478ff597b5010aca22abb77ffd06d69bb6060fef5f4252e74` |
+
+The owner supplied this JSON from PR #64. `captureStatus` is complete: schema, clock and
+cohort requests returned without HTTP/GraphQL errors. This is request completion, not a
+statement that playback or normative methodology is complete. Raw JSON remains outside Git.
+All 582 actual-series values match the preceding expanded capture. WK 9019592113's 38
+benchmark rows changed again; the other two benchmarks did not. Its raw-time-10 matchCount
+is now 8136 (earlier 6564 → 6788 → 6951).
+
+### 1. Live argument descriptions and explicit rank groups
+
+Live HeroStatsQuery.stats introspection confirms the argument descriptions and types that
+were previously known only from a third-party schema snapshot. Input week is described as
+an epoch timestamp, and minTime/maxTime as in-game minutes. The rank description still
+uses numeric 0–8 prose despite the coarse enum. Descriptions of returned time, cs, networth,
+matchCount and remainingMatchCount remain null; the argument descriptions do not fill
+these gaps.
+
+Each of four explicitly requested rank groups returned 76 rows (raw times 0–75) for each
+target. Omitting the rank filter with groupByBracket=true returned 380 rows: 76 each for
+UNCALIBRATED and the four paired groups. Explicit `[ALL]` returned an empty list for all
+three targets. Omission and ALL are therefore demonstrably different in these requests.
+
+For every available heroAverage row, direct stats with the corresponding returned week,
+hero, position and DIVINE_IMMORTAL matched every shared field except bracketBasicIds:
+66/66, 38/38 and 30/30 base rows, and the same counts for the 12 shared clock-query fields.
+heroAverage's bracket is null while the direct rows identify DIVINE_IMMORTAL. All three
+matches report rank=80 and bracket=8; this establishes an empirical cohort match for these
+subjects, not the selected player's historical rank or a universal resolver rule.
+This observation belongs to the initial study. The later controls below expose contradictory
+creep metrics between aliases and do not reproduce all of these direct-query values.
+
+For WK 9019592113, raw time 10 illustrates the rank effect:
+
+| Requested group | cs | networth | matchCount |
+|---|---:|---:|---:|
+| HERALD_GUARDIAN | 33.68 | 3136.67 | 6160 |
+| CRUSADER_ARCHON | 38.48 | 3345.00 | 23514 |
+| LEGEND_ANCIENT | 41.47 | 3471.31 | 31012 |
+| DIVINE_IMMORTAL | 44.30 | 3606.61 | 8136 |
+
+This is a research comparison at **raw time 10**, not a verified 10:00 target or player grade.
+
+### 2. Actual clock and creep-event coverage
+
+Lifestealer playbackData is null; do not infer zero creep events or missing farm from it.
+Both WK playbacks have CS event counts equal to final last hits: 302 and 281. Every flag
+was a Boolean, but some events have all three category flags false. Identical selected-field
+records can represent simultaneous kills of identical NPC types; do not deduplicate them.
+
+| Target | isCreep only | isNeutral only | isAncient only | All three false | Total |
+|---|---:|---:|---:|---:|---:|
+| 9019592113 | 117 | 140 | 1 | 44 | 302 |
+| 9003795847 | 163 | 76 | 9 | 33 | 281 |
+
+No overlapping flags were observed in these two event streams. That does not establish
+that flags are mutually exclusive in every match. The flagged totals differ from OpenDota's
+lane/neutral/ancient kill counters (124/174/4 and 164/102/9); they are not interchangeable
+category definitions. Unflagged events must remain unclassified.
+
+At 600 seconds, WK 9019592113 has 51 events: 43 isCreep and eight isNeutral. WK 9003795847
+has 52 events: 48 isCreep, three isNeutral and one unflagged. Thus actual LH at ten minutes
+includes flagged neutrals and cannot be labelled lane-creep-only. Average cs equivalence
+and the meaning of average neutrals/ancients remain unproven.
+
+OpenDota times are 0,60,... for all three targets. Counting CS events strictly before each
+recorded tick matches WK 9019592113 at all 38 ticks, and WK 9003795847 at 29/30; the latter
+has a one-event difference at 660s. Including events exactly at the tick matches only 29/38
+and 25/30. Preserve this observation and boundary uncertainty instead of rounding events
+or discarding the mismatch.
+
+STRATZ networthPerMinute[i] matches playerUpdateGoldEvents at time=i*60 for every exported
+WK element: 38/38 and 30/30. Both start at networth=600 at time 0. This validates the actual
+series on these two subjects, not heroAverage's clock or definition. OpenDota networth_t is
+unavailable and is not replaced by cumulative collected gold.
+
+### 3. Average clock and week limitations
+
+Average raw time 0 networth is 127.77 / 161.63 / 154.36, while raw time 1 is
+606.51 / 611.16 / 608.80. The small cs at raw time 1 and following values support a clock
+or initial-state hypothesis, but do not prove an offset. Never silently map raw time 10 to
+10:00 or subtract one without a confirmed contract.
+
+| Target | Match start UTC | floor(start/604800) | Returned average week |
+|---|---|---:|---:|
+| 8781054570 | 2026-04-21 22:32:49 | 2937 | 2937 |
+| 9019592113 | 2026-09-27 22:12:49 | 2960 | 2960 |
+| 9003795847 | 2026-09-17 21:09:56 | 2959 | 2958 |
+
+The third row contradicts using floor(matchStart/604800) as a universal week selector.
+Passing the *returned* week multiplied by 604800 reproduced each target's curve; it does
+not prove Thursday-based provider week boundaries or why the selected week differs from
+this date calculation. Timezone, period boundaries and selection/fallback behavior remain
+unconfirmed. The candidate UTC intervals above are arithmetic hypotheses, not established
+provider periods.
+
+### 4. Counters and corrected targeted controls
+
+matchCount equals remainingMatchCount in all returned direct rows as well as heroAverage.
+Both decrease at later raw times. For DIVINE_IMMORTAL, raw-time-0 → raw-time-75 counts are
+20623 → 67, 8136 → 40 and 7766 → 36. Do not turn this into a proved survival/finished-match
+filter or assume either value is the averaging denominator.
+
+The original collapsedTime and boundary10 queries both inherited `[ALL]`; their empty
+results cannot isolate time grouping or min/max boundaries. The probe now uses the
+observed populated DIVINE_IMMORTAL group for both controls and adds adjacent range windows.
+ALL remains its own recorded negative control. The additional controls are not a promise
+that hidden average-clock or denominator semantics can be recovered without STRATZ definitions.
+
+To avoid recapturing schema, matches, playback and OpenDota, the existing script accepts
+`--controls-from`. It reads the original study, validates all three selectors before any
+request, and refreshes only stats requests (one HTTP call per target). The output references
+the original filename, bytes, SHA-256, capture time and schema time. It does not merge new
+values into the old artifact or claim the source schema is a new introspection.
+
+The owner used the following command on the updated PR #64 branch, with the existing token
+and working STRATZ access; the resulting capture is analysed below:
+
+```powershell
+cd D:\dota-coach
+git switch codex/stratz-controlled-cohort-study
+git pull --ff-only
+node --env-file=.env.local scripts/probe-stratz-hero-average.mjs --controls-from=stratz-controlled-study.json --out=stratz-cohort-controls.json
+```
+
+If git reports an error, do not run the new mode from an old checkout. Send the new controls
+JSON, including a partial result. No Next.js server is required. Source and output paths
+must differ; the input is read unchanged. Product decision remains **C — research-only**.
+Actual clock/creep findings can support #34 independently of unresolved average methodology.
+
+## Corrected controls received (2026-10-01 MSK)
+
+| Artifact | `capturedAt` (UTC) | Bytes | SHA-256 |
+|---|---|---:|---|
+| `stratz-cohort-controls.json` | `2026-09-30T22:34:52.115Z` | 1159577 | `7d6108767f85fc5a9fd6cb78606cd530ca77455e227a189782ad94b13a8a028a` |
+
+The source reference was checked against the original study: filename, bytes, SHA-256,
+capture time and schema time match. The two artifact completion times differ by 46 minutes
+36.899 seconds; this does not date a provider update. All three controls requests are
+captured without recorded HTTP/GraphQL errors, and captureStatus is complete. No new match,
+playback, actual series or schema was fetched. Raw files remain outside Git.
+
+### Returned time labels and grouping
+
+For all three targets, the four paired buckets again return 76 rows, omission 380, and
+explicit ALL zero. The corrected controls now return data:
+
+| Request | Returned raw time labels, for each target |
+|---|---|
+| minTime=10, maxTime=10 | 10 |
+| minTime=9, maxTime=11 | 9, 10, 11 |
+| minTime=9, maxTime=10 | 9, 10 |
+| minTime=10, maxTime=11 | 10, 11 |
+| groupByTime=false, range 0–75 | One row, time=75 |
+
+Both bounds are included in the returned **raw labels** for these requests. This does not
+establish the instant/interval represented by a row or map heroAverage.time=10 to 10:00.
+The ungrouped row matches the full DIVINE_IMMORTAL time=75 row in every returned field for
+each target, including both counts. It therefore does not establish a pooled population or
+the averaging denominator. Never sum counts over time to obtain unique matches.
+
+### Creep metrics disagree within the same HTTP response
+
+Hero, position, input week and the returned DIVINE_IMMORTAL bucket are fixed. At raw time 10,
+cs varies by alias/filter range within each target's single response:
+
+| Query variant | LS 8781054570 | WK 9019592113 | WK 9003795847 |
+|---|---:|---:|---:|
+| Explicit bucket, range 0–75 | 150.67 | 149.81 | 149.88 |
+| Omitted bucket filter, returned DIVINE_IMMORTAL row | 42.21 | 44.32 | 44.33 |
+| Equal bounds 10–10 | 148.02 | 44.32 | 120.63 |
+| Range 9–11 | 132.92 | 44.32 | 149.88 |
+| Range 9–10 | 148.02 | 44.32 | 120.63 |
+| Range 10–11 | 132.92 | 44.32 | 149.88 |
+
+The variants have different time ranges or rank-filter omission; they are not identical
+queries. However, every other returned field except cs/neutrals/ancients agrees at each
+overlapping time between the full explicit curve and these controls/omitted DIVINE rows.
+This includes networth, week, matchCount, remainingMatchCount and winCount. At raw time 10,
+networth is respectively 3485.94 / 3607.81 / 3616.83 and both counts are 20623 / 8224 / 7766
+throughout the variants. Ordinary changes between the two captures cannot by themselves
+explain discrepancies inside one response.
+
+Across the full curves, explicit versus omitted DIVINE rows differ in cs at 45/76, 75/76
+and 75/76 times; neutrals at 43/76, 73/76 and 72/76; ancients at 34/76, 61/76 and 62/76.
+For LS and the older WK, the entire omitted response and the other three explicit groups
+are unchanged from the original study. Their full explicit DIVINE curves changed only in
+these three creep fields after the query composition was expanded. The current-week WK
+also changed its counts/economy between captures (raw-time-10 matchCount 8136 → 8224), which
+must be kept separate from the within-response discrepancies.
+
+As an arithmetic observation, WK 9019592113's full explicit cs at raw time 10 (149.81)
+equals the sum of omitted DIVINE cs at labels 0–9, rounded to two decimals. A similar prefix
+pattern occurs over part of the curve, but is not universal across targets or later labels.
+It is not a reason to integrate, differentiate or repair cs in the product.
+
+The CLI's captureResearch retains provider body.data without transforming these metrics;
+cohortResults only adds alias status and row counts. The anomalies are present in the
+stored response rather than an actual-to-average computation in the probe. Aggregation,
+caching or shared resolver state are possible explanations, not confirmed diagnoses.
+These aliases share one GraphQL request: fixed selectors do not establish independence of
+their server execution. Isolated single-field requests and provider definitions would be
+needed to separate range semantics from possible alias interactions. No such isolation
+result is claimed here, and no alias is selected as the authoritative correction.
+
+### Decision and remaining questions
+
+The corrected query plumbing is live-verified: populated controls, original selectors,
+explicit empty ALL and unchanged source provenance are all retained. Transport completion
+does not become semantic validation. matchCount and remainingMatchCount are still equal in
+all returned rows; their distinction and the denominator remain unknown. goldPerMinute
+remains null throughout. Average clock, average CS definition and week selection are not
+resolved by this capture.
+
+Decision remains **C — research-only**. The new contradiction is an additional reason to
+keep STRATZ average comparisons out of product grades/targets. This patch requires no
+further runtime changes or an identical owner recapture. Further benchmark work needs a
+separate isolation experiment or explicit STRATZ definitions; repeating this combined
+request alone will not establish them. No provider message has been sent.
+
+Ready-to-review provider questions, with the concrete response/query stored in the artifact:
+
+1. What instant or interval do returned time labels represent, including labels 0 and 1?
+2. Are cs/neutrals/ancients interval or cumulative values, and which units do they count?
+3. Why do overlapping rows with equal networth/counts return different creep metrics,
+   especially when explicit, omitted, narrowed and ungrouped aliases share one request?
+4. What do matchCount and remainingMatchCount count, and which value is the denominator?
+5. How is heroAverage's week selected when it differs from floor(matchStart/604800)?
+
+PR #64 can finish as research tooling/documentation. Factual economy work in #34 can proceed
+using the already checked actual series and event limits; it does not require these averages.

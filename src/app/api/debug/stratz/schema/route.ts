@@ -3,6 +3,16 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 
 const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
+const TYPE_REF = 'kind name ofType { kind name ofType { kind name ofType { kind name } } }';
+
+type TypeRef = { kind?: string; name?: string; ofType?: TypeRef };
+type SchemaArgument = { name?: string; description?: string; defaultValue?: string; type?: TypeRef };
+type IntrospectionResponse = {
+  data?: { __type?: { name?: string; description?: string;
+    fields?: Array<{ name?: string; description?: string; type?: TypeRef; args?: SchemaArgument[] }>;
+    enumValues?: Array<{ name?: string; description?: string; isDeprecated?: boolean; deprecationReason?: string }> } };
+  errors?: Array<{ message?: string }>;
+};
 
 export async function GET(request: Request) {
   const token = process.env.STRATZ_API_TOKEN;
@@ -19,14 +29,8 @@ export async function GET(request: Request) {
       fields {
         name
         description
-        type {
-          kind
-          name
-          ofType {
-            kind
-            name
-          }
-        }
+        type { ${TYPE_REF} }
+        args { name description defaultValue type { ${TYPE_REF} } }
       }
       enumValues(includeDeprecated: true) {
         name
@@ -46,21 +50,26 @@ export async function GET(request: Request) {
         'User-Agent': 'dota-coach-mvp/0.1 local-dev'
       },
       body: JSON.stringify({ query, variables: { typeName } }),
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30_000)
     });
 
     const text = await response.text();
     const contentType = response.headers.get('content-type') ?? '';
     const mayBeJson = contentType.includes('application/json') || contentType.includes('application/graphql-response+json') || text.trim().startsWith('{');
-    type IntrospectionResponse = { data?: { __type?: { name?: string; description?: string; fields?: Array<{ name?: string; description?: string; type?: { kind?: string; name?: string; ofType?: { kind?: string; name?: string } } }>; enumValues?: Array<{ name?: string; description?: string; isDeprecated?: boolean; deprecationReason?: string }> } }; errors?: Array<{ message?: string }> };
     const parsed = mayBeJson ? JSON.parse(text) as IntrospectionResponse : null;
     const errors = parsed?.errors?.map((entry) => entry.message ?? 'Unknown GraphQL error') ?? [];
-    const fields = parsed?.data?.__type?.fields?.map((field) => ({ name: field.name, description: field.description ?? null, type: field.type })) ?? [];
+    if (!response.ok) errors.push(`STRATZ HTTP ${response.status}`);
+    if (!parsed?.data?.__type && errors.length === 0) errors.push('Requested schema type unavailable');
+    const fields = parsed?.data?.__type?.fields?.map((field) => ({ name: field.name, description: field.description ?? null, type: field.type,
+      args: (field.args ?? []).map((arg) => ({ name: arg.name, description: arg.description ?? null,
+        defaultValue: arg.defaultValue ?? null, type: arg.type })) })) ?? [];
     const enumValues = parsed?.data?.__type?.enumValues?.map((value) => ({ ...value, description: value.description ?? null, deprecationReason: value.deprecationReason ?? null })) ?? [];
 
     return NextResponse.json({
       ok: response.ok && errors.length === 0,
       hasToken: true,
+      capturedAt: new Date().toISOString(),
       endpoint: STRATZ_GRAPHQL_URL,
       typeName: parsed?.data?.__type?.name ?? typeName,
       typeDescription: parsed?.data?.__type?.description ?? null,
