@@ -773,9 +773,9 @@ JSON as well. A failure of the original STRATZ/OpenDota base capture still abort
 writing a replacement output file; send the terminal error and do not mistake an older
 file for a new result. All base targets must finish before the artifact is written.
 
-The owner has supplied the initial live result of this mode (below). This checkout still
-has no STRATZ_API_TOKEN or .env.local; the corrected controls are not claimed as live-tested.
-Node regression/CLI tests use explicitly synthetic responses.
+The owner has supplied both the initial study and the corrected controls (below). This
+checkout still has no STRATZ_API_TOKEN or .env.local; live evidence comes from those owner
+captures. Node regression/CLI tests use explicitly synthetic responses.
 
 ### Questions to answer from the capture
 
@@ -824,6 +824,8 @@ hero, position and DIVINE_IMMORTAL matched every shared field except bracketBasi
 heroAverage's bracket is null while the direct rows identify DIVINE_IMMORTAL. All three
 matches report rank=80 and bracket=8; this establishes an empirical cohort match for these
 subjects, not the selected player's historical rank or a universal resolver rule.
+This observation belongs to the initial study. The later controls below expose contradictory
+creep metrics between aliases and do not reproduce all of these direct-query values.
 
 For WK 9019592113, raw time 10 illustrates the rank effect:
 
@@ -908,7 +910,8 @@ request, and refreshes only stats requests (one HTTP call per target). The outpu
 the original filename, bytes, SHA-256, capture time and schema time. It does not merge new
 values into the old artifact or claim the source schema is a new introspection.
 
-After receiving the updated PR #64 branch, with the existing token and working STRATZ access:
+The owner used the following command on the updated PR #64 branch, with the existing token
+and working STRATZ access; the resulting capture is analysed below:
 
 ```powershell
 cd D:\dota-coach
@@ -921,3 +924,105 @@ If git reports an error, do not run the new mode from an old checkout. Send the 
 JSON, including a partial result. No Next.js server is required. Source and output paths
 must differ; the input is read unchanged. Product decision remains **C — research-only**.
 Actual clock/creep findings can support #34 independently of unresolved average methodology.
+
+## Corrected controls received (2026-10-01 MSK)
+
+| Artifact | `capturedAt` (UTC) | Bytes | SHA-256 |
+|---|---|---:|---|
+| `stratz-cohort-controls.json` | `2026-09-30T22:34:52.115Z` | 1159577 | `7d6108767f85fc5a9fd6cb78606cd530ca77455e227a189782ad94b13a8a028a` |
+
+The source reference was checked against the original study: filename, bytes, SHA-256,
+capture time and schema time match. The two artifact completion times differ by 46 minutes
+36.899 seconds; this does not date a provider update. All three controls requests are
+captured without recorded HTTP/GraphQL errors, and captureStatus is complete. No new match,
+playback, actual series or schema was fetched. Raw files remain outside Git.
+
+### Returned time labels and grouping
+
+For all three targets, the four paired buckets again return 76 rows, omission 380, and
+explicit ALL zero. The corrected controls now return data:
+
+| Request | Returned raw time labels, for each target |
+|---|---|
+| minTime=10, maxTime=10 | 10 |
+| minTime=9, maxTime=11 | 9, 10, 11 |
+| minTime=9, maxTime=10 | 9, 10 |
+| minTime=10, maxTime=11 | 10, 11 |
+| groupByTime=false, range 0–75 | One row, time=75 |
+
+Both bounds are included in the returned **raw labels** for these requests. This does not
+establish the instant/interval represented by a row or map heroAverage.time=10 to 10:00.
+The ungrouped row matches the full DIVINE_IMMORTAL time=75 row in every returned field for
+each target, including both counts. It therefore does not establish a pooled population or
+the averaging denominator. Never sum counts over time to obtain unique matches.
+
+### Creep metrics disagree within the same HTTP response
+
+Hero, position, input week and the returned DIVINE_IMMORTAL bucket are fixed. At raw time 10,
+cs varies by alias/filter range within each target's single response:
+
+| Query variant | LS 8781054570 | WK 9019592113 | WK 9003795847 |
+|---|---:|---:|---:|
+| Explicit bucket, range 0–75 | 150.67 | 149.81 | 149.88 |
+| Omitted bucket filter, returned DIVINE_IMMORTAL row | 42.21 | 44.32 | 44.33 |
+| Equal bounds 10–10 | 148.02 | 44.32 | 120.63 |
+| Range 9–11 | 132.92 | 44.32 | 149.88 |
+| Range 9–10 | 148.02 | 44.32 | 120.63 |
+| Range 10–11 | 132.92 | 44.32 | 149.88 |
+
+The variants have different time ranges or rank-filter omission; they are not identical
+queries. However, every other returned field except cs/neutrals/ancients agrees at each
+overlapping time between the full explicit curve and these controls/omitted DIVINE rows.
+This includes networth, week, matchCount, remainingMatchCount and winCount. At raw time 10,
+networth is respectively 3485.94 / 3607.81 / 3616.83 and both counts are 20623 / 8224 / 7766
+throughout the variants. Ordinary changes between the two captures cannot by themselves
+explain discrepancies inside one response.
+
+Across the full curves, explicit versus omitted DIVINE rows differ in cs at 45/76, 75/76
+and 75/76 times; neutrals at 43/76, 73/76 and 72/76; ancients at 34/76, 61/76 and 62/76.
+For LS and the older WK, the entire omitted response and the other three explicit groups
+are unchanged from the original study. Their full explicit DIVINE curves changed only in
+these three creep fields after the query composition was expanded. The current-week WK
+also changed its counts/economy between captures (raw-time-10 matchCount 8136 → 8224), which
+must be kept separate from the within-response discrepancies.
+
+As an arithmetic observation, WK 9019592113's full explicit cs at raw time 10 (149.81)
+equals the sum of omitted DIVINE cs at labels 0–9, rounded to two decimals. A similar prefix
+pattern occurs over part of the curve, but is not universal across targets or later labels.
+It is not a reason to integrate, differentiate or repair cs in the product.
+
+The CLI's captureResearch retains provider body.data without transforming these metrics;
+cohortResults only adds alias status and row counts. The anomalies are present in the
+stored response rather than an actual-to-average computation in the probe. Aggregation,
+caching or shared resolver state are possible explanations, not confirmed diagnoses.
+These aliases share one GraphQL request: fixed selectors do not establish independence of
+their server execution. Isolated single-field requests and provider definitions would be
+needed to separate range semantics from possible alias interactions. No such isolation
+result is claimed here, and no alias is selected as the authoritative correction.
+
+### Decision and remaining questions
+
+The corrected query plumbing is live-verified: populated controls, original selectors,
+explicit empty ALL and unchanged source provenance are all retained. Transport completion
+does not become semantic validation. matchCount and remainingMatchCount are still equal in
+all returned rows; their distinction and the denominator remain unknown. goldPerMinute
+remains null throughout. Average clock, average CS definition and week selection are not
+resolved by this capture.
+
+Decision remains **C — research-only**. The new contradiction is an additional reason to
+keep STRATZ average comparisons out of product grades/targets. This patch requires no
+further runtime changes or an identical owner recapture. Further benchmark work needs a
+separate isolation experiment or explicit STRATZ definitions; repeating this combined
+request alone will not establish them. No provider message has been sent.
+
+Ready-to-review provider questions, with the concrete response/query stored in the artifact:
+
+1. What instant or interval do returned time labels represent, including labels 0 and 1?
+2. Are cs/neutrals/ancients interval or cumulative values, and which units do they count?
+3. Why do overlapping rows with equal networth/counts return different creep metrics,
+   especially when explicit, omitted, narrowed and ungrouped aliases share one request?
+4. What do matchCount and remainingMatchCount count, and which value is the denominator?
+5. How is heroAverage's week selected when it differs from floor(matchStart/604800)?
+
+PR #64 can finish as research tooling/documentation. Factual economy work in #34 can proceed
+using the already checked actual series and event limits; it does not require these averages.
