@@ -3,14 +3,19 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { parseTargets, summarizeProbe, writeArtifact } from './probe-stratz-hero-average.mjs';
+import { parseTargets, query, summarizeProbe, writeArtifact } from './probe-stratz-hero-average.mjs';
+
+test('requests the additional cohort fields without aliases or transformations', () => {
+  assert.match(query, /week bracketBasicIds remainingMatchCount/);
+});
 
 test('keeps provider metrics separate and records the adjacent-index window', () => {
   const result = summarizeProbe(1, 54, { data: { match: {
     durationSeconds: 1200, gameVersionId: 99, lobbyType: 'RANKED', gameMode: 'ALL_PICK',
     players: [{ heroId: 54, position: 'POSITION_1', numLastHits: 123, goldPerMinute: 620,
       stats: { lastHitsPerMinute: [0, 7, 15], networthPerMinute: [600, 1020, 1510], goldPerMinute: [0, 410, 505] },
-      heroAverage: [{ time: 1, position: 'POSITION_1', matchCount: 20, winCount: 11, cs: 6, networth: 1000, goldPerMinute: 420 }] }]
+      heroAverage: [{ time: 1, position: 'POSITION_1', matchCount: 20, winCount: 11, cs: 6, networth: 1000, goldPerMinute: 420,
+        week: 202639, bracketBasicIds: 'TEST_BRACKET', remainingMatchCount: 4 }] }]
   } } }, { players: [{ hero_id: 54, lh_t: [0, 7], gold_t: [600, 9999] }] });
 
   assert.deepEqual(result.checkpoints[0].actualCsStratzWindow, [{ index: 0, value: 0 }, { index: 1, value: 7 }, { index: 2, value: 15 }]);
@@ -20,6 +25,9 @@ test('keeps provider metrics separate and records the adjacent-index window', ()
   assert.equal(result.finalLastHits, 123);
   assert.equal(result.finalGoldPerMinute, 620);
   assert.equal(result.checkpoints[0].heroAverage.networth, 1000);
+  assert.equal(result.checkpoints[0].heroAverage.week, 202639);
+  assert.equal(result.checkpoints[0].heroAverage.bracketBasicIds, 'TEST_BRACKET');
+  assert.equal(result.checkpoints[0].heroAverage.remainingMatchCount, 4);
   assert.equal(result.checkpoints[0].rawTime, 1);
   assert.equal(result.checkpoints[0].candidateArrayIndex, 1);
   assert.equal('minute' in result.checkpoints[0], false);
@@ -51,10 +59,13 @@ test('keeps null heroAverage GPM and missing partial-minute values explicit', ()
   const result = summarizeProbe(1, 54, { data: { match: {
     durationSeconds: 119, players: [{ heroId: 54, numLastHits: 8,
       stats: { lastHitsPerMinute: [8], networthPerMinute: [600], goldPerMinute: [null] },
-      heroAverage: [{ time: 0, cs: 0, goldPerMinute: null }] }]
+      heroAverage: [{ time: 0, cs: 0, goldPerMinute: null, week: 202639, bracketBasicIds: null, remainingMatchCount: null }] }]
   } } }, { players: [{ hero_id: 54, lh_t: [0] }] });
 
   assert.equal(result.checkpoints[0].heroAverage.goldPerMinute, null);
+  assert.equal(result.checkpoints[0].heroAverage.week, 202639);
+  assert.equal(result.checkpoints[0].heroAverage.bracketBasicIds, null);
+  assert.equal(result.checkpoints[0].heroAverage.remainingMatchCount, null);
   assert.deepEqual(result.actualSeries.stratzGoldPerMinute.values, [null]);
   assert.equal(result.checkpoints[0].actualCsStratzWindow[0].value, null);
   assert.equal(result.checkpoints[0].actualCsStratzWindow[2].value, null);

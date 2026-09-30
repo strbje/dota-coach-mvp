@@ -3,22 +3,35 @@ import { dirname } from 'node:path';
 
 const STRATZ_URL = 'https://api.stratz.com/graphql';
 const OPENDOTA_URL = 'https://api.opendota.com/api/matches';
-const query = `query HeroAverageMethodologyProbe($id: Long!) {
+const REQUEST_TIMEOUT_MS = 30_000;
+export const query = `query HeroAverageMethodologyProbe($id: Long!) {
   match(id: $id) {
     id durationSeconds gameVersionId lobbyType gameMode
     players {
       playerSlot heroId position role roleBasic numLastHits goldPerMinute
       stats { lastHitsPerMinute networthPerMinute goldPerMinute }
-      heroAverage { heroId time position matchCount winCount cs networth goldPerMinute }
+      heroAverage {
+        heroId time position matchCount winCount cs networth goldPerMinute
+        week bracketBasicIds remainingMatchCount
+      }
     }
   }
 }`;
 
 async function jsonFetch(url, init) {
-  const response = await fetch(url, init);
-  const body = await response.json();
+  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  const text = await response.text();
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-  return body;
+  return JSON.parse(text);
+}
+
+async function fetchProvider(provider, matchId, url, init) {
+  try {
+    return await jsonFetch(url, init);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`${provider} request failed for match ${matchId}: ${detail}`, { cause: error });
+  }
 }
 
 function valueAtIndex(series, index) {
@@ -116,6 +129,7 @@ export function summarizeProbe(matchId, heroId, stratzBody, openDotaBody) {
       'Full actual arrays are preserved independently of heroAverage coverage; a missing final partial-minute bucket is not replaced with zero.',
       'STRATZ interval last-hit values and OpenDota cumulative last-hit values are explicitly separate and are not directly compared.',
       'OpenDota gold_t is deliberately not requested or compared.',
+      'week, bracketBasicIds, and remainingMatchCount are preserved as raw provider values; their semantics remain unconfirmed.',
       'Cohort filters absent from the payload remain unknown.'
     ]
   };
@@ -139,12 +153,14 @@ async function main() {
 
   const probes = [];
   for (const { matchId, heroId } of targets) {
+    console.error(`Fetching STRATZ and OpenDota for match ${matchId} (hero ${heroId})...`);
     const [stratzBody, openDotaBody] = await Promise.all([
-      jsonFetch(STRATZ_URL, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'dota-coach-mvp-methodology-probe/1.0' }, body: JSON.stringify({ query, variables: { id: matchId } }) }),
-      jsonFetch(`${OPENDOTA_URL}/${matchId}`)
+      fetchProvider('STRATZ', matchId, STRATZ_URL, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'dota-coach-mvp-methodology-probe/1.0' }, body: JSON.stringify({ query, variables: { id: matchId } }) }),
+      fetchProvider('OpenDota', matchId, `${OPENDOTA_URL}/${matchId}`)
     ]);
     if (stratzBody.errors?.length) throw new Error(`match ${matchId}: ${JSON.stringify(stratzBody.errors)}`);
     probes.push(summarizeProbe(matchId, heroId, stratzBody, openDotaBody));
+    console.error(`Captured match ${matchId} (${probes.length}/${targets.length}).`);
   }
 
   const output = `${JSON.stringify({ capturedAt: new Date().toISOString(), methodologyStatus: 'research-only', probes }, null, 2)}\n`;
