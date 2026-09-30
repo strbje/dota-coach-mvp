@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { buildCohortRequest, captureResearch, clockEvidence, clockQuery, cohortResults, parseOptions, parseTargets, query, schemaQuery, summarizeProbe, writeArtifact } from './probe-stratz-hero-average.mjs';
+import { buildCohortRequest, captureResearch, clockEvidence, clockQuery, cohortResults, parseOptions, parseTargets, query, repeatControls, schemaQuery, summarizeProbe, writeArtifact } from './probe-stratz-hero-average.mjs';
 
 const targets = ['8781054570:54', '9019592113:42', '9003795847:42'];
 const schemaFixture = () => ({
@@ -164,15 +164,18 @@ test('controlled cohorts isolate rank filters and preserve the week conversion a
   assert.equal(plan.weekInterpretation.rawWeek, 2960);
   assert.equal(plan.weekInterpretation.candidateStartUtc, '2026-09-24T00:00:00.000Z');
   assert.equal(plan.weekInterpretation.candidateEndUtcExclusive, '2026-10-01T00:00:00.000Z');
-  assert.equal(plan.requests.length, 8);
+  assert.equal(plan.requests.length, 11);
   assert.equal(plan.requests.every((request) => request.week === 2960 * 604800), true);
   assert.deepEqual(plan.requests[2].bracketBasicIds, ['LEGEND_ANCIENT']);
   assert.deepEqual(plan.requests[3].bracketBasicIds, ['DIVINE_IMMORTAL']);
   assert.equal(plan.requests[5].bracketBasicIds, null);
   assert.doesNotMatch(plan.query.split('omittedBracket:')[1].split('collapsedTime:')[0], /bracketBasicIds:/);
   assert.equal(plan.requests[6].groupByTime, false);
+  assert.deepEqual(plan.requests[6].bracketBasicIds, ['DIVINE_IMMORTAL']);
+  assert.deepEqual(plan.requests[7].bracketBasicIds, ['DIVINE_IMMORTAL']);
   assert.equal(plan.requests[7].minTime, 10);
   assert.equal(plan.requests[7].maxTime, 10);
+  assert.deepEqual(plan.requests.slice(8).map(({ minTime, maxTime }) => [minTime, maxTime]), [[9, 11], [9, 10], [10, 11]]);
   assert.doesNotMatch(plan.query, /week: 2960[,)]/);
 });
 
@@ -235,7 +238,8 @@ globalThis.fetch = async (url, init) => {
   if (!input) return new Response(JSON.stringify({start_time: 123, players:[{hero_id:heroId,times:[0,60],lh_t:[0,2]}]}));
   if (input.query.includes('query CohortSchemaProbe')) return new Response(JSON.stringify({data:schema}));
   if (input.query.includes('query ControlledCohortProbe')) {
-    const heroStats = Object.fromEntries(['bracket0','bracket1','bracket2','bracket3','bracket4','omittedBracket','collapsedTime','boundary10'].map(alias=>[alias,[]]));
+    const aliases = [...input.query.matchAll(/(\\w+): stats\\(/g)].map(match=>match[1]);
+    const heroStats = Object.fromEntries(aliases.map(alias=>[alias,[]]));
     if (process.env.MOCK_PARTIAL) heroStats.bracket3 = null;
     return new Response(JSON.stringify({data:{heroStats}}));
   }
@@ -250,6 +254,18 @@ globalThis.fetch = async (url, init) => {
     assert.equal(complete.methodologyStatus, 'research-only');
     assert.equal(complete.probes.length, 3);
     assert.equal(complete.probes[0].clockEvidence.evidence.openDota.times[1], 60);
+    const controlsPath = join(root, 'controls.json');
+    const controlsArgs = ['--import', pathToFileURL(preload).href, script, `--controls-from=${outputPath}`, `--out=${controlsPath}`];
+    const originalSource = await readFile(outputPath, 'utf8');
+    await promisify(execFile)(process.execPath, controlsArgs, { env: { ...process.env, STRATZ_API_TOKEN: 'secret-test-token', MOCK_PARTIAL: '' } });
+    const controls = JSON.parse(await readFile(controlsPath, 'utf8'));
+    assert.equal(controls.captureStatus, 'complete');
+    assert.equal(controls.probes.length, 3);
+    assert.equal(controls.sourceCapture.filename, 'study.json');
+    assert.equal('actualSeries' in controls.probes[0], false);
+    assert.equal(await readFile(outputPath, 'utf8'), originalSource);
+    await assert.rejects(promisify(execFile)(process.execPath, controlsArgs, { env: { ...process.env, STRATZ_API_TOKEN: 'secret-test-token', MOCK_PARTIAL: '1' } }), { code: 1 });
+    assert.equal(JSON.parse(await readFile(controlsPath, 'utf8')).captureStatus, 'partial');
     await assert.rejects(promisify(execFile)(process.execPath, args, { env: { ...process.env, STRATZ_API_TOKEN: 'secret-test-token', MOCK_PARTIAL: '1' } }), { code: 1 });
     const partial = JSON.parse(await readFile(outputPath, 'utf8'));
     assert.equal(partial.captureStatus, 'partial');
@@ -258,4 +274,68 @@ globalThis.fetch = async (url, init) => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('controls-only CLI mode cannot overwrite its source or mix capture modes', () => {
+  assert.equal(parseOptions(['--controls-from=study.json', '--out=controls.json']).controlsFrom, 'study.json');
+  for (const options of [
+    ['--controls-from='], ['--controls-from=a', '--controls-from=b'],
+    ['--controls-from=study.json', '--out=./study.json'],
+    ['--controls-from=study.json', '--cohort-study'], ['--controls-from=study.json', ...targets]
+  ]) assert.throws(() => parseOptions(options));
+});
+
+test('repeats only stats requests from saved evidence and keeps source provenance and empty ALL', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'stratz-controls-'));
+  const path = join(root, 'source.json');
+  const source = JSON.stringify({ capturedAt: '2026-09-30T21:48:15.216Z', methodologyStatus: 'research-only',
+    schema: { data: schemaFixture(), completedAt: '2026-09-30T21:40:00.000Z' },
+    probes: targets.map((target) => {
+      const [matchId, heroId] = target.split(':').map(Number);
+      return { ...cohortFixture(), matchId, heroId };
+    }) });
+  let requests = 0;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    assert.equal(url, 'https://api.stratz.com/graphql');
+    const { query: request } = JSON.parse(init.body);
+    assert.match(request, /query ControlledCohortProbe/);
+    assert.doesNotMatch(request, /match\(id:|csEvents|__type\(/);
+    requests++;
+    const heroStats = {};
+    for (const match of request.matchAll(/(\w+): stats\(([\s\S]*?)\) \{/g)) {
+      // Synthetic provider reproduces the observed empty ALL, without blocking other controls.
+      heroStats[match[1]] = /bracketBasicIds: \[ALL\]/.test(match[2]) ? [] : [{ time: 10, cs: null, matchCount: 12, remainingMatchCount: 12 }];
+    }
+    return new Response(JSON.stringify({ data: { heroStats } }));
+  });
+  try {
+    await writeFile(path, source);
+    const result = await repeatControls(path, 'synthetic-test-token');
+    assert.equal(requests, 3);
+    assert.equal(result.captureStatus, 'complete');
+    assert.equal(result.sourceCapture.capturedAt, '2026-09-30T21:48:15.216Z');
+    assert.match(result.sourceCapture.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(result.sourceCapture.bytes, Buffer.byteLength(source));
+    assert.equal(await readFile(path, 'utf8'), source);
+    const cohort = result.probes[0].controlledCohorts;
+    assert.equal(cohort.results.find((row) => row.alias === 'bracket4').status, 'empty');
+    assert.equal(cohort.results.find((row) => row.alias === 'collapsedTime').status, 'rows');
+    assert.equal(cohort.results.find((row) => row.alias === 'boundary10').status, 'rows');
+    assert.equal(cohort.capture.data.heroStats.collapsedTime[0].cs, null);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('validates all source selectors before any controls request', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'stratz-invalid-controls-'));
+  const path = join(root, 'source.json');
+  const probes = targets.map((target) => {
+    const [matchId, heroId] = target.split(':').map(Number);
+    return { ...cohortFixture(), matchId, heroId };
+  });
+  probes[2].selectedPosition = 'UNKNOWN';
+  t.mock.method(globalThis, 'fetch', () => { assert.fail('No request may precede full source validation'); });
+  try {
+    await writeFile(path, JSON.stringify({ methodologyStatus: 'research-only', schema: { data: schemaFixture() }, probes }));
+    await assert.rejects(repeatControls(path, 'synthetic-test-token'), /hero_or_position_unavailable/);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

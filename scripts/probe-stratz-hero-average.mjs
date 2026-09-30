@@ -1,5 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { basename, dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const STRATZ_URL = 'https://api.stratz.com/graphql';
 const OPENDOTA_URL = 'https://api.opendota.com/api/matches';
@@ -173,13 +174,23 @@ export function summarizeProbe(matchId, heroId, stratzBody, openDotaBody) {
 
 export function parseOptions(args) {
   const options = args.filter((arg) => arg.startsWith('--'));
-  if (options.some((arg) => arg !== '--cohort-study' && !arg.startsWith('--out='))) {
-    throw new Error('Unknown option; supported options: --cohort-study, --out=file.json');
+  if (options.some((arg) => arg !== '--cohort-study' && !arg.startsWith('--out=') && !arg.startsWith('--controls-from='))) {
+    throw new Error('Unknown option; supported options: --cohort-study, --controls-from=file.json, --out=file.json');
   }
   if (options.filter((arg) => arg === '--cohort-study').length > 1 ||
-      options.filter((arg) => arg.startsWith('--out=')).length > 1) throw new Error('Duplicate option');
+      options.filter((arg) => arg.startsWith('--out=')).length > 1 ||
+      options.filter((arg) => arg.startsWith('--controls-from=')).length > 1) throw new Error('Duplicate option');
   const outputPath = options.find((arg) => arg.startsWith('--out='))?.slice('--out='.length);
+  const controlsFrom = options.find((arg) => arg.startsWith('--controls-from='))?.slice('--controls-from='.length);
   if (outputPath !== undefined && !outputPath.trim()) throw new Error('--out requires a file path');
+  if (controlsFrom !== undefined) {
+    if (!controlsFrom.trim()) throw new Error('--controls-from requires a file path');
+    if (options.includes('--cohort-study') || args.some((arg) => !arg.startsWith('--'))) {
+      throw new Error('--controls-from cannot be combined with targets or --cohort-study');
+    }
+    if (outputPath && resolve(controlsFrom) === resolve(outputPath)) throw new Error('Output must not replace the source capture');
+    return { controlsFrom, outputPath };
+  }
   return { cohortStudy: options.includes('--cohort-study'), outputPath,
     targets: parseTargets(args.filter((arg) => !arg.startsWith('--'))) };
 }
@@ -238,8 +249,11 @@ export function buildCohortRequest(probe, schema) {
   const profiles = brackets.map((bracket, index) => ({ alias: `bracket${index}`, bracketBasicIds: [bracket], minTime: 0, maxTime: 75, groupByTime: true }));
   profiles.push(
     { alias: 'omittedBracket', bracketBasicIds: null, minTime: 0, maxTime: 75, groupByTime: true },
-    { alias: 'collapsedTime', bracketBasicIds: ['ALL'], minTime: 0, maxTime: 75, groupByTime: false },
-    { alias: 'boundary10', bracketBasicIds: ['ALL'], minTime: 10, maxTime: 10, groupByTime: true }
+    { alias: 'collapsedTime', bracketBasicIds: ['DIVINE_IMMORTAL'], minTime: 0, maxTime: 75, groupByTime: false },
+    { alias: 'boundary10', bracketBasicIds: ['DIVINE_IMMORTAL'], minTime: 10, maxTime: 10, groupByTime: true },
+    { alias: 'window9To11', bracketBasicIds: ['DIVINE_IMMORTAL'], minTime: 9, maxTime: 11, groupByTime: true },
+    { alias: 'window9To10', bracketBasicIds: ['DIVINE_IMMORTAL'], minTime: 9, maxTime: 10, groupByTime: true },
+    { alias: 'window10To11', bracketBasicIds: ['DIVINE_IMMORTAL'], minTime: 10, maxTime: 11, groupByTime: true }
   );
   const weekInput = week * 604_800;
   const requests = profiles.map((profile) => ({ ...profile, heroIds: [probe.heroId], positionIds: [probe.selectedPosition],
@@ -257,6 +271,7 @@ export function buildCohortRequest(probe, schema) {
       'Rank cohorts are requested independently; none is assigned to the selected player.',
       'ALL and omission are separate controls and are not assumed equivalent.',
       'Collapsed time and equal time bounds test API behavior, not denominator or minute-boundary definitions.',
+      'Collapsed/boundary controls use the observed populated DIVINE_IMMORTAL group; ALL remains a separate negative control.',
       'Means and counts are exported raw; no pooled means, percentiles, scores or actual-to-average deltas are calculated.'
     ] };
 }
@@ -286,6 +301,44 @@ export function cohortResults(plan, capture) {
   });
 }
 
+async function captureCohorts(probe, schema, token) {
+  const plan = buildCohortRequest(probe, schema);
+  if (plan.status !== 'planned') return plan;
+  const capture = await captureResearch(plan.query, {}, token, `${probe.matchId} controlled cohorts`);
+  const results = cohortResults(plan, capture);
+  return { ...plan, status: capture.status === 'captured' && results.some((row) => row.status === 'unavailable') ? 'partial' : capture.status,
+    capture, results };
+}
+
+export async function repeatControls(sourcePath, token) {
+  const bytes = await readFile(sourcePath);
+  const source = JSON.parse(bytes.toString('utf8'));
+  if (source.methodologyStatus !== 'research-only' || !source.schema?.data || !Array.isArray(source.probes)) {
+    throw new Error('Source must be a research study with captured schema and base probes');
+  }
+  parseTargets(source.probes.map((probe) => `${probe.matchId}:${probe.heroId}`));
+  // Validate every selector before making requests; never choose a new bucket or week silently.
+  for (const probe of source.probes) {
+    if (!Array.isArray(probe.checkpoints)) throw new Error('Source is missing base checkpoints');
+    const plan = buildCohortRequest(probe, source.schema.data);
+    if (plan.status !== 'planned') throw new Error(`Source match ${probe.matchId}: ${plan.reason}`);
+  }
+  const probes = [];
+  for (const probe of source.probes) {
+    console.error(`Repeating controlled cohorts for match ${probe.matchId} (no match/playback/OpenDota fetch)...`);
+    probes.push({ matchId: probe.matchId, heroId: probe.heroId, selectedPosition: probe.selectedPosition,
+      controlledCohorts: await captureCohorts(probe, source.schema.data, token) });
+  }
+  return { capturedAt: new Date().toISOString(), methodologyStatus: 'research-only',
+    captureStatus: probes.every((probe) => probe.controlledCohorts.status === 'captured') ? 'complete' : 'partial',
+    sourceCapture: { filename: basename(sourcePath), capturedAt: source.capturedAt ?? null,
+      bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'),
+      schemaCompletedAt: source.schema.completedAt ?? null },
+    caveats: ['Only controlled stats are refreshed. Match clocks and schema are referenced from the earlier source, not captured again.',
+      'The source capture is read unchanged; new values are not substituted into its original evidence.',
+      'Current-week cohorts may change between requests; identical selectors do not imply an immutable curve.'], probes };
+}
+
 async function main() {
   const token = process.env.STRATZ_API_TOKEN;
   let options;
@@ -295,8 +348,20 @@ async function main() {
     console.error(error instanceof Error ? error.message : String(error));
   }
   if (!token || !options) {
-    console.error('Usage: node --env-file=.env.local scripts/probe-stratz-hero-average.mjs <matchId:heroId> <matchId:heroId> <matchId:heroId> [--cohort-study] [--out=file.json] (requires STRATZ_API_TOKEN)');
+    console.error('Usage: node --env-file=.env.local scripts/probe-stratz-hero-average.mjs <matchId:heroId> <matchId:heroId> <matchId:heroId> [--cohort-study] [--out=file.json] OR --controls-from=study.json [--out=file.json] (requires STRATZ_API_TOKEN)');
     process.exitCode = 2;
+    return;
+  }
+
+  if (options.controlsFrom) {
+    const artifact = await repeatControls(options.controlsFrom, token);
+    const output = `${JSON.stringify(artifact, null, 2)}\n`;
+    if (options.outputPath) await writeArtifact(options.outputPath, output);
+    else process.stdout.write(output);
+    if (artifact.captureStatus === 'partial') {
+      console.error('Partial controls artifact saved; inspect controlledCohorts statuses.');
+      process.exitCode = 1;
+    }
     return;
   }
 
@@ -319,14 +384,7 @@ async function main() {
       console.error(`Capturing clocks, creep flags and controlled cohorts for match ${matchId}...`);
       const clock = await captureResearch(clockQuery, { id: matchId }, token, `${matchId} clock evidence`);
       probe.clockEvidence = { ...clock, data: undefined, evidence: clockEvidence(heroId, clock, openDotaBody) };
-      const plan = buildCohortRequest(probe, schema.data);
-      probe.controlledCohorts = plan;
-      if (plan.status === 'planned') {
-        const capture = await captureResearch(plan.query, {}, token, `${matchId} controlled cohorts`);
-        const results = cohortResults(plan, capture);
-        probe.controlledCohorts = { ...plan, status: capture.status === 'captured' && results.some((row) => row.status === 'unavailable') ? 'partial' : capture.status,
-          capture, results };
-      }
+      probe.controlledCohorts = await captureCohorts(probe, schema.data, token);
     }
     probes.push(probe);
     console.error(`Captured match ${matchId} (${probes.length}/${targets.length}).`);
