@@ -396,6 +396,39 @@ test('economy priority compares phases only when phase economy is available', ()
   assert.doesNotMatch(analysis.priorities[0].meaning, /данных по фазам недостаточно/);
 });
 
+test('partial phase economy remains usable while unavailable telemetry is explained', () => {
+  const partial = match();
+  partial.player!.economyByPhaseSource = 'partial';
+  partial.player!.economyByPhase = {
+    laning: { startMinute: 0, endMinute: 10, durationMinutes: 10, lhPerMinuteInPhase: 5 },
+    earlyMid: { startMinute: 10, endMinute: 20, durationMinutes: 10, lhPerMinuteInPhase: 7 }
+  };
+  const partialCopy = allCopy(runCarryPostMatchRules(partial, undefined, {}, lifestealerCarryOverride));
+  assert.match(partialCopy, /0–10 мин: 5 крипа\/мин; 10–20 мин: 7 крипа\/мин/);
+  assert.doesNotMatch(partialCopy, /Фазовый темп экономики недоступен/);
+
+  const unavailable = match();
+  unavailable.player!.economyByPhaseSource = 'unavailable';
+  const unavailableCopy = allCopy(runCarryPostMatchRules(unavailable, undefined, {}, lifestealerCarryOverride));
+  assert.match(unavailableCopy, /Фазовый темп экономики недоступен/);
+});
+
+test('farm copy uses the confirmed truncated interval without relabeling full-phase deaths', () => {
+  const input = match();
+  input.player!.economyByPhaseSource = 'partial';
+  input.player!.economyByPhase = {
+    earlyMid: { startMinute: 10, endMinute: 20, durationMinutes: 10, lhPerMinuteInPhase: 6 },
+    midGame: { startMinute: 20, endMinute: 25, durationMinutes: 5, lhPerMinuteInPhase: 4 },
+    lateGame: { startMinute: 35, endMinute: 40, durationMinutes: 5, lhPerMinuteInPhase: 5 }
+  };
+  input.player!.deathsByPhase = { laning: 0, earlyMid: 0, midGame: 3, lateGame: 0 };
+  input.player!.deathDataSource = 'death_log';
+  const copy = allCopy(runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride));
+  assert.match(copy, /20–25 мин: 4 крипа\/мин/);
+  assert.doesNotMatch(copy, /20–35 мин: 4 крипа\/мин/);
+  assert.match(copy, /полной фазе 20–35 мин было 3 смерт/);
+});
+
 test('screen-derived Wraith King fixture keeps personal result beside the training direction', () => {
   // Synthetic regression fixture reconstructed from the owner screenshot; no live Match ID was supplied.
   const input = match(51);

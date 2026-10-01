@@ -30,3 +30,14 @@ test('treats a constant assigned to the unknown group as product-unknown', () =>
   assert.equal(result.breakdownComplete, false);
   assert.equal(result.constantsAvailable, false);
 });
+
+test('omits absent and invalid amounts instead of replacing them with zero', () => {
+  const result = normalizeGoldReasons({ 12: undefined, 13: Number.NaN, 14: 0, 15: 25 }, {
+    12: { label: 'Missing', group: 'creeps' },
+    13: { label: 'Invalid', group: 'neutral' },
+    14: { label: 'Confirmed zero', group: 'heroes' },
+    15: { label: 'Known', group: 'buildings' }
+  });
+  assert.deepEqual(result.decoded.map(({ key, amount }) => ({ key, amount })), [{ key: '15', amount: 25 }]);
+  assert.deepEqual(result.groups, [{ group: 'buildings', label: 'Строения', amount: 25 }]);
+});

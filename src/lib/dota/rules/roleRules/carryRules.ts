@@ -205,10 +205,11 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     ...(xpm !== undefined && formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} опыта в минуту — ${formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
     ...(lastHitsPerMin !== undefined && formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добитых крипов в минуту — ${formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile)} по ориентиру OpenDota.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
   ];
-  if (p?.economyByPhaseSource === 'gold_t/lh_t' && p.economyByPhase) {
+  if (p?.economyByPhaseSource !== 'unavailable' && p?.economyByPhase) {
     const phaseLabels: Record<MatchPhase, string> = { laning: '0–10 мин', earlyMid: '10–20 мин', midGame: '20–35 мин', lateGame: 'после 35 мин' };
-    const phases = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined);
-    if (phases.length >= 2) mapFindings.unshift({ text: phases.map(([phase, value]) => `${phaseLabels[phase]}: ${fmt(value.lhPerMinuteInPhase!)} крипа/мин`).join('; ') + '.', evidence: ['темп по фазам'], severity: 'info' });
+    const phases = (Object.entries(p.economyByPhase) as Array<[MatchPhase, { startMinute: number; endMinute: number; lhPerMinuteInPhase?: number }]>).filter((entry) => entry[1].lhPerMinuteInPhase !== undefined);
+    const farmInterval = (value: { startMinute: number; endMinute: number }) => `${value.startMinute}–${value.endMinute} мин`;
+    if (phases.length >= 2) mapFindings.unshift({ text: phases.map(([, value]) => `${farmInterval(value)}: ${fmt(value.lhPerMinuteInPhase!)} крипа/мин`).join('; ') + '.', evidence: ['темп по фазам'], severity: 'info' });
     const phaseOrder: MatchPhase[] = ['laning', 'earlyMid', 'midGame', 'lateGame'];
     const phaseWithMostDeaths = deathsByPhase && (Object.entries(deathsByPhase) as Array<[MatchPhase, number]>).sort((a, b) => b[1] - a[1])[0];
     if (phaseWithMostDeaths?.[1]) {
@@ -217,7 +218,9 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       const nextFarm = nextPhase ? p.economyByPhase[nextPhase]?.lhPerMinuteInPhase : undefined;
       if (phaseFarm !== undefined && nextFarm !== undefined) {
         const direction = nextFarm > phaseFarm ? 'вырос' : nextFarm < phaseFarm ? 'снизился' : 'не изменился';
-        mapFindings.unshift({ text: `В отрезке ${phaseLabels[phaseWithMostDeaths[0]]} было ${phaseWithMostDeaths[1]} смерт. В следующей доступной фазе темп фарма ${direction} с ${fmt(phaseFarm)} до ${fmt(nextFarm)} крипа/мин; причинная связь не установлена.`, evidence: ['смерти и темп по фазам'], severity: 'info' });
+        const deathPhaseEconomy = p.economyByPhase[phaseWithMostDeaths[0]]!;
+        const nextPhaseEconomy = p.economyByPhase[nextPhase!]!;
+        mapFindings.unshift({ text: `В полной фазе ${phaseLabels[phaseWithMostDeaths[0]]} было ${phaseWithMostDeaths[1]} смерт. Между доступными отрезками фарма ${farmInterval(deathPhaseEconomy)} и ${farmInterval(nextPhaseEconomy)} темп ${direction} с ${fmt(phaseFarm)} до ${fmt(nextFarm)} крипа/мин; причинная связь не установлена.`, evidence: ['смерти и темп по фазам'], severity: 'info' });
       }
     }
   } else mapFindings.push({ text: 'Фазовый темп экономики недоступен: OpenDota не вернул минутные срезы фарма для этого матча.', evidence: ['нет минутных срезов фарма'], severity: 'info' });
@@ -243,8 +246,8 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       : undefined;
   const actualLhAt10 = actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10;
   const laneLhTarget = actualLhAt10 === undefined ? undefined : Math.round(actualLhAt10);
-  const hasPhaseEconomy = p?.economyByPhaseSource === 'gold_t/lh_t'
-    && Object.values(p.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
+  const hasPhaseEconomy = p?.economyByPhaseSource !== 'unavailable'
+    && Object.values(p?.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
   const priorities: PostMatchAnalysis['priorities'] = [];
 
   if (lanePct !== undefined && lanePct < 60) priorities.push({
