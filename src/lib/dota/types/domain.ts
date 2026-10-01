@@ -174,7 +174,7 @@ export type NormalizedOpenDotaMatch = {
       deathsBefore10?: number;
       source: 'opendota' | 'partial' | 'unavailable';
     };
-    economyByPhaseSource?: 'gold_t/lh_t' | 'unavailable';
+    economyByPhaseSource?: 'gold_t/lh_t' | 'partial' | 'unavailable';
     economyByPhase?: Partial<Record<'laning' | 'earlyMid' | 'midGame' | 'lateGame', {
       startMinute: number; endMinute: number; durationMinutes: number;
       goldStart?: number; goldEnd?: number; goldDelta?: number; goldPerMinuteInPhase?: number;

@@ -93,18 +93,23 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
   const goldT = Array.isArray(playerRaw.gold_t) ? playerRaw.gold_t.map((v) => toNumber(v, NaN)) : null;
   const lhT = Array.isArray(playerRaw.lh_t) ? playerRaw.lh_t.map((v) => toNumber(v, NaN)) : null;
   const xpT = Array.isArray(playerRaw.xp_t) ? playerRaw.xp_t.map((v) => toNumber(v, NaN)) : null;
-  const economyByPhaseSource = goldT && lhT && xpT && goldT.length > 5 && lhT.length > 5 && xpT.length > 5 ? 'gold_t/lh_t' : 'unavailable';
-
   const laneEfficiency = typeof playerRaw.lane_efficiency === 'number' ? toNumber(playerRaw.lane_efficiency) : undefined;
   const laneEfficiencyPct = typeof playerRaw.lane_efficiency_pct === 'number' ? toNumber(playerRaw.lane_efficiency_pct) : undefined;
   const { lhAt10, goldAt10 } = normalizeLaneEconomyAt10(goldT, lhT, durationSeconds);
   const deathsBefore10 = deathTimings.length ? deathTimings.filter((d) => d.timeSeconds <= 600).length : undefined;
   const laneSource = laneEfficiencyPct !== undefined || (lhAt10 !== undefined && goldAt10 !== undefined) ? 'opendota' : (laneEfficiency !== undefined || lhAt10 !== undefined || goldAt10 !== undefined || deathsBefore10 !== undefined ? 'partial' : 'unavailable');
-  const economyTimeline = economyByPhaseSource === 'gold_t/lh_t'
-    ? normalizeEconomyTimeline(goldT!, lhT!, xpT!, durationSeconds, deathsByPhase)
+  const economyTimeline = normalizeEconomyTimeline(goldT, lhT, xpT, durationSeconds, deathsByPhase);
+  const economyByPhase: EconomyByPhase | undefined = Object.keys(economyTimeline.economyByPhase).length
+    ? economyTimeline.economyByPhase
     : undefined;
-  const economyByPhase: EconomyByPhase | undefined = economyTimeline?.economyByPhase;
-  const economyCheckpoints = economyTimeline?.checkpoints;
+  const economyMetricsAvailable = {
+    gold: Object.values(economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined),
+    lastHits: Object.values(economyByPhase ?? {}).some((phase) => phase?.lhPerMinuteInPhase !== undefined),
+    xp: Object.values(economyByPhase ?? {}).some((phase) => phase?.xpPerMinuteInPhase !== undefined)
+  };
+  const availableEconomyMetrics = Object.values(economyMetricsAvailable).filter(Boolean).length;
+  const economyByPhaseSource = availableEconomyMetrics === 3 ? 'gold_t/lh_t' : availableEconomyMetrics > 0 ? 'partial' : 'unavailable';
+  const economyCheckpoints = economyTimeline.checkpoints.length ? economyTimeline.checkpoints : undefined;
   const farmProfile = {
     laneKills: normalizeOptionalNumber(playerRaw.lane_kills),
     neutralKills: normalizeOptionalNumber(playerRaw.neutral_kills),
