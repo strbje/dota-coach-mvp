@@ -35,6 +35,55 @@ export type CoachingPriority = {
   severity: AnalysisFinding['severity'];
 };
 
+export type TeamAdvantagePoint = { timeSeconds: number; gold?: number; xp?: number };
+export type MatchTimelineEvent = {
+  id: string;
+  timeSeconds: number;
+  endSeconds?: number;
+  kind: 'item' | 'death' | 'objective' | 'lane';
+  label: string;
+  detail?: string;
+};
+export type MatchReview = {
+  headline: string;
+  summary: string;
+  coverageNote?: string;
+  factors: Array<{
+    id: string;
+    title: string;
+    fact: string;
+    meaning: string;
+    confidence: 'observation' | 'possible-factor';
+    timeSeconds: number;
+    endSeconds?: number;
+    evidenceId: string;
+    stat?: { value: string; label: string };
+  }>;
+  strengths: string[];
+  advantage: TeamAdvantagePoint[];
+  timeline: MatchTimelineEvent[];
+};
+
+export type TrainingObservation = {
+  matchId: number;
+  accountId?: number;
+  heroId: number;
+  role: string;
+  startTime?: number;
+  gameMode?: number;
+  lobbyType?: number;
+  durationSeconds: number;
+  lastHitsAt10?: number;
+};
+export type TrainingGoal = {
+  metric: 'lastHitsAt10';
+  title: string;
+  baseline: number;
+  target: number;
+  source: 'training';
+  action: string;
+};
+
 export type BenchmarkPercentileBucket = { percentile: number; value: number };
 
 export type PostMatchBenchmarkContext = {
@@ -88,6 +137,12 @@ export type NormalizedOpenDotaMatch = {
   matchId: number;
   didRadiantWin: boolean;
   durationSeconds: number;
+  startTime?: number;
+  gameMode?: number;
+  lobbyType?: number;
+  teamAdvantage?: TeamAdvantagePoint[];
+  // Only timestamped, translated observations; no inferred killer attribution.
+  objectiveTimeline?: MatchTimelineEvent[];
   selectedPlayer: {
     accountId?: number;
     playerSlot?: number;
@@ -242,6 +297,9 @@ export type PostMatchAnalysis = {
   hero: HeroName;
   role: RoleName;
   result: 'win' | 'loss';
+  durationSeconds: number;
+  review: MatchReview;
+  training: { observation: TrainingObservation; goal?: TrainingGoal };
   buildPlayed: string[];
   timings: Record<string, string>;
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;

@@ -25,7 +25,7 @@ test('maps unexpected errors to a stable generic response', () => {
 test('maps unsupported or ambiguous roles to a controlled response', () => {
   assert.deepEqual(toPublicPostMatchError(new UnsupportedPostMatchRoleError('unknown')), {
     errorCode: 'UNSUPPORTED_POST_MATCH_ROLE',
-    error: 'Пока разбор доступен только для игроков, надёжно определённых как carry.',
+    error: 'Пока разбор доступен только для игроков, у которых подтверждена роль керри.',
     status: 422
   });
 });

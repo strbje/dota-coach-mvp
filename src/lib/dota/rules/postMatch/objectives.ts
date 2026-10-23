@@ -7,6 +7,7 @@ export function normalizeObjectiveType(rawType: string): NormalizedObjectiveType
   if (rawType === 'CHAT_MESSAGE_AEGIS') return 'aegis';
   if (rawType === 'CHAT_MESSAGE_AEGIS_STOLEN') return 'aegis';
   if (rawType === 'CHAT_MESSAGE_MINIBOSS_KILL') return 'roshan';
+  if (rawType === 'CHAT_MESSAGE_ROSHAN_KILL') return 'roshan';
   if (rawType === 'CHAT_MESSAGE_BUYBACK') return 'buyback';
   if (rawType === 'CHAT_MESSAGE_RUNE_PICKUP') return 'rune';
   return 'unknown';

@@ -1,0 +1,18 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920,
+    2560
+  ],
+  "checks": [
+    "accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation",
+    "initial/error/empty/partial/unsupported role; malformed success controlled",
+    "late roster and analysis responses discarded after match/player changes",
+    "blocked storage never reports accepted progress; focus and evidence navigation"
+  ],
+  "consoleErrors": []
+}

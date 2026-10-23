@@ -64,6 +64,26 @@ test('adapter derives full, partial and unavailable economy states from usable p
   }
 });
 
+test('explicit sample times govern the 10-minute goal and missing totals stay unknown', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('{}', { status: 200 });
+  try {
+    const payload = economyPayload({ times: [120, 180, 600, 660], lh_t: [8, 15, 51, 60], lane_efficiency_pct: 70 });
+    const result = await normalizeOpenDotaMatch(payload, { playerSlot: 0 });
+    assert.equal(result.player?.laneReview?.lhAt10, 51);
+    assert.equal(result.player?.laneReview?.laneEfficiencyPct, undefined);
+    assert.equal(result.player?.economyCheckpoints?.find((p) => p.minute === 10)?.cs, 51);
+    assert.equal(result.player?.deaths, undefined);
+    assert.equal(result.player?.gpm, undefined);
+    assert.equal(result.player?.heroDamage, undefined);
+    assert.equal(result.player?.lastHitsPerMin, undefined);
+    const truncated = await normalizeOpenDotaMatch(economyPayload({ times: [120, 180], lh_t: [8, 15, 60] }), { playerSlot: 0 });
+    assert.equal(truncated.player?.laneReview?.lhAt10, undefined);
+    const dire = await normalizeOpenDotaMatch({ ...payload, players: [{ hero_id: 54, player_slot: 128 }] }, { playerSlot: 128 });
+    assert.equal(dire.player?.isRadiant, false);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 async function runDebug(url: string, id = '123') {
   const selectors: PlayerSelector[] = [];
   const response = await handleDebugMatch(new Request(url), { params: Promise.resolve({ id }) }, {

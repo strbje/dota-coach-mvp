@@ -9,6 +9,7 @@ import { normalizeOptionalNumber } from './normalizeOptionalNumber';
 import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
 import { getOpenDotaSelectedPlayerMetadata, selectOpenDotaPlayer } from './selectOpenDotaPlayer';
 import { normalizeEconomyTimeline, normalizeLaneEconomyAt10 } from '@/lib/dota/normalize/economyByPhase';
+import { alignMinuteSeries, normalizeObjectiveTimeline, normalizeTeamAdvantage } from '@/lib/dota/normalize/matchContext';
 
 const TRACKED_ITEM_KEYS = new Set([
   'phase_boots', 'armlet', 'desolator', 'basher', 'black_king_bar', 'sange_and_yasha', 'assault', 'abyssal_blade', 'satanic',
@@ -32,18 +33,20 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
 
   const durationSeconds = toNumber(payload.duration);
   const durationMinutes = durationSeconds > 0 ? durationSeconds / 60 : 0;
-  const kills = toNumber(playerRaw.kills);
-  const assists = toNumber(playerRaw.assists);
-  const lastHits = toNumber(playerRaw.last_hits);
-  const heroDamage = toNumber(playerRaw.hero_damage);
-  const towerDamage = toNumber(playerRaw.tower_damage);
-  const deaths = toNumber(playerRaw.deaths);
+  const isRadiant = typeof playerRaw.isRadiant === 'boolean' ? playerRaw.isRadiant : (selectedPlayer.playerSlot ?? 128) < 128;
+  const kills = normalizeOptionalNumber(playerRaw.kills);
+  const assists = normalizeOptionalNumber(playerRaw.assists);
+  const lastHits = normalizeOptionalNumber(playerRaw.last_hits);
+  const heroDamage = normalizeOptionalNumber(playerRaw.hero_damage);
+  const towerDamage = normalizeOptionalNumber(playerRaw.tower_damage);
+  const deaths = normalizeOptionalNumber(playerRaw.deaths);
 
   const rawPurchaseLog = Array.isArray(playerRaw.purchase_log) ? (playerRaw.purchase_log as Array<Record<string, unknown>>) : null;
   const itemTimingSource = rawPurchaseLog ? 'purchase_log' : 'unavailable';
   const seen = new Set<string>();
   const itemTimings = (rawPurchaseLog ?? [])
-    .filter((entry) => typeof entry.key === 'string' && TRACKED_ITEM_KEYS.has(entry.key) && typeof entry.time === 'number')
+    .filter((entry) => typeof entry.key === 'string' && TRACKED_ITEM_KEYS.has(entry.key) && typeof entry.time === 'number' && Number.isFinite(entry.time) && entry.time <= durationSeconds)
+    .sort((a, b) => Number(a.time) - Number(b.time))
     .filter((entry) => (seen.has(entry.key as string) ? false : (seen.add(entry.key as string), true)))
     .map((entry) => {
       const timeSeconds = toNumber(entry.time);
@@ -53,7 +56,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
   const rawDeathsLog = Array.isArray(playerRaw.deaths_log) ? (playerRaw.deaths_log as Array<Record<string, unknown>>) : null;
   const rawDeathLog = Array.isArray(playerRaw.death_log) ? (playerRaw.death_log as Array<Record<string, unknown>>) : null;
   const deathSource = rawDeathsLog ? 'deaths_log' : rawDeathLog ? 'death_log' : 'unavailable';
-  const deathEntries = (rawDeathsLog ?? rawDeathLog ?? []).filter((entry) => typeof entry.time === 'number');
+  const deathEntries = (rawDeathsLog ?? rawDeathLog ?? []).filter((entry) => typeof entry.time === 'number' && Number.isFinite(entry.time) && entry.time >= 0 && entry.time <= durationSeconds);
   const deathTimings = deathEntries.map((entry) => {
     const timeSeconds = toNumber(entry.time);
     const phase = getMatchPhase(timeSeconds);
@@ -90,11 +93,13 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
       })
     : [];
 
-  const goldT = Array.isArray(playerRaw.gold_t) ? playerRaw.gold_t.map((v) => toNumber(v, NaN)) : null;
-  const lhT = Array.isArray(playerRaw.lh_t) ? playerRaw.lh_t.map((v) => toNumber(v, NaN)) : null;
-  const xpT = Array.isArray(playerRaw.xp_t) ? playerRaw.xp_t.map((v) => toNumber(v, NaN)) : null;
-  const laneEfficiency = typeof playerRaw.lane_efficiency === 'number' ? toNumber(playerRaw.lane_efficiency) : undefined;
-  const laneEfficiencyPct = typeof playerRaw.lane_efficiency_pct === 'number' ? toNumber(playerRaw.lane_efficiency_pct) : undefined;
+  const goldT = alignMinuteSeries(playerRaw.gold_t, playerRaw.times, durationSeconds);
+  const lhT = alignMinuteSeries(playerRaw.lh_t, playerRaw.times, durationSeconds);
+  const xpT = alignMinuteSeries(playerRaw.xp_t, playerRaw.times, durationSeconds);
+  // OpenDota computes these fields from gold_t[10]. A shifted provider clock makes that a different minute.
+  const laneEfficiencyClockValid = playerRaw.times === undefined || (Array.isArray(playerRaw.times) && playerRaw.times[10] === 600);
+  const laneEfficiency = laneEfficiencyClockValid ? normalizeOptionalNumber(playerRaw.lane_efficiency) : undefined;
+  const laneEfficiencyPct = laneEfficiencyClockValid ? normalizeOptionalNumber(playerRaw.lane_efficiency_pct) : undefined;
   const { lhAt10, goldAt10 } = normalizeLaneEconomyAt10(goldT, lhT, durationSeconds);
   const deathsBefore10 = deathTimings.length ? deathTimings.filter((d) => d.timeSeconds <= 600).length : undefined;
   const laneSource = laneEfficiencyPct !== undefined || (lhAt10 !== undefined && goldAt10 !== undefined) ? 'opendota' : (laneEfficiency !== undefined || lhAt10 !== undefined || goldAt10 !== undefined || deathsBefore10 !== undefined ? 'partial' : 'unavailable');
@@ -125,15 +130,18 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
   const rawItemIds = [0, 1, 2, 3, 4, 5].map((slot) => toNumber(playerRaw[`item_${slot}`]));
   const unknownItemIds = rawItemIds.filter((id) => id > 0 && !getItemNameById(id));
   const buildPlayed = rawItemIds.map((id) => getItemNameById(id)).filter((name): name is string => Boolean(name));
-  const teamKey = toBoolean(playerRaw.isRadiant) ? 'radiant_score' : 'dire_score';
+  const teamKey = isRadiant ? 'radiant_score' : 'dire_score';
   const teamKillsRaw = payload[teamKey as keyof OpenDotaMatchResponse];
   const teamKills = typeof teamKillsRaw === 'number' && teamKillsRaw > 0 ? teamKillsRaw : null;
 
   return { matchId: toNumber(payload.match_id), didRadiantWin: toBoolean(payload.radiant_win), durationSeconds,
+    startTime: normalizeOptionalNumber(payload.start_time), gameMode: normalizeOptionalNumber(payload.game_mode), lobbyType: normalizeOptionalNumber(payload.lobby_type),
+    teamAdvantage: normalizeTeamAdvantage(payload, isRadiant, durationSeconds),
+    objectiveTimeline: normalizeObjectiveTimeline(payload.objectives, durationSeconds),
     selectedPlayer, player: {
-    heroName, isRadiant: toBoolean(playerRaw.isRadiant), durationMinutes, kills, deaths, assists, lastHits,
-    lastHitsPerMin: durationMinutes > 0 ? lastHits / durationMinutes : 0, heroDamage, heroDamagePerMin: durationMinutes > 0 ? heroDamage / durationMinutes : 0, towerDamage,
-    gpm: toNumber(playerRaw.gold_per_min), xpm: toNumber(playerRaw.xp_per_min), killParticipation: teamKills ? (kills + assists) / teamKills : undefined,
+    heroName, isRadiant, durationMinutes, kills, deaths, assists, lastHits,
+    lastHitsPerMin: durationMinutes > 0 && lastHits !== undefined ? lastHits / durationMinutes : undefined, heroDamage, heroDamagePerMin: durationMinutes > 0 && heroDamage !== undefined ? heroDamage / durationMinutes : undefined, towerDamage,
+    gpm: normalizeOptionalNumber(playerRaw.gold_per_min), xpm: normalizeOptionalNumber(playerRaw.xp_per_min), killParticipation: teamKills && kills !== undefined && assists !== undefined ? (kills + assists) / teamKills : undefined,
     item0: rawItemIds[0], item1: rawItemIds[1], item2: rawItemIds[2], item3: rawItemIds[3], item4: rawItemIds[4], item5: rawItemIds[5],
     itemTimings, itemTimingSource, buildPlayed,
     rawPurchaseLogPreview: (rawPurchaseLog ?? []).filter((e) => typeof e.key === 'string' && typeof e.time === 'number').slice(0, 30).map((e) => ({ key: e.key as string, time: toNumber(e.time) })),

@@ -1,5 +1,6 @@
 .header { border-bottom: var(--border-width) solid var(--color-border); background: var(--color-surface); }
-.headerInner, .container { width: min(100% - calc(var(--space-4) * 2), 1200px); margin-inline: auto; }
+.headerInner, .container { width: min(100% - calc(var(--space-4) * 2), var(--layout-standard)); margin-inline: auto; }
+.workspace { width: min(100% - calc(var(--layout-gutter) * 2), var(--layout-workspace)); }
 .headerInner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
 .brand { font-family: var(--font-heading); font-weight: 800; text-decoration: none; }
 .nav { display: flex; gap: var(--space-1); }

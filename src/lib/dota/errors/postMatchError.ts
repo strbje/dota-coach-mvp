@@ -33,7 +33,7 @@ function errorChain(error: unknown): string {
 export function toPublicPostMatchError(error: unknown): PublicPostMatchError {
   if (error instanceof Error && error.name === 'PlayerSelectionError') return { errorCode: 'INVALID_PLAYER_SELECTOR', error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.', status: 422 };
   if (error instanceof UnsupportedPostMatchRoleError) {
-    return { errorCode: 'UNSUPPORTED_POST_MATCH_ROLE', error: 'Пока разбор доступен только для игроков, надёжно определённых как carry.', status: 422 };
+    return { errorCode: 'UNSUPPORTED_POST_MATCH_ROLE', error: 'Пока разбор доступен только для игроков, у которых подтверждена роль керри.', status: 422 };
   }
   const chain = errorChain(error);
   if (chain.includes('playerselectionerror')) return { errorCode: 'INVALID_PLAYER_SELECTOR', error: 'Не удалось однозначно определить выбранного игрока. Выберите игрока ещё раз.', status: 422 };

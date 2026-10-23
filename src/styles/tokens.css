@@ -43,5 +43,10 @@
   --font-size-xl: 1.5rem;
   --font-size-score: 2rem;
   --font-size-hero: clamp(2rem, 7vw, 4rem);
+  --layout-standard: 1200px;
+  --layout-workspace: 2320px;
+  --layout-gutter: clamp(16px, 2.5vw, 48px);
+  --text-measure: 72ch;
+  --font-size-report-title: clamp(1.5rem, 2.4vw, 2.5rem);
   --reduced-motion-duration: 0.01ms;
 }

@@ -14,7 +14,7 @@ export function AppHeader() {
 
   return (
     <header className={styles.header}>
-      <div className={styles.headerInner}>
+      <div className={`${styles.headerInner} ${pathname === '/post-match' ? styles.workspace : ''}`}>
         <Link className={styles.brand} href="/">Dota Coach</Link>
         <div className={styles.headerControls}>
         <nav className={styles.nav} aria-label={text.nav.label}>

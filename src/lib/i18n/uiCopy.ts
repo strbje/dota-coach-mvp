@@ -42,7 +42,7 @@ const postMatchErrors = {
     OPENDOTA_NOT_FOUND: 'Матч не найден или ещё не обработан OpenDota.',
     OPENDOTA_RATE_LIMIT: 'OpenDota временно ограничил число запросов. Попробуйте немного позже.',
     OPENDOTA_UNAVAILABLE: 'OpenDota временно недоступен. Попробуйте позже.',
-    UNSUPPORTED_POST_MATCH_ROLE: 'Пока разбор доступен только для игроков, надёжно определённых как carry.',
+    UNSUPPORTED_POST_MATCH_ROLE: 'Пока разбор доступен только для игроков, у которых подтверждена роль керри.',
     POST_MATCH_FAILED: 'Не удалось разобрать матч. Попробуйте ещё раз.'
   },
   en: {

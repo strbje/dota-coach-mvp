@@ -1,22 +1,20 @@
 'use client';
-import { type FormEvent, useRef, useState } from 'react';
-import { BenchmarkEvidence } from '@/components/coach/BenchmarkEvidence';
-import { GradesGrid } from '@/components/coach/GradesGrid';
-import { ItemTimeline } from '@/components/coach/ItemTimeline';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
-import { PhaseBreakdown } from '@/components/coach/PhaseBreakdown';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useLocale } from '@/components/layout/LocaleProvider';
 import { Alert, Badge, Button, Field, Panel, Select } from '@/components/ui';
 import type { MatchPlayerOption } from '@/lib/dota/selection/matchPlayers';
-import type { MatchPhase } from '@/lib/dota/types/domain';
 import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 import { isPostMatchSuccessPayload, type PostMatchSuccessPayload as Payload } from '@/lib/dota/validation/postMatchResponse';
-const PHASE_LABELS: Record<MatchPhase, string> = { laning: 'линия', earlyMid: 'ранняя середина', midGame: 'мидгейм', lateGame: 'лейт' };
-const ROLE_LABELS: Record<string, string> = { carry: 'Керри', mid: 'Мидер', offlane: 'Оффлейнер', support: 'Поддержка', 'hard support': 'Полная поддержка' };
+import { PostMatchReport } from '@/components/coach/PostMatchReport';
+import { formatGameTime } from '@/lib/dota/constants/items';
+import styles from '@/components/coach/postMatch.module.css';
+
 export default function PostMatchPage() {
   const { locale } = useLocale();
   const [matchId, setMatchId] = useState('8781054570');
+  const [showSelection, setShowSelection] = useState(true);
   const [data, setData] = useState<Payload | null>(null);
   const [players, setPlayers] = useState<MatchPlayerOption[]>([]);
   const [playersLoaded, setPlayersLoaded] = useState(false);
@@ -32,6 +30,9 @@ export default function PostMatchPage() {
   const analysis = data?.analysis;
   // Keep the result consistently Russian until rules expose stable message IDs.
   const copy = getUiCopy(analysis ? 'ru' : locale).postMatch;
+
+  useEffect(() => () => { playersAbortController.current?.abort(); analysisAbortController.current?.abort(); }, []);
+  useEffect(() => { if (data) document.getElementById('report-title')?.focus(); }, [data]);
 
   async function loadPlayers(event: FormEvent) {
     event.preventDefault();
@@ -97,11 +98,12 @@ export default function PostMatchPage() {
         );
         return;
       }
-      if (!isPostMatchSuccessPayload(payload)) {
+      if (!isPostMatchSuccessPayload(payload) || payload.analysis.matchId !== Number(matchId)) {
         setAnalysisErrorCode('POST_MATCH_FAILED');
         return;
       }
       setData(payload);
+      setShowSelection(false);
     } catch {
       if (controller.signal.aborted || requestSequence !== analysisRequestSequence.current) return;
       setAnalysisErrorCode('POST_MATCH_FAILED');
@@ -110,7 +112,6 @@ export default function PostMatchPage() {
     }
   }
 
-  const deaths = analysis?.stratz?.deathsByPhase ?? analysis?.deathsByPhase;
   const changeMatchId = (value: string) => {
     playersAbortController.current?.abort();
     analysisAbortController.current?.abort();
@@ -142,139 +143,47 @@ export default function PostMatchPage() {
     return `${player.isRadiant ? 'Radiant' : 'Dire'} · ${player.heroName}${identity}${kda}`;
   };
 
+  const selectedPlayer = players.find((player) => String(player.playerSlot) === selectedSlot);
   return (
-    <PageContainer className="page-stack">
-<header className="stack">
-<span className="eyebrow">{copy.eyebrow}</span>
-<h1 className="page-title">{copy.title}</h1>
-<p className="muted">{copy.lead}</p>
-</header>
-<Panel>
-<form className="stack" onSubmit={loadPlayers} aria-busy={loadingPlayers}>
-<MatchIdForm
-  matchId={matchId}
-  label={copy.matchIdLabel}
-  hint={copy.matchIdHint}
-  onChange={changeMatchId}
-/>
-<Button type="submit" loading={loadingPlayers} loadingLabel="Загружаем игроков…">Загрузить игроков</Button>
-{loadingPlayers ? <Alert tone="info">Загружаем состав матча…</Alert> : null}
-{playersErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, playersErrorCode)}</Alert>
- : null}{!analysis && !loading && !loadingPlayers && !playersErrorCode && !playersLoaded ? <Alert tone="unknown">{copy.initial}</Alert>
- : null}</form>
-{playersLoaded && players.length === 0 ? <Alert tone="unknown">В матче не найдены игроки, доступные для выбора.</Alert> : null}
-{players.length > 0 && players.length < 10 ? <Alert tone="unknown">OpenDota вернул неполный состав: доступно игроков — {players.length}.</Alert> : null}
-{players.length > 0 ? <form className="stack subsection" onSubmit={submit} aria-busy={loading}>
-<Field id="match-player" label="Игрок" hint="Выберите героя и сторону из состава матча.">
-<Select value={selectedSlot} onChange={(event) => changeSelectedSlot(event.target.value)}>
-<option value="">Выберите игрока</option>
-{players.map((player) => <option key={player.playerSlot} value={player.playerSlot}>{playerOptionLabel(player)}</option>)}
-</Select>
-</Field>
-<p className="muted">Сейчас полный тренерский разбор доступен для carry.</p>
-<Button type="submit" disabled={selectedSlot === ''} loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
-{loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
-{analysisErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, analysisErrorCode)}</Alert> : null}
-</form> : null}
-</Panel>
-{analysis ? <div className="page-stack">
-<Panel>
-<h2 className="section-heading">Контекст матча</h2>
-
-<div className="result-context">
-<div className="context-item">
-<span>Match ID</span>
-<strong>{analysis.matchId}</strong></div>
-
-<div className="context-item">
-<span>Герой</span>
-<strong>{analysis.hero ?? '—'}</strong></div>
-
-<div className="context-item">
-<span>Роль</span>
-<strong>{ROLE_LABELS[analysis.role?.toLowerCase()] ?? 'Недостаточно данных'}</strong></div>
-
-<div className="context-item">
-<span>Результат</span>
-<Badge tone={analysis.result === 'win' ? 'success' : 'danger'}>{analysis.result === 'win' ? 'Победа' : 'Поражение'}</Badge>
-</div>
-</div>
-</Panel>
-
-<Panel className="verdict">
-<span className="eyebrow">Краткий итог</span>
-
-<div className="verdict-grid">
-<div>
-<h2>Главное в твоей игре</h2>
-<p>{analysis.finalVerdict.mainReason}</p>
-</div>
-
-<div>
-<h3>Что стоит проверить</h3>
-<p>{analysis.finalVerdict.biggestRisk}</p>
-</div>
-
-<div>
-<h3>Фокус на следующую игру</h3>
-<p>{analysis.finalVerdict.nextMatchFocus}</p>
-</div>
-</div>
-</Panel>
-<Panel>
-<h2 className="section-heading">Приоритеты</h2>
-{analysis.priorities.length ? <div className="grid grid-2">{analysis.priorities.map((priority) => <Panel as="article" key={priority.id}>
-<h3>{priority.title}</h3>
-<p><strong>{priority.fact}</strong></p>
-<p>{priority.meaning}</p>
-<p><strong>Что сделать:</strong> {priority.action}</p>
-{priority.target ? <p><strong>Цель:</strong> {priority.target.text} <span className="muted">({priority.target.source === 'personal' ? 'собственный результат, не норма для героя' : priority.target.source === 'external' ? 'подтверждённый внешний ориентир' : 'тренировочная цель'})</span></p> : null}
-{priority.dataState === 'partial' ? <Alert tone="unknown">Для полного вывода данных недостаточно.</Alert> : null}
-</Panel>)}</div> : <Alert tone="unknown">По доступным данным нет приоритета, который можно обосновать фактами матча.</Alert>}
-</Panel>
-<ItemTimeline items={analysis.itemTimings} title="Ключевые покупки" />
-<GradesGrid grades={analysis.grades} />
-<details className="details">
-<summary>Показать доказательства и подробности</summary>
-
-<div className="details-content">
-<BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
-<PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={deaths} itemTimings={analysis.itemTimings} />{deaths ? <Panel>
-<h3>Смерти по фазам</h3>
-<ul>{Object.entries(deaths).map(([phase, count]) => <li key={phase}>{PHASE_LABELS[phase as MatchPhase]}: <strong>{count}</strong></li>
-)}</ul>
-{analysis.stratz?.deathTimings?.length ? <ul>{analysis.stratz.deathTimings.map((entry) => <li key={`${entry.time}-${entry.phase}`}>{entry.time} — {PHASE_LABELS[entry.phase]}</li>
-)}</ul>
- : null}</Panel>
- : <Alert tone="unknown">Недостаточно данных о смертях по фазам.</Alert>
-}{analysis.farmProfile ? <Panel>
-<h3>Фарм и экономика</h3>
-{analysis.goldReasons?.constantsAvailable ? <><ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>
-)}{analysis.goldReasons.unknownAmount > 0 ? <li>Другое / нераспознано: {Math.round(analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li>
- : null}</ul>
-{!analysis.goldReasons.breakdownComplete ? <><Alert tone="unknown">Разбивка по источникам золота неполная. Ниже отдельно показано количество добиваний и убийств.</Alert>
-<ul>
-<li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
-<li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li>
-<li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li>
-<li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
-</ul></> : null}</>
- : <>
-<ul>
-<li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li>
-
-<li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li>
-
-<li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li>
-
-<li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li>
-</ul>
-<Alert tone="unknown">Разбивка золота по источникам недоступна. Значения выше — количество добиваний и убийств.</Alert>
-</>}</Panel>
- : <Alert tone="unknown">Недостаточно данных о профиле фарма.</Alert>
-}</div>
-</details>
-</div>
- : null}</PageContainer>
+    <PageContainer width="workspace" className={styles.workspace}>
+      <header className={styles.matchHeader}>
+        <div className={styles.identity}>
+          <span className="eyebrow">{analysis ? 'Разбор матча' : copy.eyebrow}</span>
+          <h1 id="report-title" tabIndex={-1}>{analysis ? analysis.hero : copy.title}</h1>
+          {analysis ? <div className={styles.meta}>
+            <Badge tone={analysis.result === 'win' ? 'success' : 'danger'}>{analysis.result === 'win' ? 'Победа' : 'Поражение'}</Badge>
+            <span>{selectedPlayer?.playerName ?? 'Выбранный игрок'}</span>
+            <span>Керри</span><span>{formatGameTime(analysis.durationSeconds)}</span><span>Матч {analysis.matchId}</span>
+          </div> : <p className="muted">Разбери ключевые отрезки и выбери одну цель на следующую игру.</p>}
+        </div>
+        {analysis ? <Button type="button" variant="secondary" aria-expanded={showSelection} aria-controls="match-selection" onClick={() => setShowSelection((value) => !value)}>{showSelection ? 'Скрыть выбор' : 'Матч и состав · изменить'}</Button> : null}
+      </header>
+      <div id="match-selection" hidden={!showSelection}>
+        <Panel className={styles.formGrid}>
+          <form className="stack" onSubmit={loadPlayers} aria-busy={loadingPlayers}>
+            <MatchIdForm matchId={matchId} label={copy.matchIdLabel} hint={copy.matchIdHint} onChange={changeMatchId} />
+            <Button type="submit" loading={loadingPlayers} loadingLabel="Загружаем игроков…">Загрузить игроков</Button>
+            {loadingPlayers ? <Alert tone="info">Загружаем состав матча…</Alert> : null}
+            {playersErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, playersErrorCode)}</Alert> : null}
+          </form>
+          <div className="stack">
+            {playersLoaded && players.length === 0 ? <Alert tone="unknown">В матче не найдены игроки, доступные для выбора.</Alert> : null}
+            {players.length > 0 && players.length < 10 ? <Alert tone="unknown">Доступна часть состава: {players.length} из 10 игроков.</Alert> : null}
+            {players.length > 0 ? <form className="stack" onSubmit={submit} aria-busy={loading}>
+              <Field id="match-player" label="Игрок" hint="Выбери героя и сторону. Сейчас полный разбор доступен для керри.">
+                <Select value={selectedSlot} onChange={(event) => changeSelectedSlot(event.target.value)}>
+                  <option value="">Выбери игрока</option>
+                  {players.map((player) => <option key={player.playerSlot} value={player.playerSlot}>{playerOptionLabel(player)}</option>)}
+                </Select>
+              </Field>
+              <Button type="submit" disabled={selectedSlot === ''} loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
+              {loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
+              {analysisErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, analysisErrorCode)}</Alert> : null}
+            </form> : !loadingPlayers && !playersErrorCode && !playersLoaded ? <p className={`muted ${styles.empty}`}>Сначала загрузи матч, затем выбери себя в составе. Разбор отделит командный результат от твоих действий.</p> : null}
+          </div>
+        </Panel>
+      </div>
+      {analysis ? <PostMatchReport analysis={analysis} /> : null}
+    </PageContainer>
   );
 }
