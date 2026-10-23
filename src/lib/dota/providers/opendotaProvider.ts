@@ -54,18 +54,27 @@ export async function fetchOpenDotaPathResearch(path: string): Promise<OpenDotaR
   }
 }
 
-export async function fetchOpenDotaPath(path: string): Promise<unknown> {
+export class OpenDotaHttpError extends Error {
+  constructor(public readonly status: number, public readonly retryAfterSeconds?: number) {
+    super(`OpenDota request failed with status ${status}`);
+    this.name = 'OpenDotaHttpError';
+  }
+}
+
+export async function fetchOpenDotaPath(path: string, options: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<unknown> {
   const key = process.env.OPENDOTA_API_KEY;
   const url = new URL(`${OPENDOTA_BASE}${path}`);
   if (key) url.searchParams.set('api_key', key);
 
-  const response = await fetch(url, {
-    cache: 'no-store',
-    headers: { Accept: 'application/json' }
-  });
-
+  const timeout = options.timeoutMs === undefined ? undefined : AbortSignal.timeout(Math.max(1, Math.ceil(options.timeoutMs)));
+  const signal = options.signal && timeout ? AbortSignal.any([options.signal, timeout]) : options.signal ?? timeout;
+  const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' }, signal });
   if (!response.ok) {
-    throw new Error(`OpenDota request failed with status ${response.status}`);
+    const retryHeader = response.headers.get('retry-after');
+    const seconds = retryHeader === null ? NaN : /^\d+$/.test(retryHeader) ? Number(retryHeader) : (Date.parse(retryHeader) - Date.now()) / 1000;
+    // Release the response body before a bounded retry in the caller.
+    await response.body?.cancel();
+    throw new OpenDotaHttpError(response.status, Number.isFinite(seconds) ? Math.max(1, Math.ceil(seconds)) : undefined);
   }
 
   return response.json();

@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchOpenDotaPathResearch } from './opendotaProvider';
+import { fetchOpenDotaPath, fetchOpenDotaPathResearch, OpenDotaHttpError } from './opendotaProvider';
+
+test('bounded provider preserves retry-after and aborts a stalled request', async () => {
+  const original = global.fetch;
+  global.fetch = (async () => new Response('limited', { status: 429, headers: { 'retry-after': '90' } })) as typeof fetch;
+  try {
+    await assert.rejects(fetchOpenDotaPath('/players/1001', { timeoutMs: 100 }), (error: unknown) => error instanceof OpenDotaHttpError && error.status === 429 && error.retryAfterSeconds === 90);
+    global.fetch = (async (_input, init) => {
+      const signal = init?.signal;
+      return new Promise((_resolve, reject) => signal?.addEventListener('abort', () => reject(signal.reason), { once: true }));
+    }) as typeof fetch;
+    // Keep the loop alive while AbortSignal.timeout uses an unref'ed timer.
+    const keepAlive = setTimeout(() => undefined, 100);
+    try { await assert.rejects(fetchOpenDotaPath('/players/1001', { timeoutMs: 10 }), { name: 'TimeoutError' }); }
+    finally { clearTimeout(keepAlive); }
+  } finally { global.fetch = original; }
+});
 
 test('research fetch retains HTTP diagnostics and a bounded body preview', async () => {
   const original = global.fetch;

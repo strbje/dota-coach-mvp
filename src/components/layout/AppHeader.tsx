@@ -10,11 +10,11 @@ export function AppHeader() {
   const pathname = usePathname();
   const { locale, setLocale } = useLocale();
   const text = getUiCopy(locale);
-  const links = [{ href: '/', label: text.nav.home }, { href: '/post-match', label: text.nav.postMatch }, { href: '/pre-game', label: text.nav.preGame }];
+  const links = [{ href: '/', label: text.nav.home }, { href: '/post-match', label: text.nav.postMatch }, { href: '/pre-game', label: text.nav.preGame }, { href: '/winrates', label: text.nav.winrates }];
 
   return (
     <header className={styles.header}>
-      <div className={`${styles.headerInner} ${pathname === '/post-match' ? styles.workspace : ''}`}>
+      <div className={`${styles.headerInner} ${pathname === '/post-match' || pathname === '/winrates' ? styles.workspace : ''}`}>
         <Link className={styles.brand} href="/">Dota Coach</Link>
         <div className={styles.headerControls}>
         <nav className={styles.nav} aria-label={text.nav.label}>

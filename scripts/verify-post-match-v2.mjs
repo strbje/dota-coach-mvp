@@ -49,7 +49,7 @@ if (server) await new Promise((resolve, reject) => {
 const chromiumModule = process.env.CHROMIUM_MODULE_PATH ? require(process.env.CHROMIUM_MODULE_PATH) : null;
 const localChromium = chromiumModule?.default ?? chromiumModule;
 const browser = await chromium.launch(localChromium
-  ? { headless: true, executablePath: await localChromium.executablePath(), args: localChromium.args }
+  ? { headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || await localChromium.executablePath(), args: localChromium.args }
   : { headless: true, channel: 'chromium' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
 const errors = [];
@@ -95,6 +95,7 @@ try {
   await page.getByRole('button', { name: 'RU', exact: true }).click();
   await snapshot('initial');
   await load('ready'); await reportReady();
+  assert.equal(await page.getByRole('link', { name: 'Доля побед участников', exact: true }).getAttribute('href'), '/winrates?matchId=9000066&accountId=1000066');
   assert.equal(await page.getByRole('heading', { name: 'Wraith King', exact: true }).count(), 1);
   await page.getByRole('button', { name: 'Принять челлендж', exact: true }).waitFor();
   for (const width of [320, 390, 768, 1440, 1920, 2560]) {

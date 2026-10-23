@@ -20,6 +20,11 @@ const sourceFiles = [
   join(root, 'src/app/api/pre-game/analyze/handler.test.ts')
 ];
 const tests = [
+  'lib/dota/winrates/calculation.test.js',
+  'lib/dota/winrates/history.test.js',
+  'lib/dota/winrates/participantUpdate.test.js',
+  'lib/dota/winrates/service.test.js',
+  'lib/dota/winrates/source.test.js',
   'lib/dota/selection/matchPlayers.test.js',
   'lib/dota/normalize/matchContext.test.js',
   'lib/dota/analyze/trainingChallenge.test.js',
