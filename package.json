@@ -12,7 +12,7 @@
     "test:combat": "node -e \"require('fs').rmSync('.tmp-combat-tests',{recursive:true,force:true})\" && tsc src/lib/dota/adapters/normalizeStratzMatch.ts src/lib/dota/adapters/normalizeStratzMatch.test.ts src/lib/dota/normalize/stratzCoordinates.ts src/lib/dota/normalize/stratzCoordinates.test.ts src/lib/dota/rules/deathRules.ts src/lib/dota/rules/deathRules.test.ts src/lib/dota/rules/fightRules.ts src/lib/dota/rules/fightRules.test.ts --outDir .tmp-combat-tests --module commonjs --moduleResolution node --target es2022 --esModuleInterop --skipLibCheck && node --test .tmp-combat-tests/adapters/*.test.js .tmp-combat-tests/normalize/*.test.js .tmp-combat-tests/rules/*.test.js && node -e \"require('fs').rmSync('.tmp-combat-tests',{recursive:true,force:true})\"",
     "check:design": "node scripts/check-design.mjs && node --test scripts/check-design.test.mjs",
     "test:unit": "node scripts/run-unit-tests.mjs",
-    "test:stratz-research": "node --test scripts/probe-stratz-hero-average.test.mjs"
+    "test:stratz-research": "node --test scripts/probe-stratz-hero-average.test.mjs scripts/probe-stratz-coordinates.test.mjs"
   },
   "dependencies": {
     "next": "15.5.25",
