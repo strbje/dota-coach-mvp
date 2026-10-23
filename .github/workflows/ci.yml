@@ -44,6 +44,9 @@ jobs:
       - name: Combat tests
         run: npm run test:combat
 
+      - name: STRATZ research capture tests (synthetic)
+        run: npm run test:stratz-research
+
       - name: Benchmark tests
         run: npm run test:benchmarks
 

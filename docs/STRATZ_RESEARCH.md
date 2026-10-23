@@ -1,5 +1,13 @@
 # STRATZ_RESEARCH
 
+## Coordinate study — current status (2026-10-24 MSK, issue #50)
+
+See the [coordinate research protocol](research/stratz-coordinates/README.md) for the
+post-PR #71/#72 evidence review, verified archive hashes, new OpenDota observations,
+unavailable STRATZ/replay checks, exact episodes and minimal PowerShell capture commands.
+No real STRATZ-to-replay coordinate pair has yet been validated. Historical playback
+counts below are not a coordinate acceptance test. `productReady=false` remains unchanged.
+
 ## Confirmed status
 - Endpoint `https://api.stratz.com/graphql` works.
 - Auth with `STRATZ_API_TOKEN` works.
