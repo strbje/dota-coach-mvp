@@ -22,7 +22,7 @@ Every finding must include:
 - STRATZ basic player stats can validate OpenDota KDA/GPM/XPM/networth.
 - STRATZ cannot yet be used for first death, death location, or teamfight death order.
 - OpenDota `farmProfile` represents kill counts, not gold-source distribution.
-- `gold_reasons` cannot be productized until constants are decoded.
+- `gold_reasons` uses only the independently verified categories in [OPENDOTA_FIELDS.md](OPENDOTA_FIELDS.md). Display signed incomes/losses and unknown separately; decoded coverage is not proof of complete collected gold or net worth.
 - Objective conversion must be cautious when team attribution is not confirmed.
 - Death phase analysis must not be shown when death timings are unavailable.
 

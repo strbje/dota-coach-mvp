@@ -1,17 +1,21 @@
-export type GoldReasonGroup = 'creeps' | 'heroes' | 'buildings' | 'roshan' | 'courier' | 'neutral' | 'starting' | 'purchase' | 'other' | 'unknown';
+export type GoldReasonGroup = 'creeps' | 'heroes' | 'buildings' | 'roshan' | 'courier' | 'neutral' | 'death' | 'buyback' | 'sale' | 'bounty' | 'ability' | 'wards' | 'courierBonus' | 'unknown';
 type GoldReasonConstant = { label: string; group: GoldReasonGroup };
 
 export const GOLD_REASON_GROUP_LABELS: Record<GoldReasonGroup, string> = {
-  creeps: 'Лейн-крипы',
+  creeps: 'Крипы',
   neutral: 'Нейтралы',
   heroes: 'Герои',
   buildings: 'Строения',
-  roshan: 'Roshan',
+  roshan: 'Рошан',
   courier: 'Курьеры',
-  starting: 'Стартовое золото',
-  purchase: 'Покупки и потери',
-  other: 'Другие источники',
-  unknown: 'Другое / нераспознано'
+  death: 'Потери при смерти',
+  buyback: 'Выкуп',
+  sale: 'Продажа предметов',
+  bounty: 'Руны богатства',
+  ability: 'Способности',
+  wards: 'Варды',
+  courierBonus: 'Личная награда за курьера',
+  unknown: 'Источник не определён'
 };
 
 export type NormalizedGoldReasons = ReturnType<typeof normalizeGoldReasons>;
@@ -21,39 +25,51 @@ export function normalizeGoldReasons(
   raw: Record<string, unknown>,
   constants: Record<string, GoldReasonConstant>
 ) {
-  const decoded = Object.entries(raw)
-    .flatMap(([key, value]) => {
-      const amount = typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-      if (amount === undefined || amount === 0) return [];
-      const constant = constants[key];
-      const productKnown = Boolean(constant && constant.group !== 'unknown');
-      return [{
-        key,
-        amount,
-        label: constant?.label ?? 'Unknown reason',
-        group: constant?.group ?? 'unknown' as GoldReasonGroup,
-        known: productKnown
-      }];
-    });
+  const invalidKeys: string[] = [];
+  const decoded = Object.entries(raw).flatMap(([key, value]) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      invalidKeys.push(key);
+      return [];
+    }
+    const constant = constants[key];
+    return [{
+      key,
+      amount: value,
+      label: constant?.label ?? 'Unknown reason',
+      group: constant?.group ?? 'unknown' as GoldReasonGroup,
+      known: Boolean(constant && constant.group !== 'unknown')
+    }];
+  });
 
-  const amountsByGroup = decoded.reduce<Record<GoldReasonGroup, number>>((acc, entry) => {
-    acc[entry.group] += entry.amount;
-    return acc;
-  }, { creeps: 0, neutral: 0, heroes: 0, buildings: 0, roshan: 0, courier: 0, starting: 0, purchase: 0, other: 0, unknown: 0 });
-  const grouped = (Object.entries(amountsByGroup) as Array<[GoldReasonGroup, number]>)
-    .filter(([, amount]) => amount !== 0)
-    .map(([group, amount]) => ({ group, label: GOLD_REASON_GROUP_LABELS[group], amount }));
-  const unknownKeys = decoded.filter((entry) => !entry.known).map((entry) => entry.key);
-  const unknownAmount = amountsByGroup.unknown;
+  // Keep each sign separately, including for unknown reasons. Opposing amounts
+  // must not disappear through netting; a confirmed zero is still an observation.
+  const grouped: Array<{ group: GoldReasonGroup; label: string; amount: number }> = [];
+  for (const group of Object.keys(GOLD_REASON_GROUP_LABELS) as GoldReasonGroup[]) {
+    for (const sign of [1, -1, 0]) {
+      const entries = decoded.filter((entry) => entry.group === group && Math.sign(entry.amount) === sign);
+      if (!entries.length) continue;
+      grouped.push({
+        group,
+        label: group === 'unknown' && sign < 0 ? 'Причина потерь не определена' : GOLD_REASON_GROUP_LABELS[group],
+        amount: entries.reduce((sum, entry) => sum + entry.amount, 0)
+      });
+    }
+  }
+  const unknownEntries = decoded.filter((entry) => !entry.known);
+  const unknownKeys = unknownEntries.map((entry) => entry.key);
   const constantsAvailable = decoded.some((entry) => entry.known);
 
   return {
+    raw: { ...raw },
+    invalidKeys,
     constantsAvailable,
-    breakdownComplete: constantsAvailable && unknownKeys.length === 0,
+    // Completeness of decoding the received entries, not coverage of all gold.
+    breakdownComplete: constantsAvailable && unknownKeys.length === 0 && invalidKeys.length === 0,
     totalPositiveGold: decoded.filter((entry) => entry.amount > 0).reduce((sum, entry) => sum + entry.amount, 0),
     totalNegativeGold: decoded.filter((entry) => entry.amount < 0).reduce((sum, entry) => sum + Math.abs(entry.amount), 0),
     groups: grouped.filter((entry) => entry.group !== 'unknown'),
-    unknownAmount,
+    // Legacy debug net amount; presentation uses the separate signed groups.
+    unknownAmount: unknownEntries.reduce((sum, entry) => sum + entry.amount, 0),
     unknownKeys,
     decoded,
     grouped

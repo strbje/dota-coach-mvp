@@ -11,7 +11,7 @@
 - kill participation from team kills.
 
 ### Research/debug data
-- `gold_reasons` exists, but constants decoding is currently unresolved;
+- `gold_reasons` uses the verified mapping and signed partial breakdown documented in [OPENDOTA_FIELDS.md](OPENDOTA_FIELDS.md); unreviewed reasons remain unknown;
 - raw objective types;
 - possible `teamfights` payload if present in raw response.
 

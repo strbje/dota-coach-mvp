@@ -5,6 +5,7 @@ import { Badge, Button, Panel } from '@/components/ui';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { BenchmarkEvidence } from './BenchmarkEvidence';
 import { GradesGrid } from './GradesGrid';
+import { GoldSources } from './GoldSources';
 import { ItemTimeline } from './ItemTimeline';
 import { PhaseBreakdown } from './PhaseBreakdown';
 import { MatchContextTimeline } from './MatchContextTimeline';
@@ -75,7 +76,7 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
           <GradesGrid grades={analysis.grades} />
           <BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
           <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={analysis.deathsByPhase} itemTimings={analysis.itemTimings} />
-          {analysis.goldReasons?.constantsAvailable ? <Panel><h3>Источники золота</h3><ul>{analysis.goldReasons.groups.map((entry) => <li key={entry.group}>{entry.label}: {Math.round(entry.amount).toLocaleString('ru-RU')} золота</li>)}{analysis.goldReasons.unknownAmount > 0 ? <li>Другие источники: {Math.round(analysis.goldReasons.unknownAmount).toLocaleString('ru-RU')} золота</li> : null}</ul>{!analysis.goldReasons.breakdownComplete ? <p className="muted">Разбивка неполная.</p> : null}</Panel> : null}
+          {analysis.goldReasons ? <GoldSources reasons={analysis.goldReasons} /> : null}
           {analysis.farmProfile ? <Panel><h3>Добивания и убийства</h3><ul><li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li><li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li><li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li><li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li></ul></Panel> : null}
           <p className="muted">Источник: OpenDota{analysis.stratz?.deathTimings ? ', события смертей — STRATZ' : ''}. Средние STRATZ и координаты в выводах не используются. Разница золота описывает ресурсы команд; сама по себе она не устанавливает причинность.</p>
         </div>

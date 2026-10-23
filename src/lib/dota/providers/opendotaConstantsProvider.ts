@@ -2,49 +2,43 @@ import { normalizeItemConstants } from '@/lib/dota/adapters/normalizeItemConstan
 import { fetchOpenDotaConstants } from '@/lib/dota/clients/opendota';
 import { setHeroConstants } from '@/lib/dota/data/heroConstants';
 import { setItemConstants } from '@/lib/dota/data/itemConstants';
+import type { GoldReasonGroup } from '@/lib/dota/normalize/goldReasons';
 
 let hydrated = false; let inFlight: Promise<void> | null = null;
 
-export type GoldReasonGroup = 'creeps' | 'heroes' | 'buildings' | 'roshan' | 'courier' | 'neutral' | 'starting' | 'purchase' | 'other' | 'unknown';
 export type GoldReasonConstant = { id: number; key: string; label: string; group: GoldReasonGroup };
 
+// Verified 2026-10-23 against OpenDota web translations and the game's enum.
+// Pinned sources and the NULL_gold_reasons_16 spelling: docs/OPENDOTA_FIELDS.md.
 const GOLD_REASON_FALLBACK: Record<string, GoldReasonConstant> = {
-  '1': { id: 1, key: 'unreliable', label: 'Unreliable Gold', group: 'other' },
-  '11': { id: 11, key: 'hero_kill', label: 'Hero Kill', group: 'heroes' },
-  '12': { id: 12, key: 'creep_kill', label: 'Creep Kill', group: 'creeps' },
-  '13': { id: 13, key: 'neutral_kill', label: 'Neutral Kill', group: 'neutral' },
-  '14': { id: 14, key: 'roshan_kill', label: 'Roshan Kill', group: 'roshan' },
-  '15': { id: 15, key: 'courier_kill', label: 'Courier Kill', group: 'courier' },
-  '16': { id: 16, key: 'tower_kill', label: 'Tower Kill', group: 'buildings' },
-  '17': { id: 17, key: 'building_kill', label: 'Building Kill', group: 'buildings' },
-  '19': { id: 19, key: 'buyback', label: 'Buyback', group: 'purchase' },
-  '20': { id: 20, key: 'abandon', label: 'Abandon', group: 'other' }
+  '1': { id: 1, key: 'death', label: 'Death', group: 'death' },
+  '2': { id: 2, key: 'buyback', label: 'Buyback', group: 'buyback' },
+  '6': { id: 6, key: 'sell_item', label: 'Sell Item', group: 'sale' },
+  '11': { id: 11, key: 'building', label: 'Building', group: 'buildings' },
+  '12': { id: 12, key: 'hero_kill', label: 'Hero Kill', group: 'heroes' },
+  '13': { id: 13, key: 'creep_kill', label: 'Creep Kill', group: 'creeps' },
+  '14': { id: 14, key: 'neutral_kill', label: 'Neutral Kill', group: 'neutral' },
+  '15': { id: 15, key: 'roshan_kill', label: 'Roshan Kill', group: 'roshan' },
+  '16': { id: 16, key: 'courier_kill', label: 'Courier Kill', group: 'courier' },
+  '17': { id: 17, key: 'bounty_rune', label: 'Bounty Rune', group: 'bounty' },
+  '19': { id: 19, key: 'ability_gold', label: 'Ability Gold', group: 'ability' },
+  '20': { id: 20, key: 'ward_kill', label: 'Ward Kill', group: 'wards' },
+  '21': { id: 21, key: 'courier_killed_by_this_player', label: 'Courier Killed By This Player', group: 'courierBonus' }
 };
 
-function groupGoldReason(label: string, key: string): GoldReasonGroup {
-  const hay = `${label} ${key}`.toLowerCase();
-  if (hay.includes('hero')) return 'heroes';
-  if (hay.includes('neutral') || hay.includes('jungle')) return 'neutral';
-  if (hay.includes('creep') || hay.includes('lane')) return 'creeps';
-  if (hay.includes('roshan')) return 'roshan';
-  if (hay.includes('courier')) return 'courier';
-  if (hay.includes('tower') || hay.includes('building') || hay.includes('rax') || hay.includes('barrack')) return 'buildings';
-  if (hay.includes('starting') || hay.includes('pre') || hay.includes('initial')) return 'starting';
-  if (hay.includes('buyback') || hay.includes('purchase') || hay.includes('loss') || hay.includes('abandon') || hay.includes('death')) return 'purchase';
-  if (hay.includes('gold') || hay.includes('bounty') || hay.includes('assist')) return 'other';
-  return 'unknown';
-}
-
-function normalizeGoldReasonConstants(payload: unknown): Record<string, GoldReasonConstant> {
+export function normalizeGoldReasonConstants(payload: unknown): Record<string, GoldReasonConstant> {
   const result: Record<string, GoldReasonConstant> = { ...GOLD_REASON_FALLBACK };
   if (!payload || typeof payload !== 'object') return result;
 
   for (const [idKey, value] of Object.entries(payload as Record<string, unknown>)) {
     const parsedId = Number(idKey);
-    if (!Number.isFinite(parsedId)) continue;
+    if (!Number.isSafeInteger(parsedId) || parsedId < 0) continue;
+    // A generic/obsolete provider label must not override verified ID semantics.
+    // Unreviewed IDs retain their raw label for debug, but stay unknown in product.
+    if (GOLD_REASON_FALLBACK[idKey]) continue;
     if (typeof value === 'string') {
       const clean = value.trim();
-      result[idKey] = { id: parsedId, key: clean.toLowerCase().replace(/\s+/g, '_'), label: clean, group: groupGoldReason(clean, clean) };
+      result[idKey] = { id: parsedId, key: clean.toLowerCase().replace(/\s+/g, '_'), label: clean, group: 'unknown' };
       continue;
     }
     if (!value || typeof value !== 'object') continue;
@@ -54,7 +48,7 @@ function normalizeGoldReasonConstants(payload: unknown): Record<string, GoldReas
       || (typeof raw.localized_name === 'string' && raw.localized_name.trim())
       || (typeof raw.name === 'string' && raw.name.trim())
       || key;
-    result[idKey] = { id: parsedId, key, label, group: groupGoldReason(label, key) };
+    result[idKey] = { id: parsedId, key, label, group: 'unknown' };
   }
   return result;
 }
