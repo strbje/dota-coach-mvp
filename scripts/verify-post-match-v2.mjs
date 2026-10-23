@@ -1,7 +1,7 @@
 // Optional local browser checks. Requires Playwright in the environment; no production dependency.
 // Start the app on BASE_URL first. All match responses below are SYNTHETIC, produced by the real adapter/rules.
 import assert from 'node:assert/strict';
-import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { spawn, spawnSync } from 'node:child_process';
@@ -38,6 +38,22 @@ try {
   fixtures.missing.analysis.training.observation = { ...fixtures.next.analysis.training.observation, matchId: 9000068, startTime: now + 120, lastHitsAt10: undefined };
 } finally { globalThis.fetch = originalFetch; }
 
+// Presentation edge cases reuse the assembled fixture without provider calls.
+fixtures.fourthMissing = structuredClone(fixtures.fourth);
+delete fixtures.fourthMissing.analysis.training.observation.lastHitsAt10;
+delete fixtures.fourthMissing.analysis.training.goal;
+fixtures.temporal = structuredClone(fixtures.ready);
+fixtures.temporal.analysis.review.advantage = [{ timeSeconds: 0, gold: 0, xp: 0 }, { timeSeconds: 60, gold: 100, xp: 150 }, { timeSeconds: 120, xp: 230 }, { timeSeconds: 180, gold: 300, xp: 400 }];
+fixtures.temporal.analysis.itemTimings[0].timeSeconds = -30;
+fixtures.temporal.analysis.itemTimings[0].time = '-00:30';
+fixtures.temporal.analysis.review.timeline.find((e) => e.id === 'item-phase_boots').timeSeconds = -30;
+fixtures.temporal.analysis.review.timeline.push({ id: 'close-objective', kind: 'objective', timeSeconds: 1405, label: 'Строение · синтетический пример' });
+fixtures.temporal.analysis.review.timeline.sort((a, b) => a.timeSeconds - b.timeSeconds);
+fixtures.noDeaths = structuredClone(fixtures.ready);
+delete fixtures.noDeaths.analysis.laneFacts.deathsAt10;
+fixtures.rescored = structuredClone(fixtures.ready);
+fixtures.rescored.analysis.grades.fights.score = 77; fixtures.rescored.analysis.grades.map.score = 65;
+
 const server = process.env.START_SERVER === '1'
   ? spawn(process.execPath, [join(root, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' } }) : null;
 if (server) await new Promise((resolve, reject) => {
@@ -52,6 +68,13 @@ const browser = await chromium.launch(localChromium
   ? { headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || await localChromium.executablePath(), args: localChromium.args }
   : { headless: true, channel: 'chromium' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+// Optional local cache of unmodified Steam CDN images for network-restricted browsers.
+if (process.env.ASSET_DIR) await page.route('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/**', async (route) => {
+  const match = new URL(route.request().url()).pathname.match(/\/(heroes|items)\/([a-z0-9_]+)\.png$/);
+  if (!match) return route.continue();
+  try { await route.fulfill({ contentType: 'image/png', body: readFileSync(join(process.env.ASSET_DIR, `${match[1]}-${match[2]}.png`)) }); }
+  catch { await route.continue(); }
+});
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 let scenario = 'ready';
@@ -83,7 +106,7 @@ async function snapshot(name) {
   await page.evaluate(() => {
     if (document.getElementById('synthetic-evidence')) return;
     const note = document.createElement('div'); note.id = 'synthetic-evidence';
-    note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #66 · не реальный контрольный матч';
+    note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #70 · не реальный контрольный матч';
     note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;';
     document.body.prepend(note);
   });
@@ -105,17 +128,68 @@ try {
     results.widths.push(width);
     await snapshot(`ready-${width}`);
     if (width <= 1050) {
-      await page.getByText('Ключевые факты · 2', { exact: true }).click();
+      await page.getByText('Ключевые факты · 1', { exact: true }).click();
       await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).first().waitFor();
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `expanded facts overflow at ${width}`);
       if (width === 390) await snapshot('ready-expanded-390');
-      await page.getByText('Ключевые факты · 2', { exact: true }).click();
+      await page.getByText('Ключевые факты · 1', { exact: true }).click();
     }
   }
   await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.getByLabel('Линия к 10:00', { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).nth(1).click();
+  await page.waitForFunction(() => document.activeElement?.id === 'lane-at-ten');
+  assert.equal(await page.getByLabel('Линия к 10:00', { exact: true }).isChecked(), true);
   assert.equal(await page.locator('#lane-at-ten').isVisible(), true);
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'lane-at-ten');
+  await page.getByLabel('Покупки', { exact: true }).uncheck();
+  await page.getByLabel('Мои смерти', { exact: true }).uncheck();
+  await page.getByLabel('Объекты', { exact: true }).uncheck();
+  assert.equal(await page.getByRole('group', { name: 'Отметки событий', exact: true }).getByRole('button').count(), 1);
+  assert.equal(await page.getByRole('heading', { name: 'Твои ключевые покупки', exact: true }).isVisible(), true);
+  await load('temporal'); await reportReady();
+  const chart = page.locator('#team-advantage');
+  assert.equal(await chart.locator('polyline').count(), 1, 'the isolated point and separate segment must not connect across a missing gold minute');
+  assert.equal(await chart.locator('circle').count(), 1);
+  assert.match(await chart.innerText(), /-0:30/);
+  await chart.getByRole('button', { name: 'Опыт', exact: true }).click();
+  assert.equal(await chart.locator('polyline').count(), 1);
+  assert.equal(await chart.locator('circle').count(), 0);
+  await chart.getByText(/^Все события по фильтрам/).click();
+  const late = chart.getByRole('button', { name: /37:05 · Твоя смерть/ });
+  await late.focus(); await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement?.id === 'death-4');
+  await chart.getByRole('button', { name: /23:25 · Black King Bar/ }).click();
+  assert.match(await chart.getByRole('region', { name: 'Выбранный отрезок' }).innerText(), /Black King Bar/);
+  assert.match(await chart.getByRole('region', { name: 'Выбранный отрезок' }).innerText(), /Строение/);
+  await chart.getByText(/^Все события по фильтрам/).click();
+  for (const width of [320, 390, 768, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.waitForTimeout(100);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `temporal overflow at ${width}`);
+    const rects = await chart.getByRole('group', { name: 'Отметки событий', exact: true }).getByRole('button').evaluateAll((buttons) => buttons.map((button) => { const r = button.getBoundingClientRect(); return { x: r.x, right: r.right }; }));
+    assert.ok(rects.every((r, i) => i === 0 || r.x >= rects[i - 1].right), `event overlap at ${width}`);
+    if (width === 390 || width === 1440) await snapshot(`timeline-${width}`);
+  }
+  for (const label of ['Покупки', 'Мои смерти', 'Объекты', 'Линия к 10:00']) await page.getByLabel(label, { exact: true }).uncheck();
+  await page.getByText('Все события скрыты фильтрами.', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).first().click();
+  await page.waitForFunction(() => document.activeElement?.id === 'team-advantage');
+  for (const label of ['Покупки', 'Мои смерти', 'Объекты']) assert.equal(await page.getByLabel(label, { exact: true }).isChecked(), true);
+  assert.equal(await page.getByLabel('Линия к 10:00', { exact: true }).isChecked(), false);
+  await load('partial'); await reportReady();
+  assert.ok(await chart.getByRole('group', { name: 'Отметки событий', exact: true }).getByRole('button').count() > 0, 'events remain available without resources');
+  await load('noDeaths'); await reportReady();
+  assert.match(await page.getByText('Смерти', { exact: true }).locator('..').innerText(), /Нет данных/);
+  await load('rescored'); await reportReady();
+  await page.getByText('Оценки, фазы и источники данных', { exact: true }).click();
+  assert.equal(await page.getByText('77', { exact: true }).isVisible(), true);
+  assert.equal(await page.getByText('65', { exact: true }).isVisible(), true);
+  assert.equal(await page.getByText('Без оценки', { exact: true }).count(), 0);
+  assert.equal(await page.getByText('Сильный показатель эффективности линии', { exact: true }).count(), 0);
+  await load('ready'); await reportReady();
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  results.checks.push('unified time domain; pregame and post-telemetry events; independent filters; hidden evidence revealed with focus; clustered collision-free markers; keyboard exact-event selection; independent gold/XP gaps; unknown deaths; preserved fight/economy grades');
   await page.keyboard.press('Tab');
   await page.getByRole('button', { name: 'Принять челлендж', exact: true }).focus();
   const outline = await page.getByRole('button', { name: 'Принять челлендж', exact: true }).evaluate((element) => getComputedStyle(element).outlineStyle);
@@ -135,10 +209,18 @@ try {
   await page.getByText('Цикл завершён · 3/3').waitFor();
   await page.getByText(/Цель достигнута в 2 из 3 матчей/).waitFor();
   await snapshot('challenge-progress');
+  await load('fourthMissing', 9000070); await reportReady();
+  await page.getByText('Цикл завершён · 3/3').waitFor();
+  results.checks.push('PR #68: reloading a completed challenge match without new last-hit data preserves 3/3');
   await load('other', 9000071); await reportReady();
   assert.equal(await page.getByText('Цикл завершён · 3/3').count(), 0);
   results.checks.push('accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation');
 
+  await page.route('**/apps/dota2/images/**', (route) => route.abort());
+  await page.reload(); await load('ready'); await reportReady();
+  await page.waitForTimeout(300);
+  assert.ok(await page.locator('.item-fallback').count() > 0);
+  results.checks.push('unavailable item images keep names, times and fallback');
   await load('low'); await reportReady(); await snapshot('one-priority');
   await page.setViewportSize({ width: 390, height: 900 });
   await snapshot('one-priority-390');
@@ -188,6 +270,9 @@ try {
   results.consoleErrors = errors;
   writeFileSync(join(output, 'verification.json'), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
+} catch (error) {
+  await snapshot('failure');
+  throw error;
 } finally {
   await browser.close();
   server?.kill();

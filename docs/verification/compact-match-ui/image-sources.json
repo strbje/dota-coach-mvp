@@ -1,0 +1,77 @@
+{
+  "checkedAt": "2026-10-23",
+  "source": "https://github.com/odota/dotaconstants/blob/master/build/heroes.json",
+  "delivery": "Original Steam CDN PNGs downloaded with curl; ASSET_DIR browser routes serve the unchanged bytes. No images derived from display names.",
+  "assets": [
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/antimage.png",
+      "bytes": 62893,
+      "sha256": "7e47a9f52f7f1cdcb77b38e1f3e26ce967a3ed0eceb4b0d808f5ea14d347ce39"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/axe.png",
+      "bytes": 66782,
+      "sha256": "9bf3a200b8d4ff797718a1615c3b3f3fa61c3bb4fb7abb0f51ee0597ae3f4138"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/bane.png",
+      "bytes": 69570,
+      "sha256": "f00d1e4d4354da7f3c5bfd199642e4219de09c30e60adedd393ae1140eacdc6d"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/bloodseeker.png",
+      "bytes": 73984,
+      "sha256": "3cc0b22a1f24219c4017703d78418f792a49a60e5d8c414971f1c495a52c4de5"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/crystal_maiden.png",
+      "bytes": 70190,
+      "sha256": "8ca577cff8dd8567b3c0a6fa185a83f4a2580a8b2c8fceff617720e894f5b5d5"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/drow_ranger.png",
+      "bytes": 25318,
+      "sha256": "a8f905bc5d1e7d4cea6977d705f443e8b99918793c025608a2564532f816ce6f"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/earthshaker.png",
+      "bytes": 80360,
+      "sha256": "6866d114db50a5e6e7766ef0f6f2bddda0394c9c6f05dbd9576a2160a8b0a213"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/juggernaut.png",
+      "bytes": 61087,
+      "sha256": "d7df25261e20c8ef9f58f296b980e9eab89659d33b245f6b168114f9f52f8763"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/mirana.png",
+      "bytes": 63933,
+      "sha256": "a6c8805cfe11bbdfcefd8ef991a757c82bdffc622c902bf06a739e28d4fb1d45"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/morphling.png",
+      "bytes": 71884,
+      "sha256": "6090ada2f9eb0c08a0ced1b1074f28f8c246149cb53575057f317e41ee0353a3"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/assault.png",
+      "bytes": 14821,
+      "sha256": "1ce6e8e7e95e5d9d1bc9b4257c64fee575f22efbe9fee8322c46e07a059c55a8"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/black_king_bar.png",
+      "bytes": 12480,
+      "sha256": "09c7e6cbdaf3c2dff83fbfa04e038e7fc96e71e875eae8fe114e0c3bfe0ee8a6"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/phase_boots.png",
+      "bytes": 11585,
+      "sha256": "f194592b0300a80abadcc15e0793ba6c9c85c391b9360d36b39570ca900d55d7"
+    },
+    {
+      "url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/radiance.png",
+      "bytes": 12299,
+      "sha256": "fbccc4e93ef0973a5759ef994513bba7cb8c96e55840723068a173573e6dc4c4"
+    }
+  ]
+}

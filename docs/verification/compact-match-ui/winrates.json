@@ -1,0 +1,23 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920
+  ],
+  "checks": [
+    "rate ascending/descending and name sorting remain stable within each side",
+    "explicit selection; adjacent 4/5 rosters with side averages; responsive layout; expandable sample details; UTF-8 CSV download",
+    "Dire selection excludes selected player; keyboard submit and visible focus",
+    "cancel/replace ignores delayed old responses; changing filters clears previous groups",
+    "anonymous roster waits for explicit selection; anonymous, restricted, empty, provider error and capped sample states",
+    "7-day and 30-day coverage is labelled independently while switching the mean window 7/30/7",
+    "empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error",
+    "bounded first series; continuation by stable Match IDs; same capture time; final unique-player table",
+    "hero portraits from canonical roster metadata; anonymous hero retained; real 0% with 0/5; unique series people without arbitrary hero; long names and unavailable images",
+    "empty/error states; post-match deep link preselects account; active navigation",
+    "current mode is separately labelled and all participants share one capture time"
+  ]
+}

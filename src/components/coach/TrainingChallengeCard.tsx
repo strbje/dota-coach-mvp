@@ -6,7 +6,7 @@ import { acceptChallenge, challengeProgress, challengeStorageKey, checkChallenge
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 import styles from './postMatch.module.css';
 
-export function TrainingChallengeCard({ analysis }: { analysis: PostMatchAnalysis }) {
+export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: PostMatchAnalysis; onEvidence: () => void }) {
   const { observation, goal: proposedGoal } = analysis.training;
   const storageKey = challengeStorageKey(observation);
   const [challenge, setChallenge] = useState<TrainingChallenge | null>(null);
@@ -55,18 +55,25 @@ export function TrainingChallengeCard({ analysis }: { analysis: PostMatchAnalysi
   const progress = challenge ? challengeProgress(challenge) : null;
   const canAccept = Boolean(storageKey && observation.startTime && proposedGoal);
   const current = challenge?.checks.find((check) => check.matchId === observation.matchId);
+  const lanePriorities = analysis.priorities.filter((priority) => priority.id === 'lane-farm' || priority.id === 'lane-events');
+  const deaths = analysis.laneFacts?.deathsAt10;
+  const efficiency = analysis.laneFacts?.efficiencyPct;
   return <Panel className={styles.challenge}>
-    <span className="eyebrow">Тренировка · 3 матча</span>
-    <h3>{goal?.title ?? 'Для цели нужен результат к 10:00'}</h3>
-    {goal ? <>
-      <div className={styles.target} aria-label={`Исходный результат ${goal.baseline}, цель ${goal.target} добитых крипов к 10:00`}>
-        <div><span className={styles.note}>Твой старт</span><strong>{goal.baseline}</strong></div>
-        <span aria-hidden="true">→</span>
-        <div><span className={styles.note}>Цель к 10:00</span><strong className={styles.targetGoal}>{goal.target}</strong></div>
-      </div>
-      <p className={styles.note}>Добитых крипов, включая нейтралов. +5 к своему результату — тренировочная цель.</p>
-      <p>{goal.action}</p>
-    </> : <p>Открой матч с минутными данными фарма и длительностью от 10 минут. Тогда появится измеримая цель.</p>}
+    <span className="eyebrow">Линия · факты и следующий шаг</span>
+    <h3>К 10:00</h3>
+    <dl className={styles.laneFacts}>
+      <div><dt>Добито крипов</dt><dd>{observation.lastHitsAt10 ?? 'Нет данных'}</dd></div>
+      <div><dt>Смерти</dt><dd>{deaths ?? 'Нет данных'}</dd></div>
+      {goal ? <div><dt>Цель · 3 матча</dt><dd className={styles.targetGoal}>{goal.target}</dd></div> : null}
+    </dl>
+    {goal ? <p className={styles.note}>Добивания включают нейтралов. Цель — +5 к {challenge ? 'исходному' : 'этому'} результату; это тренировка, а не норма.</p> : <p className={styles.note}>Для измеримой цели нужен результат к 10:00 и матч от 10 минут.</p>}
+    {lanePriorities.map((priority, index) => <article className={styles.priority} key={priority.id}>
+      <Badge tone={index === 0 ? 'brand' : 'unknown'}>{analysis.priorities[0].id === priority.id ? 'Основной фокус' : 'Дополнительно'}</Badge>
+      <h4>{priority.title}</h4><p className="muted">{priority.meaning}</p><p className={styles.action}>{priority.action}</p>
+    </article>)}
+    {goal && !lanePriorities.some((priority) => priority.id === 'lane-farm') ? <p className={styles.action}>{goal.action}</p> : null}
+    {analysis.review.timeline.some((event) => event.id === 'lane-at-ten') ? <Button type="button" variant="ghost" className={styles.factorLink} onClick={onEvidence}>Посмотреть отрезок ↗</Button> : null}
+    {efficiency !== undefined ? <details className={styles.more}><summary>Эффективность линии · {Math.round(efficiency)}%</summary><p className={styles.note}>Исходный показатель OpenDota. Это не оценка из 100 и не положение среди игроков; сопоставимого ориентира для оценки линии нет.</p></details> : null}
     <div aria-live="polite" aria-atomic="true">
       {challenge && progress ? <div className="stack">
         <Badge tone={progress.complete ? 'success' : 'info'}>{progress.complete ? 'Цикл завершён' : 'Челлендж принят'} · {progress.counted.length}/3</Badge>
@@ -81,11 +88,11 @@ export function TrainingChallengeCard({ analysis }: { analysis: PostMatchAnalysi
           })}
         </div>
         {progress.complete ? <p>Цель достигнута в {progress.successes} из 3 матчей. {progress.successes === 3 ? 'Повтори тот же подход и проверь, насколько устойчив результат.' : 'Пересмотри первые волны матчей ниже цели и найди повторяющийся пропуск добивания.'}</p> : null}
-        {current?.actual !== undefined ? <p>В этом матче: <strong>{current.actual}</strong> при цели {challenge.goal.target}.</p> : current ? <p>Этот матч пока без результата к 10:00. Он не засчитан ни как успех, ни как неудача.</p> : null}
+        {current && current.actual === undefined ? <p>Этот матч пока без результата к 10:00. Он не засчитан ни как успех, ни как неудача.</p> : null}
         <details className={styles.more}>
           <summary>Какие матчи засчитаны</summary>
           {progress.counted.length ? <ul>{progress.counted.map((entry) => <li key={entry.matchId}>Матч {entry.matchId}: {entry.actual} из {challenge.goal.target}</li>)}</ul> : <p>Пока ни одного.</p>}
-          <p className={styles.note}>Исходный матч: {challenge.sourceMatchId}. Берём первые три проверенных матча с данными, сыгранных после принятия цели.</p>
+          <p className={styles.note}>Исходный результат: {challenge.goal.baseline}. Матч: {challenge.sourceMatchId}. Берём первые три проверенных матча с данными, сыгранных после принятия цели.</p>
         </details>
       </div> : null}
     </div>
