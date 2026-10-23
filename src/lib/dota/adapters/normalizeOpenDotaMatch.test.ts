@@ -5,6 +5,8 @@ import { getOpenDotaSelectedPlayerMetadata, selectOpenDotaPlayer } from './selec
 import { normalizeOpenDotaMatch } from './normalizeOpenDotaMatch';
 import { handleDebugMatch } from '../debugMatchHandler';
 import type { OpenDotaMatchResponse } from '../types/providers';
+import { GOLD_REASON_CONTROLS } from '../normalize/goldReasons.fixture';
+import { getGoldReasonConstants } from '../providers/opendotaConstantsProvider';
 import type { PlayerSelector } from '../selection/playerSelector';
 
 const players = [
@@ -87,12 +89,12 @@ test('explicit sample times govern the 10-minute goal and missing totals stay un
 async function runDebug(url: string, id = '123') {
   const selectors: PlayerSelector[] = [];
   const response = await handleDebugMatch(new Request(url), { params: Promise.resolve({ id }) }, {
-    fetchMatch: async () => economyPayload({ gold_reasons: { 12: 10 } }),
+    fetchMatch: async () => economyPayload({ gold_reasons: { 13: 10 } }),
     normalizeMatch: async (_payload, selector) => {
       selectors.push(selector);
       return { matchId: 123, didRadiantWin: true, durationSeconds: 0, selectedPlayer: { heroId: 54, heroName: 'Lifestealer' } };
     },
-    getConstants: async () => ({ 12: { id: 12, key: 'creep_kill', label: 'Creep Kill', group: 'creeps' } })
+    getConstants: async () => ({ 13: { id: 13, key: 'creep_kill', label: 'Creep Kill', group: 'creeps' } })
   });
   return { response, body: await response.json() as Record<string, unknown>, selectors };
 }
@@ -123,4 +125,31 @@ test('debug handler rejects empty selectors and invalid match ids without applyi
   }
   const fallback = await runDebug('http://localhost/api/debug/match/123');
   assert.deepEqual(fallback.selectors, [{ heroId: 54 }]);
+});
+
+
+test('debug and product adapter preserve the selected control player and independently expected gold categories', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('{"error":"Not Found"}', { status: 404 });
+  try {
+    for (const control of GOLD_REASON_CONTROLS) {
+      // Synthetic envelope around the anonymous live gold excerpt; no role claim.
+      const payload = economyPayload({});
+      payload.match_id = control.matchId;
+      payload.players = [
+        { player_slot: 4, hero_id: 1, gold_reasons: { 12: 999999 } },
+        { player_slot: control.playerSlot, hero_id: control.heroId, gold_reasons: control.raw }
+      ];
+      const response = await handleDebugMatch(new Request(`http://localhost/api/debug/match/${control.matchId}?playerSlot=${control.playerSlot}`), { params: Promise.resolve({ id: String(control.matchId) }) }, {
+        fetchMatch: async () => payload, normalizeMatch: normalizeOpenDotaMatch, getConstants: getGoldReasonConstants
+      });
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      assert.equal(body.normalized.selectedPlayer.playerSlot, control.playerSlot);
+      assert.equal(body.normalized.selectedPlayer.heroId, control.heroId);
+      assert.deepEqual(body.goldReasonsDebug, body.normalized.player.goldReasons);
+      assert.deepEqual(Object.fromEntries(body.goldReasonsDebug.groups.map((entry: { group: string; amount: number }) => [entry.group, entry.amount])),
+        Object.fromEntries(Object.entries(control.expected).filter(([, value]) => value !== undefined)));
+    }
+  } finally { globalThis.fetch = originalFetch; }
 });

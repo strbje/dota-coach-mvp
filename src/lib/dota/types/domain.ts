@@ -1,3 +1,4 @@
+import type { NormalizedGoldReasons } from '../normalize/goldReasons';
 import type { DeathRulesSummary } from '../rules/deathRules';
 import type { FightRulesSummary } from '../rules/fightRules';
 
@@ -241,17 +242,7 @@ export type NormalizedOpenDotaMatch = {
     farmProfile?: {
       laneKills?: number; neutralKills?: number; ancientKills?: number; heroKills?: number; roshanKills?: number; towerKills?: number;
     };
-    goldReasons?: {
-      constantsAvailable: boolean;
-      breakdownComplete: boolean;
-      totalPositiveGold: number;
-      totalNegativeGold: number;
-      groups: Array<{ group: string; label: string; amount: number }>;
-      unknownAmount: number;
-      unknownKeys: string[];
-      decoded: Array<{ key: string; label: string; amount: number; group: string; known: boolean }>;
-      grouped: Array<{ group: string; label: string; amount: number }>;
-    };
+    goldReasons?: NormalizedGoldReasons;
   };
 };
 

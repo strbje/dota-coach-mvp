@@ -1,3 +1,5 @@
+import { normalizeGoldReasons } from '../../normalize/goldReasons';
+import { normalizeGoldReasonConstants } from '../../providers/opendotaConstantsProvider';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { lifestealerCarryOverride } from '../heroOverrides/lifestealer';
@@ -242,7 +244,7 @@ test('the last real death-heavy phase has no after-phase comparison', () => {
 test('uses the kill-count profile when gold reasons are incomplete', () => {
   const input = match();
   input.player!.farmProfile = { laneKills: 80, neutralKills: 120, ancientKills: 20 };
-  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: false, totalPositiveGold: 1000, totalNegativeGold: 0, groups: [{ group: 'creeps', label: 'Лейн-крипы', amount: 1000 }], unknownAmount: 100, unknownKeys: ['21'], decoded: [], grouped: [] };
+  input.player!.goldReasons = normalizeGoldReasons({ 13: 1000, 0: 100 }, normalizeGoldReasonConstants(null));
   const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
   assert.match(copy, /Добито больше всего.*нейтралы.*120/);
   assert.doesNotMatch(copy, /Главный подтверждённый источник/);
@@ -251,7 +253,7 @@ test('uses the kill-count profile when gold reasons are incomplete', () => {
 test('uses the dominant confirmed gold source when the breakdown is complete', () => {
   const input = match();
   input.player!.farmProfile = { laneKills: 80, neutralKills: 120 };
-  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: true, totalPositiveGold: 3000, totalNegativeGold: 0, groups: [{ group: 'creeps', label: 'Лейн-крипы', amount: 1000 }, { group: 'neutral', label: 'Нейтралы', amount: 2000 }], unknownAmount: 0, unknownKeys: [], decoded: [], grouped: [] };
+  input.player!.goldReasons = normalizeGoldReasons({ 13: 1000, 14: 2000 }, normalizeGoldReasonConstants(null));
   const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
   assert.match(copy, /Главный подтверждённый источник экономики — нейтралы: 2\s?000 золота/);
   assert.doesNotMatch(copy, /резервному профилю/);
@@ -259,7 +261,7 @@ test('uses the dominant confirmed gold source when the breakdown is complete', (
 
 test('non-source gold groups cannot override the dominant confirmed economy source', () => {
   const input = match();
-  input.player!.goldReasons = { constantsAvailable: true, breakdownComplete: true, totalPositiveGold: 11000, totalNegativeGold: 0, groups: [{ group: 'neutral', label: 'Нейтралы', amount: 1000 }, { group: 'other', label: 'Другие источники', amount: 10000 }], unknownAmount: 0, unknownKeys: [], decoded: [], grouped: [] };
+  input.player!.goldReasons = normalizeGoldReasons({ 14: 1000, 6: 10000 }, normalizeGoldReasonConstants(null));
   const copy = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).grades.map.findings.map((finding) => finding.text).join(' ');
   assert.match(copy, /Главный подтверждённый источник экономики — нейтралы: 1\s?000 золота/);
   assert.doesNotMatch(copy, /другие источники/);

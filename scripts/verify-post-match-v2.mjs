@@ -1,5 +1,6 @@
 // Optional local browser checks. Requires Playwright in the environment; no production dependency.
-// Start the app on BASE_URL first. All match responses below are SYNTHETIC, produced by the real adapter/rules.
+// Start the app on BASE_URL first. Responses are SYNTHETIC (gold excerpts have separate live provenance),
+// produced by real adapter/rules. This does not exercise live API role validation.
 import assert from 'node:assert/strict';
 import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,12 +16,15 @@ const output = process.env.EVIDENCE_DIR || join(root, 'docs/evidence/post-match-
 rmSync(temp, { recursive: true, force: true });
 mkdirSync(temp, { recursive: true });
 mkdirSync(output, { recursive: true });
-writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ extends: '../tsconfig.json', compilerOptions: { noEmit: false, incremental: false, rootDir: '../src', outDir: '.', module: 'commonjs', moduleResolution: 'node', target: 'es2022' }, files: ['../src/lib/dota/rules/postMatch/postMatchV2.fixture.ts'], include: [] }));
+writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ extends: '../tsconfig.json', compilerOptions: { noEmit: false, incremental: false, rootDir: '../src', outDir: '.', module: 'commonjs', moduleResolution: 'node', target: 'es2022' }, files: ['../src/lib/dota/rules/postMatch/postMatchV2.fixture.ts', '../src/lib/dota/normalize/goldReasons.fixture.ts'], include: [] }));
 const compile = spawnSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '-p', join(temp, 'tsconfig.json')], { cwd: root, stdio: 'inherit' });
 if (compile.status !== 0) throw new Error('Fixture compilation failed');
 mkdirSync(join(temp, 'node_modules/@'), { recursive: true });
 symlinkSync(join(temp, 'lib'), join(temp, 'node_modules/@/lib'), 'junction');
 const { syntheticPostMatch } = require(join(temp, 'lib/dota/rules/postMatch/postMatchV2.fixture.js'));
+const { normalizeGoldReasons } = require(join(temp, 'lib/dota/normalize/goldReasons.js'));
+const { normalizeGoldReasonConstants } = require(join(temp, 'lib/dota/providers/opendotaConstantsProvider.js'));
+const { GOLD_REASON_CONTROLS } = require(join(temp, 'lib/dota/normalize/goldReasons.fixture.js'));
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async () => new Response('{}');
 const now = Math.floor(Date.now() / 1000);
@@ -35,6 +39,11 @@ try {
     fourth: await syntheticPostMatch({ matchId: 9000070, startTime: now + 240, lastHitsAt10: 56 }),
     other: await syntheticPostMatch({ matchId: 9000071, startTime: now + 300, accountId: 1000099 })
   };
+  fixtures.ready.analysis.goldReasons = normalizeGoldReasons(GOLD_REASON_CONTROLS[0].raw, normalizeGoldReasonConstants(null));
+  for (const [name, raw] of Object.entries({ unknownGold: { 98: 100, 99: -100 }, invalidGold: { 14: 0, 15: '25', 16: null } })) {
+    fixtures[name] = structuredClone(fixtures.ready);
+    fixtures[name].analysis.goldReasons = normalizeGoldReasons(raw, normalizeGoldReasonConstants(null));
+  }
   fixtures.missing.analysis.training.observation = { ...fixtures.next.analysis.training.observation, matchId: 9000068, startTime: now + 120, lastHitsAt10: undefined };
 } finally { globalThis.fetch = originalFetch; }
 
@@ -87,7 +96,16 @@ async function snapshot(name) {
     note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;';
     document.body.prepend(note);
   });
-  await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
+  if (name.startsWith('gold-')) {
+    const panel = page.getByRole('heading', { name: 'Источники золота', exact: true }).locator('..');
+    await panel.evaluate((element) => {
+      const note = document.createElement('p'); note.dataset.synthetic = 'gold';
+      note.textContent = 'СИНТЕТИЧЕСКИЙ ОТЧЁТ · контрольный фрагмент золота #34 · не приёмка live API';
+      element.prepend(note);
+    });
+    await panel.screenshot({ path: join(output, `${name}.png`) });
+    await panel.locator('[data-synthetic="gold"]').evaluate((element) => element.remove());
+  } else await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
 }
 const results = { synthetic: true, widths: [], checks: [] };
 try {
@@ -112,6 +130,40 @@ try {
       await page.getByText('Ключевые факты · 2', { exact: true }).click();
     }
   }
+  // #34: product rendering of a live excerpt in a synthetic report, then synthetic edge cases.
+  const goldPanel = page.getByRole('heading', { name: 'Источники золота', exact: true }).locator('..');
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const details = page.getByText('Оценки, фазы и источники данных', { exact: true });
+    if (!await goldPanel.isVisible()) { await details.focus(); await page.keyboard.press('Enter'); }
+    const income = goldPanel.getByRole('region', { name: 'Доходы', exact: true });
+    const losses = goldPanel.getByRole('region', { name: 'Потери и расходы', exact: true });
+    assert.match(await income.innerText(), /Нейтралы: \+14\s350 золота/);
+    assert.match(await income.innerText(), /Рошан: \+1\s033 золота/);
+    assert.match(await income.innerText(), /Курьеры: \+305 золота/);
+    assert.match(await income.innerText(), /Личная награда за курьера: \+155 золота/);
+    assert.match(await income.innerText(), /Источник не определён: \+800 золота/);
+    assert.match(await losses.innerText(), /Потери при смерти: -6\s325 золота/);
+    assert.doesNotMatch(await goldPanel.innerText(), /Другие источники|Roshan|unknown_|gold_reasons/);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `gold breakdown overflow at ${width}`);
+    if (width === 390 || width === 1440) await snapshot(`gold-${width}`);
+  }
+  for (const name of ['unknownGold', 'invalidGold', 'empty']) {
+    await load(name); await reportReady();
+    if (!await goldPanel.isVisible()) await page.getByText('Оценки, фазы и источники данных', { exact: true }).click();
+    const text = await goldPanel.innerText();
+    if (name === 'unknownGold') {
+      assert.match(text, /Источник не определён: \+100/);
+      assert.match(text, /Причина потерь не определена: -100/);
+      assert.match(text, /Разбивка неполная/);
+    } else if (name === 'invalidGold') {
+      assert.match(text, /Нейтралы: 0 золота/);
+      assert.doesNotMatch(text, /Рошан:|Курьеры:/);
+      assert.match(text, /Разбивка неполная/);
+    } else assert.match(text, /не вернул числовую разбивку/);
+  }
+  results.checks.push('gold: independent income/loss/unknown, unknown-only net zero, confirmed zero, invalid/missing values, keyboard disclosure; 320/390/768/1440');
+  await load('ready'); await reportReady();
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).nth(1).click();
   assert.equal(await page.locator('#lane-at-ten').isVisible(), true);

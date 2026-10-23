@@ -70,7 +70,7 @@ export async function handleDebugMatch(
     const constants = await dependencies.getConstants();
     const goldReasonsDebug = normalizeGoldReasons(raw, constants);
 
-    return NextResponse.json({ ok: true, source: 'opendota', matchId, selector, hasApiKey, stages: { fetched: true, normalized: true }, normalized, goldReasonsDebug: { raw, ...goldReasonsDebug } });
+    return NextResponse.json({ ok: true, source: 'opendota', matchId, selector, hasApiKey, stages: { fetched: true, normalized: true }, normalized, goldReasonsDebug });
   } catch (error) {
     const parsed = error instanceof Error ? error : new Error(String(error));
     const cause = parsed.cause as { message?: string } | undefined;
