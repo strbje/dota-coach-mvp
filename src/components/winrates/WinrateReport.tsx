@@ -42,15 +42,23 @@ export function WinrateReport({ plan, rows, results, days }: { plan: Plan; rows:
             {matchRows.map((row) => {
               const result = resultFor(row, results);
               const person = people.find((item) => item.accountId === row.player.accountId);
+              const complete = result && result.samples[7].complete && result.samples[30].complete;
               return <details key={row.key} className={styles.participant}>
                 <summary>
                   <span className={styles.identity}><strong>{result?.name ?? row.player.name ?? row.player.heroName}</strong><span className="muted">{row.side === 'with' ? 'Союзник' : 'Соперник'} · {row.player.heroName}</span></span>
-                  <span className={styles.miniStats}><span>7 дней <strong>{percent(result?.samples[7].rate)}</strong></span><span>30 дней <strong>{percent(result?.samples[30].rate)}</strong></span></span>
-                  <Badge tone={result?.status === 'ready' && result.samples[30].complete ? 'info' : 'unknown'}>{result?.status === 'ready' && !result.samples[days].complete ? 'Неполная выборка' : rowStatus(row, results)}</Badge>
+                  <span className={styles.miniStats}>{([7, 30] as const).map((window) => <span key={window}>
+                    <span>{window} дней</span><strong>{percent(result?.samples[window].rate)}</strong>
+                    {result ? <span className="muted" title={coverageText(result.samples[window])}>{result.samples[window].complete ? 'Полное окно' : 'Неполное окно'}</span> : null}
+                  </span>)}</span>
+                  <span className={styles.participantStatus}>
+                    <Badge tone={result?.status === 'ready' && complete ? 'info' : 'unknown'}>{result?.status === 'ready' && !complete ? 'Неполная выборка' : rowStatus(row, results)}</Badge>
+                    {result?.refreshError ? <Badge tone="warning">Ошибка обновления</Badge> : null}
+                  </span>
                 </summary>
                 <div className={styles.participantBody}>
                   <p>{row.player.accountId ? `Account ID ${row.player.accountId}` : rowStatus(row, results)} · Вместе {person?.with.length ?? '—'} / против {person?.against.length ?? '—'}</p>
                   {result ? <>
+                    {result.refreshError ? <p role="status">{statusText[result.refreshError]}. Показана ранее полученная выборка; время её получения сохранено. Повторите обновление позже.</p> : null}
                     {result.status === 'private' ? <p>OpenDota ограничил историю: она закрыта или источнику не удалось её обновить. Причину источник не уточнил.</p> : null}
                     <div className={styles.samples}>{([7, 30] as const).map((window) => {
                       const value = result.samples[window];

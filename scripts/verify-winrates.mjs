@@ -66,9 +66,26 @@ await page.route('**/api/winrates/**', async (route) => {
   if (kind === 'batch') return route.fulfill({ json: request.matchIds.map((matchId, index) => {
     const entry = fixturePlan('series').matches[1]; entry.matchId = matchId; entry.match.matchId = matchId; entry.match.startTime -= (index + 2) * 86400; return entry;
   }) });
+  if (thisScenario === 'retry-http' && request.accountId === 1001) return route.fulfill({ status: 503, json: { error: 'provider_error' } });
   const entry = fixturePlan('series').matches.find((item) => item.matchId === request.matchId);
   const asOf = request.basis === 'now' ? request.capturedAt : entry?.match.startTime ?? fixturePlan().matches[0].match.startTime - (request.matchId - 9000067) * 86400;
-  const result = fixtureResult(request.accountId, request.matchId, asOf, request.accountId % 4, 5);
+  let result = fixtureResult(request.accountId, request.matchId, asOf, request.accountId % 4, 5);
+  if (thisScenario.startsWith('retry-') && request.accountId === 1001) {
+    const empty = thisScenario === 'retry-failure';
+    const recovered = thisScenario === 'retry-success';
+    result = fixtureResult(request.accountId, request.matchId, asOf, empty ? 0 : recovered ? 40 : 30, empty ? 0 : 100);
+    const fetchedAt = result.fetchedAt + (recovered ? 120 : empty ? 60 : -120);
+    Object.assign(result, { fetchedAt, expiresAt: fetchedAt + 300 });
+    Object.assign(result.history, { fetchedAt, expiresAt: fetchedAt + 300 });
+    if (!recovered) {
+      result.history.stop = empty ? 'provider_error' : 'timeout';
+      Object.assign(result.samples[30], { complete: false, limitedBy: result.history.stop });
+    }
+    if (empty) {
+      result.status = 'provider_error';
+      Object.assign(result.samples[7], { complete: false, limitedBy: 'provider_error' });
+    }
+  }
   result.capturedAt = request.capturedAt; result.basis = request.basis;
   result.name = `${thisScenario === 'stale' ? 'OLD' : 'Участник'} ${request.accountId}`;
   if (thisScenario === 'partial') {
@@ -157,9 +174,16 @@ try {
   assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '', 'anonymous participant must not become an implicit selection');
   assert.equal(seen.filter((item) => item.kind === 'participant').length, beforeAnonymous, 'no history requests before explicit selection with anonymous players');
   await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('0'); await complete();
-  await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
-  await page.getByLabel('Окно для средних', { exact: true }).selectOption('30');
-  await page.getByText('Окно 30 дней · сортировка', { exact: true }).click();
+  const cappedSummary = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1005' }) }).locator('summary');
+  for (const days of ['7', '30', '7']) {
+    await page.getByText(/^Окно (7|30) дней · сортировка$/).click();
+    await page.getByLabel('Окно для средних', { exact: true }).selectOption(days);
+    await page.getByText(`Окно ${days} дней · сортировка`, { exact: true }).click();
+    assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Полное окно/);
+    assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /Неполное окно/);
+    assert.equal(await cappedSummary.getByText('Неполная выборка', { exact: true }).count(), 1);
+    assert.equal(await cappedSummary.getByText('Данные получены', { exact: true }).count(), 0);
+  }
   await page.getByText('История ограничена OpenDota', { exact: true }).waitFor();
   await page.getByText('Нет подходящих игр', { exact: true }).waitFor();
   await shot('partial-desktop');
@@ -167,6 +191,42 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'partial states fit 320px');
   await page.setViewportSize({ width: 390, height: 1050 }); await shot('partial-mobile');
   report.checks.push('anonymous roster waits for explicit selection; anonymous, restricted, empty, provider error and capped sample states');
+  report.checks.push('7-day and 30-day coverage is labelled independently while switching the mean window 7/30/7');
+
+  await load('retry-sample'); await complete();
+  const retry = page.getByRole('button', { name: 'Продолжить / повторить · 1', exact: true });
+  await retry.waitFor();
+  const retained = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1001' }) });
+  await retained.locator('summary').click();
+  assert.equal(await retained.getByText(/Победы \/ игры: 30 \/ 100/).count(), 2);
+  const freshness = await retained.getByText(/^Самые ранние данные получены/).innerText();
+  const allyCard = page.locator('[class*="metric"]').filter({ has: page.getByRole('heading', { name: 'Союзники', exact: true }) });
+  const previousMean = await allyCard.innerText();
+  for (const failed of ['retry-failure', 'retry-http']) {
+    scenario = failed;
+    await retry.click(); await retry.waitFor();
+    await retained.getByText('Ошибка обновления', { exact: true }).waitFor();
+    assert.equal(await retained.getByText(/Победы \/ игры: 30 \/ 100/).count(), 2, 'both samples survive an empty failed retry');
+    assert.equal(await retained.getByText(/^Самые ранние данные получены/).innerText(), freshness, 'failed retry cannot refresh source timestamps');
+    assert.equal(await allyCard.innerText(), previousMean, 'retained participant remains in the same side mean');
+  }
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 1050 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `refresh failure fits ${width}px`);
+    assert.ok(await retained.locator('[class*="identity"]').evaluate((element) => element.getBoundingClientRect().width > innerWidth / 2), `coverage labels leave space for the participant name at ${width}px`);
+  }
+  await shot('refresh-failure-mobile');
+  const retainedDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Скачать CSV для Excel' }).click();
+  const retainedCsv = readFileSync(await (await retainedDownload).path(), 'utf8');
+  assert.match(retainedCsv, /Ошибка обновления/); assert.match(retainedCsv, /"30";"30";"100"/); assert.match(retainedCsv, /Ошибка OpenDota/);
+  scenario = 'retry-success'; await retry.click();
+  await retry.waitFor({ state: 'hidden' });
+  await retained.getByText(/Победы \/ игры: 40 \/ 100/).first().waitFor();
+  assert.equal(await retained.getByText('Ошибка обновления', { exact: true }).count(), 0);
+  assert.notEqual(await retained.getByText(/^Самые ранние данные получены/).innerText(), freshness);
+  assert.notEqual(await allyCard.innerText(), previousMean); assert.match(await allyCard.innerText(), /35%/);
+  report.checks.push('empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error');
 
   await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series');
   await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { encounters, resultKey, sample } from '@/lib/dota/winrates/calculation';
 import { canRetry } from '@/lib/dota/winrates/presentation';
+import { applyParticipantUpdate } from '@/lib/dota/winrates/participantUpdate';
 import type { Encounter, Failure, History, MatchEntry, ParticipantResult, Plan, Query, Results } from '@/lib/dota/winrates/types';
 
 async function post<T>(path: string, body: unknown, signal: AbortSignal, timeout: number): Promise<T> {
@@ -65,7 +66,7 @@ export function useWinrates() {
         } catch (failure) { if (request.signal.aborted) return; result = failedResult(row, nextPlan, failure); }
         if (generation.current !== version || request.signal.aborted) return;
         const key = resultKey(row.matchId, row.player.accountId!);
-        setResults((current) => ({ ...current, [key]: result }));
+        setResults((current) => ({ ...current, [key]: applyParticipantUpdate(current[key], result) }));
         if (result.status === 'rate_limit' || result.history.stop === 'rate_limit') { limited = true; setError('rate_limit'); }
       }
     }

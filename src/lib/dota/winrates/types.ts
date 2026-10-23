@@ -31,5 +31,7 @@ export type Plan = {
 };
 export type Side = 'with' | 'against';
 export type Encounter = { key: string; matchId: number; startTime: number; player: RosterPlayer; side: Side };
-export type Results = Record<string, ParticipantResult>;
+// Client state keeps refresh failures separate from the retained source observations.
+export type ParticipantState = ParticipantResult & { refreshError?: Failure };
+export type Results = Record<string, ParticipantState>;
 export type Sort = 'side' | 'rate_desc' | 'rate_asc' | 'name';

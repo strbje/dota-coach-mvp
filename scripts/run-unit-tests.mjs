@@ -22,6 +22,7 @@ const sourceFiles = [
 const tests = [
   'lib/dota/winrates/calculation.test.js',
   'lib/dota/winrates/history.test.js',
+  'lib/dota/winrates/participantUpdate.test.js',
   'lib/dota/winrates/service.test.js',
   'lib/dota/winrates/source.test.js',
   'lib/dota/selection/matchPlayers.test.js',

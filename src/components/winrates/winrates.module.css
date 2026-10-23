@@ -22,6 +22,7 @@
 .miniStats { display: flex; gap: var(--space-4); }
 .miniStats > span { display: grid; gap: var(--space-1); font-size: var(--font-size-sm); }
 .miniStats strong { font-size: var(--font-size-lg); }
+.participantStatus { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .participantBody { display: grid; gap: var(--space-4); padding: 0 0 var(--space-4) var(--space-6); overflow-wrap: anywhere; }
 .samples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
 .samples h3 { font-size: var(--font-size-lg); }
@@ -38,6 +39,7 @@
   .comparison > :last-child { grid-column: 1 / -1; }
   .metric { padding-left: var(--space-2); }
   .participant summary { gap: var(--space-3); }
+  .miniStats { flex-basis: 100%; }
   .participant summary > :last-child { flex-basis: 100%; }
   .participantBody { padding-left: 0; }
   .people th, .people td { padding: var(--space-3) var(--space-1); }

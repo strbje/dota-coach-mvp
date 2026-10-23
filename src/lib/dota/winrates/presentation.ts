@@ -1,5 +1,5 @@
 import { groupMean, resultFor, seriesMean, uniquePlayers } from './calculation';
-import type { Encounter, ParticipantResult, Plan, Results, Sample, WindowDays } from './types';
+import type { Encounter, ParticipantState, Plan, Results, Sample, WindowDays } from './types';
 
 export const percent = (value: number | null | undefined) => value == null ? '—' : `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
 export const points = (a: number | null, b: number | null) => a === null || b === null ? '—' : `${a - b > 0 ? '+' : ''}${(a - b).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} п.п.`;
@@ -13,7 +13,7 @@ export const statusText: Record<string, string> = {
 };
 export const coverageText = (value: Sample) => value.complete ? 'Окно доступной истории покрыто' : `Неполная выборка: ${statusText[value.limitedBy ?? 'unavailable'] ?? statusText.unavailable}`;
 export const rowStatus = (row: Encounter, results: Results) => statusText[row.player.missing ?? resultFor(row, results)?.status ?? 'pending'];
-export const canRetry = (result?: ParticipantResult) => !result || ['provider_error', 'rate_limit', 'timeout', 'unavailable'].includes(result.status) || ['provider_error', 'rate_limit', 'timeout'].includes(result.history.stop);
+export const canRetry = (result?: ParticipantState) => !result || Boolean(result.refreshError) || ['provider_error', 'rate_limit', 'timeout', 'unavailable'].includes(result.status) || ['provider_error', 'rate_limit', 'timeout'].includes(result.history.stop);
 
 /** Excel-compatible text, including neutralisation of formula prefixes after whitespace/control chars. */
 export function csvCell(value: unknown): string {
@@ -46,7 +46,7 @@ export function exportCsv(plan: Plan, rows: Encounter[], results: Results, days:
   table.push([], ['Матч', 'Время матча (МСК)', 'Сторона', 'Account ID', 'Имя', 'Герой', 'Состояние', 'Расчёт на (МСК)', 'Данные получены (МСК)', 'Кэш до (МСК)',
     '7 дней, %', 'Победы 7', 'Игры 7', 'Граница 7 (МСК)', 'Первая игра 7 (МСК)', 'Последняя игра 7 (МСК)', 'Покрытие 7',
     '30 дней, %', 'Победы 30', 'Игры 30', 'Граница 30 (МСК)', 'Первая игра 30 (МСК)', 'Последняя игра 30 (МСК)', 'Покрытие 30',
-    'Вместе, всего', 'Против, всего', 'Match ID вместе', 'Match ID против', 'Просмотрено записей', 'История до (МСК)']);
+    'Вместе, всего', 'Против, всего', 'Match ID вместе', 'Match ID против', 'Просмотрено записей', 'История до (МСК)', 'Ошибка обновления']);
   for (const row of rows) {
     const result = resultFor(row, results);
     const person = people.find((item) => item.accountId === row.player.accountId);
@@ -55,7 +55,7 @@ export function exportCsv(plan: Plan, rows: Encounter[], results: Results, days:
       return value ? [value.rate, value.wins, value.games, dateMsk(value.from), dateMsk(value.first), dateMsk(value.last), coverageText(value)] : Array(7).fill('');
     };
     table.push([row.matchId, dateMsk(row.startTime), row.side === 'with' ? 'Союзник' : 'Соперник', row.player.accountId, result?.name ?? row.player.name, row.player.heroName, rowStatus(row, results), dateMsk(result?.asOf), dateMsk(result?.fetchedAt), dateMsk(result?.expiresAt),
-      ...windowCells(7), ...windowCells(30), person?.with.length, person?.against.length, person?.with.join(', '), person?.against.join(', '), result?.history.scanned, dateMsk(result?.history.oldest)]);
+      ...windowCells(7), ...windowCells(30), person?.with.length, person?.against.length, person?.with.join(', '), person?.against.join(', '), result?.history.scanned, dateMsk(result?.history.oldest), result?.refreshError ? statusText[result.refreshError] : '']);
   }
   return '\uFEFF' + table.map((cells) => cells.map(csvCell).join(';')).join('\r\n') + '\r\n';
 }
