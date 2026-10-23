@@ -1,0 +1,194 @@
+// Optional local browser checks. Requires Playwright in the environment; no production dependency.
+// Start the app on BASE_URL first. All match responses below are SYNTHETIC, produced by the real adapter/rules.
+import assert from 'node:assert/strict';
+import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { spawn, spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
+const temp = join(root, '.tmp-post-match-v2');
+const output = process.env.EVIDENCE_DIR || join(root, 'docs/evidence/post-match-v2');
+rmSync(temp, { recursive: true, force: true });
+mkdirSync(temp, { recursive: true });
+mkdirSync(output, { recursive: true });
+writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ extends: '../tsconfig.json', compilerOptions: { noEmit: false, incremental: false, rootDir: '../src', outDir: '.', module: 'commonjs', moduleResolution: 'node', target: 'es2022' }, files: ['../src/lib/dota/rules/postMatch/postMatchV2.fixture.ts'], include: [] }));
+const compile = spawnSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '-p', join(temp, 'tsconfig.json')], { cwd: root, stdio: 'inherit' });
+if (compile.status !== 0) throw new Error('Fixture compilation failed');
+mkdirSync(join(temp, 'node_modules/@'), { recursive: true });
+symlinkSync(join(temp, 'lib'), join(temp, 'node_modules/@/lib'), 'junction');
+const { syntheticPostMatch } = require(join(temp, 'lib/dota/rules/postMatch/postMatchV2.fixture.js'));
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async () => new Response('{}');
+const now = Math.floor(Date.now() / 1000);
+let fixtures;
+try {
+  fixtures = {
+    ready: await syntheticPostMatch(), low: await syntheticPostMatch({ lowLane: true }),
+    partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
+    next: await syntheticPostMatch({ matchId: 9000067, startTime: now + 60, lastHitsAt10: 58 }),
+    missing: await syntheticPostMatch({ matchId: 9000068, startTime: now + 120, empty: true }),
+    third: await syntheticPostMatch({ matchId: 9000069, startTime: now + 180, lastHitsAt10: 50 }),
+    fourth: await syntheticPostMatch({ matchId: 9000070, startTime: now + 240, lastHitsAt10: 56 }),
+    other: await syntheticPostMatch({ matchId: 9000071, startTime: now + 300, accountId: 1000099 })
+  };
+  fixtures.missing.analysis.training.observation = { ...fixtures.next.analysis.training.observation, matchId: 9000068, startTime: now + 120, lastHitsAt10: undefined };
+} finally { globalThis.fetch = originalFetch; }
+
+const server = process.env.START_SERVER === '1'
+  ? spawn(process.execPath, [join(root, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' } }) : null;
+if (server) await new Promise((resolve, reject) => {
+  const timeout = setTimeout(() => { server.kill(); reject(new Error('Server startup timed out')); }, 30000);
+  server.stdout.on('data', (data) => { if (data.toString().includes('Ready')) { clearTimeout(timeout); resolve(); } });
+  server.on('exit', (code) => { clearTimeout(timeout); reject(new Error(`Server exited ${code}`)); });
+  server.on('error', reject);
+});
+const chromiumModule = process.env.CHROMIUM_MODULE_PATH ? require(process.env.CHROMIUM_MODULE_PATH) : null;
+const localChromium = chromiumModule?.default ?? chromiumModule;
+const browser = await chromium.launch(localChromium
+  ? { headless: true, executablePath: await localChromium.executablePath(), args: localChromium.args }
+  : { headless: true, channel: 'chromium' });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+const errors = [];
+page.on('pageerror', (error) => errors.push(error.message));
+let scenario = 'ready';
+let delay = 0;
+const players = Array.from({ length: 10 }, (_, index) => ({ playerSlot: index < 5 ? index : 123 + index, heroId: index === 0 ? 42 : 1 + index, heroName: index === 0 ? 'Wraith King' : `Герой ${index + 1}`, playerName: index === 0 ? 'Игрок · пример' : `Игрок ${index + 1}`, accountId: index === 0 ? 1000066 : 1000066 + index, isRadiant: index < 5, kills: 8, deaths: 5, assists: 11 }));
+await page.route('**/api/post-match/**', async (route) => {
+  const selectedScenario = scenario;
+  const path = new URL(route.request().url()).pathname;
+  if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+  if (selectedScenario === 'network-error') return route.fulfill({ status: 503, json: { errorCode: 'OPENDOTA_UNAVAILABLE' } });
+  if (path.endsWith('/players')) return route.fulfill({ json: { players: selectedScenario === 'empty-roster' ? [] : selectedScenario === 'partial' ? players.slice(0, 7) : players } });
+  const request = route.request().postDataJSON();
+  if (request.selector.playerSlot !== 0) return route.fulfill({ status: 422, json: { errorCode: 'UNSUPPORTED_POST_MATCH_ROLE' } });
+  if (selectedScenario === 'malformed') return route.fulfill({ json: { analysis: { matchId: request.matchId } } });
+  return route.fulfill({ json: fixtures[selectedScenario] });
+});
+
+async function load(name, matchId = 9000066) {
+  scenario = name;
+  const change = page.getByRole('button', { name: 'Матч и состав · изменить' });
+  if (await change.isVisible()) await change.click();
+  await page.getByLabel('Match ID', { exact: true }).fill(String(matchId));
+  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByLabel('Игрок', { exact: true }).selectOption('0');
+  await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
+}
+async function reportReady() { await page.getByRole('heading', { name: 'Личный план', exact: true }).waitFor(); }
+async function snapshot(name) {
+  await page.evaluate(() => {
+    if (document.getElementById('synthetic-evidence')) return;
+    const note = document.createElement('div'); note.id = 'synthetic-evidence';
+    note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #66 · не реальный контрольный матч';
+    note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;';
+    document.body.prepend(note);
+  });
+  await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
+}
+const results = { synthetic: true, widths: [], checks: [] };
+try {
+  await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/post-match`);
+  await page.getByRole('button', { name: 'RU', exact: true }).click();
+  await snapshot('initial');
+  await load('ready'); await reportReady();
+  assert.equal(await page.getByRole('heading', { name: 'Wraith King', exact: true }).count(), 1);
+  await page.getByRole('button', { name: 'Принять челлендж', exact: true }).waitFor();
+  for (const width of [320, 390, 768, 1440, 1920, 2560]) {
+    await page.setViewportSize({ width, height: width < 1000 ? 900 : 1100 });
+    const overflow = await page.evaluate(() => ({ viewport: innerWidth, body: document.documentElement.scrollWidth }));
+    assert.ok(overflow.body <= overflow.viewport, `horizontal overflow at ${width}: ${JSON.stringify(overflow)}`);
+    results.widths.push(width);
+    await snapshot(`ready-${width}`);
+    if (width <= 1050) {
+      await page.getByText('Ключевые факты · 2', { exact: true }).click();
+      await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).first().waitFor();
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `expanded facts overflow at ${width}`);
+      if (width === 390) await snapshot('ready-expanded-390');
+      await page.getByText('Ключевые факты · 2', { exact: true }).click();
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).nth(1).click();
+  assert.equal(await page.locator('#lane-at-ten').isVisible(), true);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'lane-at-ten');
+  await page.keyboard.press('Tab');
+  await page.getByRole('button', { name: 'Принять челлендж', exact: true }).focus();
+  const outline = await page.getByRole('button', { name: 'Принять челлендж', exact: true }).evaluate((element) => getComputedStyle(element).outlineStyle);
+  assert.notEqual(outline, 'none');
+  await page.keyboard.press('Enter');
+  await page.getByText('Челлендж принят · 0/3').waitFor();
+  await load('next', 9000067); await reportReady();
+  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await page.reload(); await load('next', 9000067); await reportReady();
+  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await load('missing', 9000068); await reportReady();
+  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await page.getByText(/Он не засчитан ни как успех/).waitFor();
+  await load('third', 9000069); await reportReady();
+  await page.getByText('Челлендж принят · 2/3').waitFor();
+  await load('fourth', 9000070); await reportReady();
+  await page.getByText('Цикл завершён · 3/3').waitFor();
+  await page.getByText(/Цель достигнута в 2 из 3 матчей/).waitFor();
+  await snapshot('challenge-progress');
+  await load('other', 9000071); await reportReady();
+  assert.equal(await page.getByText('Цикл завершён · 3/3').count(), 0);
+  results.checks.push('accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation');
+
+  await load('low'); await reportReady(); await snapshot('one-priority');
+  await page.setViewportSize({ width: 390, height: 900 });
+  await snapshot('one-priority-390');
+  assert.equal(await page.getByText('Основной фокус', { exact: true }).count(), 1);
+  await load('partial'); await reportReady(); await snapshot('partial-data');
+  await load('empty'); await reportReady(); await snapshot('empty-data');
+  assert.equal(await page.getByRole('button', { name: 'Принять челлендж', exact: true }).count(), 0);
+
+  await page.getByRole('button', { name: 'Матч и состав · изменить' }).click();
+  await page.getByLabel('Игрок', { exact: true }).selectOption('1');
+  await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
+  await page.getByText(/подтверждена роль керри/).waitFor(); await snapshot('unsupported-role');
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  scenario = 'network-error';
+  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByText('OpenDota временно недоступен. Попробуйте позже.').waitFor(); await snapshot('error');
+  scenario = 'empty-roster';
+  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByText(/В матче не найдены игроки/).waitFor();
+  await load('malformed'); await page.getByText('Не удалось разобрать матч. Попробуйте ещё раз.').waitFor();
+  results.checks.push('initial/error/empty/partial/unsupported role; malformed success controlled');
+
+  scenario = 'ready'; delay = 600;
+  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByText('Загружаем состав матча…').waitFor(); await snapshot('loading');
+  await page.getByLabel('Match ID', { exact: true }).fill('9999999');
+  await page.waitForTimeout(800);
+  assert.equal(await page.getByLabel('Игрок', { exact: true }).count(), 0);
+  delay = 0;
+  await load('ready'); await reportReady();
+  await page.getByRole('button', { name: 'Матч и состав · изменить' }).click();
+  delay = 600;
+  await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
+  await page.getByLabel('Игрок', { exact: true }).selectOption('1');
+  await page.waitForTimeout(800);
+  assert.equal(await page.getByRole('heading', { name: 'Личный план', exact: true }).count(), 0);
+  delay = 0;
+  results.checks.push('late roster and analysis responses discarded after match/player changes');
+
+  await page.evaluate(() => { localStorage.clear(); Object.defineProperty(Storage.prototype, 'setItem', { configurable: true, value() { throw new DOMException('blocked'); } }); });
+  await load('ready'); await reportReady();
+  await page.getByRole('button', { name: 'Принять челлендж', exact: true }).click();
+  await page.getByText(/Челлендж не принят/).waitFor();
+  assert.equal(await page.getByText('Челлендж принят · 0/3').count(), 0);
+  results.checks.push('blocked storage never reports accepted progress; focus and evidence navigation');
+  assert.deepEqual(errors, []);
+  results.consoleErrors = errors;
+  writeFileSync(join(output, 'verification.json'), JSON.stringify(results, null, 2));
+  console.log(JSON.stringify(results, null, 2));
+} finally {
+  await browser.close();
+  server?.kill();
+  rmSync(temp, { recursive: true, force: true });
+}

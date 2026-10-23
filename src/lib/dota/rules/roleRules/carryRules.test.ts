@@ -155,7 +155,8 @@ test('generic carry without a hero timing override emits no timing adjustment', 
   };
 
   const analysis = runCarryPostMatchRules(match(), undefined, {}, override);
-  assert.deepEqual(analysis.nextGameAdjustments, ['Попробовать пройти первые 10 минут без смерти.']);
+  assert.deepEqual(analysis.nextGameAdjustments, []);
+  assert.equal(analysis.priorities.length, 0);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /ключев.*тайминг/i);
 });
 
@@ -181,7 +182,9 @@ test('LH target never drops below the achieved checkpoint', () => {
     }
   };
   const analysis = runCarryPostMatchRules(match(62), undefined, context, lifestealerCarryOverride);
-  assert.ok(analysis.nextGameAdjustments.some((item) => item.includes('свой результат — 62 добитых крипов')));
+  assert.equal(analysis.training.goal?.baseline, 62);
+  assert.equal(analysis.training.goal?.target, 67);
+  assert.equal(analysis.training.goal?.source, 'training');
 });
 
 test('research-only heroAverage does not affect product lane score or copy', () => {
@@ -303,7 +306,8 @@ test('low lane efficiency without lane deaths produces farm-only adjustment', ()
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   assert.equal(analysis.priorities[0].id, 'lane-farm');
   assert.match(analysis.priorities[0].fact, /48 добитых крипов.*55%.*смертей до 10:00 — 0/);
-  assert.match(analysis.finalVerdict.nextMatchFocus, /Пересмотри первые 10 минут/);
+  assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].target?.text);
+  assert.match(analysis.priorities[0].action, /Пересмотри первые 10 минут/);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /смерт/);
 });
 
@@ -368,7 +372,7 @@ test('low benchmarked economy becomes a priority and the shared final focus', ()
   assert.equal(analysis.priorities[0].id, 'economy');
   assert.match(analysis.priorities[0].fact, /400 золота в минуту.*ниже доступного ориентира/);
   assert.equal(analysis.priorities[0].dataState, 'partial');
-  assert.match(analysis.priorities[0].meaning, /данных по фазам недостаточно/);
+  assert.match(analysis.priorities[0].meaning, /данных по фазам недостаточно/i);
   assert.match(analysis.priorities[0].action, /Посмотри запись матча/);
   assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].action);
 });
@@ -393,7 +397,7 @@ test('economy priority compares phases only when phase economy is available', ()
   const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
   assert.equal(analysis.priorities[0].dataState, 'available');
   assert.match(analysis.priorities[0].action, /Сравни отрезки фарма по фазам/);
-  assert.doesNotMatch(analysis.priorities[0].meaning, /данных по фазам недостаточно/);
+  assert.doesNotMatch(analysis.priorities[0].meaning, /данных по фазам недостаточно/i);
 });
 
 test('partial phase economy remains usable while unavailable telemetry is explained', () => {
@@ -443,11 +447,13 @@ test('screen-derived Wraith King fixture keeps personal result beside the traini
   const analysis = runCarryPostMatchRules(input, undefined, {}, override);
   assert.equal(analysis.grades.items.score, undefined);
   assert.match(analysis.grades.items.summary ?? '', /Покупки зафиксированы, оценка недоступна/);
-  assert.match(analysis.priorities[0].fact, /51 добитых крипов и 1 смерть к 10:00/);
-  assert.match(analysis.priorities[0].target?.text ?? '', /Сохранить свой результат — 51 добитых крипов/);
-  assert.equal(analysis.priorities[0].target?.source, 'personal');
+  assert.equal(analysis.priorities.length, 0, 'one death is not an automatic corrective priority');
+  assert.equal(analysis.training.goal?.baseline, 51);
+  assert.equal(analysis.training.goal?.target, 56);
+  assert.equal(analysis.training.goal?.source, 'training');
+  assert.match(analysis.review.factors.find((f) => f.id === 'personal-start')?.fact ?? '', /51.*смертей.*1/);
   assert.equal(analysis.grades.lane.score, undefined);
-  assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].target?.text);
+  assert.doesNotMatch(analysis.finalVerdict.mainReason, /причина поражения|из-за смерти/);
   assert.doesNotMatch(allCopy(analysis), /Тайминги недоступны|не начинай драку первым|потер.*Рошан/i);
 });
 
@@ -468,7 +474,8 @@ test('screen-derived Spectre fixture exposes purchases without inventing an item
   const analysis = runCarryPostMatchRules(input, undefined, {}, override);
   assert.equal(analysis.grades.items.score, undefined);
   assert.deepEqual(analysis.itemTimings.map(({ item, time }) => ({ item, time })), [{ item: 'Radiance', time: '18:41' }, { item: 'Butterfly', time: '40:13' }]);
-  assert.match(analysis.finalVerdict.mainReason, /не доказывают причину результата/);
+  assert.match(analysis.review.coverageNote ?? '', /Нет динамики ресурсов команд/);
+  assert.doesNotMatch(analysis.finalVerdict.mainReason, /917|97.600|из-за/);
   assert.doesNotMatch(allCopy(analysis), /конвертац|окно на Рошан|buyback pressure|не начинай/i);
 });
 

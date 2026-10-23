@@ -3,6 +3,8 @@ import { getMatchPhase, type MatchPhase } from '../postMatch/phases';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, PostMatchBenchmarkContext, StratzPostMatchData } from '../../types/domain';
 import { formatPercentileRange, getPercentileForValue } from '../../analyze/compareToBenchmarks';
 import { findNearestUsableItemTimingBucket } from '../../analyze/itemTimingBenchmarks';
+import { buildMatchReview } from '../postMatch/matchReview';
+import { makeTrainingGoal } from '../../analyze/trainingChallenge';
 
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
 
@@ -245,7 +247,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
       ? { actual, percentileRange: comparison.percentileRange, lowerPercentile: comparison.lowerPercentile, upperPercentile: comparison.upperPercentile, label: comparison.label }
       : undefined;
   const actualLhAt10 = actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10;
-  const laneLhTarget = actualLhAt10 === undefined ? undefined : Math.round(actualLhAt10);
+  const trainingGoal = makeTrainingGoal(actualLhAt10);
   const hasPhaseEconomy = p?.economyByPhaseSource !== 'unavailable'
     && Object.values(p?.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
   const priorities: PostMatchAnalysis['priorities'] = [];
@@ -253,27 +255,27 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   if (lanePct !== undefined && lanePct < 60) priorities.push({
     id: 'lane-farm', title: 'Улучшить фарм на линии',
     fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов к 10:00; ` : ''}эффективность линии — ${Math.round(lanePct)}%${laneDeaths !== undefined ? `; смертей до 10:00 — ${laneDeaths}` : '; число смертей до 10:00 недоступно'}.`,
-    meaning: 'Доступный показатель эффективности отмечает фарм на линии как направление для улучшения. Он не устанавливает причину результата матча.',
-    action: 'Пересмотри первые 10 минут и отметь пропущенные добивания и отрезки, когда не удавалось фармить.',
+    meaning: 'Фарм первых десяти минут — доступное направление для тренировки. Проверь, на каких волнах терялись добивания.',
+    action: 'Пересмотри первые 10 минут и выбери один повторяющийся пропуск добивания. В следующей игре следи за здоровьем такого крипа до удара.',
+    target: trainingGoal ? { text: `${trainingGoal.baseline} → ${trainingGoal.target} добитых крипов к 10:00.`, source: 'training' } : undefined,
     dataState: laneDeaths === undefined || actualLhAt10 === undefined ? 'partial' : 'available', severity: 'warning'
   });
-  if (laneDeaths !== undefined && laneDeaths > 0 && priorities.length < 2) priorities.push({
-    id: 'lane-events', title: laneDeaths === 1 ? 'Сохранить темп линии' : 'Проверить ранние эпизоды',
+  if (laneDeaths !== undefined && laneDeaths >= 2 && priorities.length < 2) priorities.push({
+    id: 'lane-events', title: 'Разобрать повторяющиеся ранние эпизоды',
     fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов и ` : ''}${laneDeaths} ${laneDeaths === 1 ? 'смерть' : 'смерти'} к 10:00${lanePct !== undefined ? `; эффективность линии — ${Math.round(lanePct)}%` : ''}.`,
-    meaning: laneDeaths === 1 ? 'Один эпизод не доказывает ошибку или проигранную линию, но его можно проверить.' : 'Данные отмечают несколько эпизодов для проверки, но не устанавливают их причины или влияние на линию.',
-    action: 'Открой запись первых 10 минут и проверь решение перед каждым отмеченным эпизодом.',
-    target: laneLhTarget !== undefined ? { text: `Сохранить свой результат — ${laneLhTarget} добитых крипов — и попробовать пройти линию без смерти.`, source: 'personal' } : { text: 'Попробовать пройти первые 10 минут без смерти.', source: 'training' },
+    meaning: 'Несколько ранних смертей дают конкретные эпизоды для просмотра. Их причины нужно проверить в записи.',
+    action: 'Перед следующей игрой пересмотри 20 секунд до каждой ранней смерти. Выбери одно повторяющееся решение и заранее определи, как поступить иначе.',
     dataState: actualLhAt10 === undefined ? 'partial' : 'available', severity: 'info'
   });
   if (economyPercentile !== undefined && economyPercentile < 50 && priorities.length < 2) priorities.push({
     id: 'economy', title: 'Проверить темп экономики',
     fact: `В этой игре: ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'значение золота в минуту недоступно'}; показатель ниже доступного ориентира OpenDota.`,
     meaning: hasPhaseEconomy
-      ? 'Сравнение отмечает темп экономики как направление для разбора, но не объясняет причину результата.'
-      : 'Сравнение отмечает темп экономики как направление для разбора, но данных по фазам недостаточно, чтобы указать конкретный отрезок.',
+      ? 'Посмотри, на что уходило время между источниками фарма на доступных отрезках.'
+      : 'Данных по фазам недостаточно, чтобы выбрать отрезок автоматически.',
     action: hasPhaseEconomy
-      ? 'Сравни отрезки фарма по фазам и выбери один период, где можно сократить время без получения золота.'
-      : 'Посмотри запись матча и отметь один продолжительный отрезок без получения золота.',
+      ? 'Сравни отрезки фарма по фазам и найди в записи один лишний переход. В следующем матче выбирай следующий доступный источник фарма до завершения текущего.'
+      : 'Посмотри запись матча и найди один лишний переход между источниками фарма. В следующем матче заранее выбирай следующую точку фарма.',
     dataState: gpm === undefined || !hasPhaseEconomy ? 'partial' : 'available', severity: 'warning'
   });
 
@@ -287,14 +289,17 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const fightBaseBenchmarkScore = benchmarkScore(hdBench);
   const fightScore = fightBaseBenchmarkScore;
   const deathRiskAdjustment = 0;
+  const review = buildMatchReview(match, deathTimings, [...laneFindings, ...itemsFindings, ...fightsFindings, ...mapFindings]);
 
-  return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,
+  return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, durationSeconds: match.durationSeconds, review,
+    training: { observation: { matchId: match.matchId, accountId: match.selectedPlayer.accountId, heroId: match.selectedPlayer.heroId, role: match.selectedPlayer.role ?? 'unknown', startTime: match.startTime, gameMode: match.gameMode, lobbyType: match.lobbyType, durationSeconds: match.durationSeconds, lastHitsAt10: actualLhAt10 }, goal: trainingGoal },
+    buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,
     grades: { lane: { score: undefined, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : undefined, summary: mapSummary, findings: mapFindings.slice(0, 3) } },
     scoreBreakdown: fightBaseBenchmarkScore === undefined ? undefined : { fights: { baseBenchmarkScore: fightBaseBenchmarkScore, deathRiskAdjustment, finalScore: fightScore! } },
     topMistakes: safeTopMistakes,
     nextGameAdjustments,
     priorities: priorities.slice(0, 2),
-    finalVerdict: { mainReason: `${result === 'win' ? 'Победа' : 'Поражение'}. ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'Темп золота недоступен'}${heroDamage !== undefined ? `, ${Math.round(heroDamage).toLocaleString('ru-RU')} урона по героям` : ''}. Эти показатели описывают игру, но не доказывают причину результата.`, biggestRisk, nextMatchFocus },
+    finalVerdict: { mainReason: review.summary, biggestRisk, nextMatchFocus },
     meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75 }
   };
 }
