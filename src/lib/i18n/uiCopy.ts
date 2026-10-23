@@ -2,7 +2,7 @@ import type { Locale } from './locales';
 
 const copy = {
   ru: {
-    nav: { label: 'Основная навигация', home: 'Главная', postMatch: 'Разбор матча', preGame: 'План перед игрой' },
+    nav: { label: 'Основная навигация', home: 'Главная', postMatch: 'Разбор матча', preGame: 'План перед игрой', winrates: 'Доля побед' },
     locale: { label: 'Язык интерфейса', ru: 'RU', en: 'EN' },
     home: {
       eyebrow: 'Тактический помощник', title: 'Персональный тренер для вашей следующей игры', lead: 'Разберите решения после матча или подготовьте чёткий план до старта — без лишней статистики и догадок.', postCta: 'Разобрать матч', preCta: 'Составить план', steps: 'От матча к следующему решению', step1: 'Укажите матч', step1Body: 'Введите ID завершённой игры.', step2: 'Получите разбор', step2Body: 'Посмотрите вывод тренера, ошибки и доказательства.', step3: 'Выберите фокус', step3Body: 'Возьмите одно конкретное действие в следующий матч.'
@@ -15,7 +15,7 @@ const copy = {
     }
   },
   en: {
-    nav: { label: 'Main navigation', home: 'Home', postMatch: 'Match review', preGame: 'Pre-game plan' },
+    nav: { label: 'Main navigation', home: 'Home', postMatch: 'Match review', preGame: 'Pre-game plan', winrates: 'Win percentages' },
     locale: { label: 'Interface language', ru: 'RU', en: 'EN' },
     home: {
       eyebrow: 'Tactical assistant', title: 'A personal coach for your next game', lead: 'Review your decisions after a match or prepare a clear plan before it starts — without noise or guesswork.', postCta: 'Review a match', preCta: 'Build a plan', steps: 'From the match to your next decision', step1: 'Choose a match', step1Body: 'Enter the ID of a completed match.', step2: 'Get your review', step2Body: 'See the coach verdict, mistakes, and evidence.', step3: 'Pick a focus', step3Body: 'Take one concrete action into your next match.'

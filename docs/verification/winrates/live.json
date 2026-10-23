@@ -1,0 +1,47 @@
+{
+  "synthetic": false,
+  "checkedAt": "2026-10-23T13:38:52.866Z",
+  "matchId": 8781054570,
+  "planHttpStatus": 200,
+  "rosterSize": 10,
+  "matchStart": 1776810769,
+  "participantHttpStatus": 200,
+  "status": "unavailable",
+  "samples": {
+    "7": {
+      "days": 7,
+      "from": 1776205969,
+      "to": 1776810769,
+      "wins": 0,
+      "games": 0,
+      "rate": null,
+      "first": null,
+      "last": null,
+      "complete": false,
+      "limitedBy": "cap"
+    },
+    "30": {
+      "days": 30,
+      "from": 1774218769,
+      "to": 1776810769,
+      "wins": 0,
+      "games": 0,
+      "rate": null,
+      "first": null,
+      "last": null,
+      "complete": false,
+      "limitedBy": "cap"
+    }
+  },
+  "history": {
+    "stop": "cap",
+    "scanned": 300,
+    "invalid": 0,
+    "oldest": 1777757127,
+    "ordered": true,
+    "fetchedAt": 1792762739,
+    "expiresAt": 1792763039
+  },
+  "asOf": 1776810769,
+  "fetchedAt": 1792762738
+}

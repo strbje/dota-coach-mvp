@@ -3,13 +3,14 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useLocale } from '@/components/layout/LocaleProvider';
-import { Alert, Badge, Button, Field, Panel, Select } from '@/components/ui';
+import { ActionLink, Alert, Badge, Button, Field, Panel, Select } from '@/components/ui';
 import type { MatchPlayerOption } from '@/lib/dota/selection/matchPlayers';
 import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 import { isPostMatchSuccessPayload, type PostMatchSuccessPayload as Payload } from '@/lib/dota/validation/postMatchResponse';
 import { PostMatchReport } from '@/components/coach/PostMatchReport';
 import { formatGameTime } from '@/lib/dota/constants/items';
 import styles from '@/components/coach/postMatch.module.css';
+import { accountId as isAccountId } from '@/lib/dota/winrates/calculation';
 
 export default function PostMatchPage() {
   const { locale } = useLocale();
@@ -154,6 +155,7 @@ export default function PostMatchPage() {
             <Badge tone={analysis.result === 'win' ? 'success' : 'danger'}>{analysis.result === 'win' ? 'Победа' : 'Поражение'}</Badge>
             <span>{selectedPlayer?.playerName ?? 'Выбранный игрок'}</span>
             <span>Керри</span><span>{formatGameTime(analysis.durationSeconds)}</span><span>Матч {analysis.matchId}</span>
+            {isAccountId(analysis.training.observation.accountId) ? <ActionLink variant="ghost" href={`/winrates?matchId=${analysis.matchId}&accountId=${analysis.training.observation.accountId}`}>Доля побед участников</ActionLink> : null}
           </div> : <p className="muted">Разбери ключевые отрезки и выбери одну цель на следующую игру.</p>}
         </div>
         {analysis ? <Button type="button" variant="secondary" aria-expanded={showSelection} aria-controls="match-selection" onClick={() => setShowSelection((value) => !value)}>{showSelection ? 'Скрыть выбор' : 'Матч и состав · изменить'}</Button> : null}

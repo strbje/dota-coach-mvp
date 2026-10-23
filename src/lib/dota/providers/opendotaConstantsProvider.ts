@@ -63,7 +63,7 @@ export async function getGoldReasonConstants(): Promise<Record<string, GoldReaso
   const constants = await fetchOpenDotaConstants('gold_reasons');
   return normalizeGoldReasonConstants(constants);
 }
-function normalizeHeroes(heroes: unknown): { heroKeyById: Record<number, string>; heroNameByKey: Record<string, string> } {
+export function normalizeHeroes(heroes: unknown): { heroKeyById: Record<number, string>; heroNameByKey: Record<string, string> } {
   const heroKeyById: Record<number, string> = {}; const heroNameByKey: Record<string, string> = {};
   if (!heroes || typeof heroes !== 'object') return { heroKeyById, heroNameByKey };
   for (const [key, value] of Object.entries(heroes as Record<string, unknown>)) { if (!key || !value || typeof value !== 'object') continue; const raw=value as Record<string, unknown>; const id=typeof raw.id==='number'?raw.id:undefined; const localizedName=typeof raw.localized_name==='string'?raw.localized_name:undefined; if(!id||id<=0) continue; heroKeyById[id]=key; if(localizedName) heroNameByKey[key]=localizedName; }

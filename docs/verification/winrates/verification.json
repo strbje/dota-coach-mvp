@@ -1,0 +1,19 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920
+  ],
+  "checks": [
+    "explicit selection; 4/5 groups; responsive layout; expandable sample details; UTF-8 CSV download",
+    "Dire selection excludes selected player; keyboard submit and visible focus",
+    "cancel/replace ignores delayed old responses; changing filters clears previous groups",
+    "anonymous, restricted, empty, provider error and capped sample states",
+    "bounded first series; continuation by stable Match IDs; same capture time; final unique-player table",
+    "empty/error states; post-match deep link preselects account; active navigation",
+    "current mode is separately labelled and all participants share one capture time"
+  ]
+}
