@@ -45,3 +45,46 @@ test('missing points cannot form a five-minute swing; same-time death/objective 
   assert.equal(review.timeline.length, 2);
   assert.doesNotMatch(JSON.stringify(review), /привела|виноват|из-за смерти|потерял.*башн/);
 });
+
+test('experience-only telemetry covering the finish is available even without personal checkpoints', () => {
+  for (const xp of [-3000, 0, 500]) {
+    const match: NormalizedOpenDotaMatch = { matchId: 1, didRadiantWin: false, durationSeconds: 2400, selectedPlayer: { heroId: 1, heroName: 'Test' }, player: { isRadiant: true },
+      teamAdvantage: [{ timeSeconds: 0, xp: 0 }, { timeSeconds: 2280, xp }] };
+    const review = buildMatchReview(match, [], []);
+    assert.match(review.summary, /динамика опыта.*38:00/);
+    assert.doesNotMatch(review.summary, /не хватает|золота/);
+    assert.match(review.coverageNote ?? '', /Нет динамики золота/);
+    assert.doesNotMatch(review.coverageNote ?? '', /конец матча не покрыт|Динамика опыта неполная|Нет динамики ресурсов/);
+    assert.equal(review.headline, 'Поражение. Разберём твою игру');
+    assert.equal(review.factors.length, 1);
+    assert.equal(review.factors[0].id, 'team-xp');
+    assert.equal(review.factors[0].confidence, 'observation');
+    assert.match(review.factors[0].fact, /38:00/);
+    assert.deepEqual(review.advantage, match.teamAdvantage);
+  }
+});
+
+test('experience-only telemetry with a truncated finish identifies the available interval and missing experience coverage', () => {
+  const match: NormalizedOpenDotaMatch = { matchId: 1, didRadiantWin: true, durationSeconds: 2400, selectedPlayer: { heroId: 1, heroName: 'Test' }, player: { isRadiant: true },
+    teamAdvantage: [{ timeSeconds: 0, xp: 0 }, { timeSeconds: 1800, xp: 2000 }] };
+  const review = buildMatchReview(match, [], []);
+  assert.match(review.summary, /динамика опыта.*30:00/);
+  assert.doesNotMatch(review.summary, /не хватает|золота/);
+  assert.match(review.coverageNote ?? '', /Нет динамики золота/);
+  assert.match(review.coverageNote ?? '', /Динамика опыта неполная: конец матча не покрыт/);
+  assert.doesNotMatch(review.coverageNote ?? '', /Динамика золота неполная/);
+  assert.equal(review.headline, 'Победа. Разберём твою игру');
+  assert.equal(review.factors[0].confidence, 'observation');
+});
+
+test('gold and experience finish coverage are assessed independently when both series exist', () => {
+  for (const missingFinish of ['gold', 'xp'] as const) {
+    const other = missingFinish === 'gold' ? 'xp' : 'gold';
+    const match: NormalizedOpenDotaMatch = { matchId: 1, didRadiantWin: true, durationSeconds: 2400, selectedPlayer: { heroId: 1, heroName: 'Test' }, player: { isRadiant: true },
+      teamAdvantage: [{ timeSeconds: 1800, gold: 1000, xp: 2000 }, { timeSeconds: 2280, [other]: 3000 }] };
+    const review = buildMatchReview(match, [], []);
+    assert.match(review.coverageNote ?? '', missingFinish === 'gold' ? /Динамика золота неполная/ : /Динамика опыта неполная/);
+    assert.doesNotMatch(review.coverageNote ?? '', missingFinish === 'gold' ? /Динамика опыта неполная/ : /Динамика золота неполная/);
+    assert.doesNotMatch(review.coverageNote ?? '', /Нет динамики/);
+  }
+});

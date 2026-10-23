@@ -38,7 +38,7 @@ export function acceptChallenge(observation: TrainingObservation, goal: Training
   return { version: 1, scope, sourceMatchId: observation.matchId, sourceStartTime: observation.startTime, acceptedAt, goal, checks: [] };
 }
 
-/** Unknown/partial matches are recorded as pending, never as failures or completed games. */
+/** Unknown/partial matches stay pending; a later partial response cannot erase confirmed progress. */
 export function checkChallenge(challenge: TrainingChallenge, observation: TrainingObservation): TrainingChallenge {
   const scope = challengeScope(observation);
   if (!scope || Object.entries(challenge.scope).some(([key, value]) => scope[key as keyof Scope] !== value)
@@ -46,6 +46,8 @@ export function checkChallenge(challenge: TrainingChallenge, observation: Traini
     || !integer(observation.startTime, 1) || observation.startTime <= challenge.sourceStartTime
     || observation.startTime < challenge.acceptedAt) return challenge;
   const actual = observation.durationSeconds >= 600 && integer(observation.lastHitsAt10) ? observation.lastHitsAt10 : undefined;
+  const previous = challenge.checks.find((entry) => entry.matchId === observation.matchId);
+  if (actual === undefined && previous?.actual !== undefined) return challenge;
   const check: ChallengeCheck = { matchId: observation.matchId, startTime: observation.startTime, ...(actual === undefined ? {} : { actual }) };
   const ordered = [...challenge.checks.filter((entry) => entry.matchId !== check.matchId), check]
     .sort((a, b) => a.startTime - b.startTime || a.matchId - b.matchId);

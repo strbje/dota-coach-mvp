@@ -31,11 +31,44 @@ test('missing and short matches neither succeed nor fail, reparsing can supply t
   challenge = checkChallenge(challenge, { ...base, matchId: 102, startTime: 6000, durationSeconds: 599 });
   assert.equal(challengeProgress(challenge).counted.length, 0);
   challenge = checkChallenge(challenge, { ...base, matchId: 101, startTime: 5000, lastHitsAt10: 56 });
+  assert.equal(challengeProgress(challenge).counted.length, 1);
+  assert.equal(challenge.checks.find((entry) => entry.matchId === 101)?.actual, 56);
   challenge = checkChallenge(challenge, { ...base, matchId: 101, startTime: 5000, lastHitsAt10: 56 });
   assert.equal(challengeProgress(challenge).successes, 1);
+  assert.equal(challengeProgress(challenge).counted.length, 1);
+  assert.equal(challenge.checks.filter((entry) => entry.matchId === 101).length, 1);
   assert.equal(challenge.checks.length, 2);
   challenge = checkChallenge(challenge, { ...base, matchId: 101, startTime: 5000, lastHitsAt10: undefined });
-  assert.equal(challengeProgress(challenge).counted.length, 0);
+  assert.equal(challengeProgress(challenge).counted.length, 1);
+  assert.equal(challenge.checks.find((entry) => entry.matchId === 101)?.actual, 56);
+});
+
+test('reloading a completed challenge without a usable checkpoint preserves all three confirmed results', () => {
+  let challenge = accepted();
+  for (const [matchId, startTime, lastHitsAt10] of [[101, 5000, 56], [102, 6000, 60], [103, 7000, 0]]) {
+    challenge = checkChallenge(challenge, { ...base, matchId, startTime, lastHitsAt10 });
+  }
+  const saved = readChallenge(JSON.stringify(challenge), base)!;
+  assert.equal(challengeProgress(saved).complete, true);
+  for (const matchId of [101, 102, 103]) {
+    for (const change of [{ lastHitsAt10: undefined }, { lastHitsAt10: NaN }, { lastHitsAt10: -1 }, { lastHitsAt10: 1.5 }, { durationSeconds: 599 }]) {
+      const reloaded = checkChallenge(saved, { ...base, matchId, startTime: (matchId - 96) * 1000, ...change });
+      assert.deepEqual(reloaded.checks, saved.checks);
+      assert.equal(challengeProgress(reloaded).counted.length, 3);
+      assert.equal(challengeProgress(reloaded).complete, true);
+      assert.equal(challengeProgress(reloaded).successes, 2);
+    }
+  }
+});
+
+test('a new usable result replaces the previous value without counting the match twice', () => {
+  let challenge = checkChallenge(accepted(), { ...base, matchId: 101, startTime: 5000, lastHitsAt10: 56 });
+  for (const lastHitsAt10 of [0, 60, 55]) {
+    challenge = checkChallenge(challenge, { ...base, matchId: 101, startTime: 5000, lastHitsAt10 });
+    assert.deepEqual(challenge.checks, [{ matchId: 101, startTime: 5000, actual: lastHitsAt10 }]);
+    assert.equal(challengeProgress(challenge).counted.length, 1);
+    assert.equal(challengeProgress(challenge).successes, lastHitsAt10 >= 56 ? 1 : 0);
+  }
 });
 
 test('zero is a real result and three checked matches are ordered by match time, not viewing order', () => {

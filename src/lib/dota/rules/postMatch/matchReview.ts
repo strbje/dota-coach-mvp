@@ -14,8 +14,10 @@ export function buildMatchReview(
   const won = player?.isRadiant === match.didRadiantWin;
   const advantage = match.teamAdvantage ?? [];
   const gold = advantage.filter((p): p is TeamAdvantagePoint & { gold: number } => p.gold !== undefined);
-  const last = gold.at(-1);
-  const nearEnd = last !== undefined && match.durationSeconds - last.timeSeconds <= 120;
+  const lastGold = gold.at(-1);
+  const lastXp = advantage.filter((p): p is TeamAdvantagePoint & { xp: number } => p.xp !== undefined).at(-1);
+  const goldNearEnd = lastGold !== undefined && match.durationSeconds - lastGold.timeSeconds <= 120;
+  const xpNearEnd = lastXp !== undefined && match.durationSeconds - lastXp.timeSeconds <= 120;
   const factors: MatchReview['factors'] = [];
   const timeline: MatchReview['timeline'] = [
     ...(match.objectiveTimeline ?? []),
@@ -42,13 +44,12 @@ export function buildMatchReview(
       stat: { value: signed(swing.delta), label: 'изменение разницы золота за 5 минут' },
       confidence: 'possible-factor', timeSeconds: swing.start.timeSeconds, endSeconds: swing.end.timeSeconds, evidenceId: 'team-advantage'
     });
-  } else if (last) {
-    factors.push({ id: 'team-snapshot', title: 'Ресурсы команды', fact: `В ${formatGameTime(last.timeSeconds)} разница золота: ${signed(last.gold)}.`,
-      meaning: 'Это состояние экономики всей команды в указанный момент.', confidence: 'observation', timeSeconds: last.timeSeconds, evidenceId: 'team-advantage' });
-  } else {
-    const xp = advantage.filter((p) => p.xp !== undefined).at(-1);
-    if (xp) factors.push({ id: 'team-xp', title: 'Опыт команды', fact: `В ${formatGameTime(xp.timeSeconds)} разница опыта: ${signed(xp.xp!)}.`,
-      meaning: 'Это общий опыт команды; распределение уровней между героями здесь не оценено.', confidence: 'observation', timeSeconds: xp.timeSeconds, evidenceId: 'team-advantage' });
+  } else if (lastGold) {
+    factors.push({ id: 'team-snapshot', title: 'Ресурсы команды', fact: `В ${formatGameTime(lastGold.timeSeconds)} разница золота: ${signed(lastGold.gold)}.`,
+      meaning: 'Это состояние экономики всей команды в указанный момент.', confidence: 'observation', timeSeconds: lastGold.timeSeconds, evidenceId: 'team-advantage' });
+  } else if (lastXp) {
+    factors.push({ id: 'team-xp', title: 'Опыт команды', fact: `В ${formatGameTime(lastXp.timeSeconds)} разница опыта: ${signed(lastXp.xp)}.`,
+      meaning: 'Это общий опыт команды; распределение уровней между героями здесь не оценено.', confidence: 'observation', timeSeconds: lastXp.timeSeconds, evidenceId: 'team-advantage' });
   }
   const lh = player?.laneReview?.lhAt10;
   if (lh !== undefined && match.durationSeconds >= 600) {
@@ -63,19 +64,23 @@ export function buildMatchReview(
     confidence: 'observation', timeSeconds: lastItem.timeSeconds, evidenceId: `item-${lastItem.key}`
   });
 
-  const headline = nearEnd && last.gold !== 0
-    ? won ? last.gold > 0 ? 'Победа с преимуществом по золоту' : 'Победа вопреки отставанию по золоту'
-      : last.gold < 0 ? 'Поражение на фоне отставания по золоту' : 'Преимущество по золоту не принесло победу'
+  const headline = goldNearEnd && lastGold.gold !== 0
+    ? won ? lastGold.gold > 0 ? 'Победа с преимуществом по золоту' : 'Победа вопреки отставанию по золоту'
+      : lastGold.gold < 0 ? 'Поражение на фоне отставания по золоту' : 'Преимущество по золоту не принесло победу'
     : won ? 'Победа. Разберём твою игру' : 'Поражение. Разберём твою игру';
   const available = [lh !== undefined ? 'стартовый фарм' : null, player?.itemTimings?.length ? 'покупки' : null, deathTimings?.length ? 'смерти по времени' : null].filter(Boolean);
-  const summary = last
-    ? `В ${formatGameTime(last.timeSeconds)} ${last.gold === 0 ? 'золото команд было равным' : `${last.gold > 0 ? 'ваша команда имела' : 'соперник имел'} преимущество в ${number(Math.abs(last.gold))} золота`}. Ниже — важный отрезок команды и твой личный результат.`
+  const summary = lastGold
+    ? `В ${formatGameTime(lastGold.timeSeconds)} ${lastGold.gold === 0 ? 'золото команд было равным' : `${lastGold.gold > 0 ? 'ваша команда имела' : 'соперник имел'} преимущество в ${number(Math.abs(lastGold.gold))} золота`}. Ниже — важный отрезок команды и твой личный результат.`
+    : lastXp ? `Для разбора доступна динамика опыта команд до ${formatGameTime(lastXp.timeSeconds)}. Разница опыта твоей команды в этот момент: ${signed(lastXp.xp)}.`
     : available.length ? `Для разбора доступны ${available.join(', ')}. Начнём с этих отрезков твоей игры.` : 'Есть итог матча. Для подробного разбора пока не хватает событий и минутных показателей.';
   return {
     headline, summary,
-    coverageNote: !advantage.length ? 'Нет динамики ресурсов команд — причину результата пока определить нельзя.'
-      : !nearEnd ? 'Динамика золота неполная: конец матча не покрыт. События драк требуют проверки в записи.'
-        : 'Деталей командных драк нет: влияние решений на результат проверь в записи.',
+    coverageNote: !lastGold && !lastXp ? 'Нет динамики ресурсов команд — причину результата пока определить нельзя.'
+      : [
+        !lastGold ? 'Нет динамики золота.' : !goldNearEnd ? 'Динамика золота неполная: конец матча не покрыт.' : null,
+        !lastXp ? 'Нет динамики опыта.' : !xpNearEnd ? 'Динамика опыта неполная: конец матча не покрыт.' : null,
+        'Деталей командных драк нет: влияние решений на результат проверь в записи.'
+      ].filter(Boolean).join(' '),
     factors: factors.slice(0, 3),
     strengths: [...new Set(positiveFindings.filter((f) => f.severity === 'good').map((f) => f.text))].slice(0, 2),
     advantage, timeline: timeline.sort((a, b) => a.timeSeconds - b.timeSeconds)
