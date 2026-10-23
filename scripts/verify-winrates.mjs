@@ -90,12 +90,14 @@ async function shot(name) {
   });
   await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
 }
-async function load(name, id = '9000067') {
+async function load(name, id = '9000067', selectPlayer = true) {
   scenario = name;
   await editInputs();
   await page.getByLabel('Match ID', { exact: true }).fill(id);
   await page.getByRole('button', { name: /^(Загрузить сравнение|Обновить данные)$/ }).click();
-  await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('0');
+  const player = page.getByLabel('Выбранный игрок', { exact: true });
+  await player.waitFor();
+  if (selectPlayer) await player.selectOption('0');
 }
 async function editInputs() {
   const edit = page.getByRole('button', { name: 'Изменить параметры / обновить', exact: true });
@@ -150,7 +152,11 @@ try {
   await page.getByLabel('Без Turbo', { exact: true }).check();
   report.checks.push('cancel/replace ignores delayed old responses; changing filters clears previous groups');
 
-  await load('partial'); await complete();
+  const beforeAnonymous = seen.filter((item) => item.kind === 'participant').length;
+  await load('partial', '9000067', false);
+  assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '', 'anonymous participant must not become an implicit selection');
+  assert.equal(seen.filter((item) => item.kind === 'participant').length, beforeAnonymous, 'no history requests before explicit selection with anonymous players');
+  await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('0'); await complete();
   await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
   await page.getByLabel('Окно для средних', { exact: true }).selectOption('30');
   await page.getByText('Окно 30 дней · сортировка', { exact: true }).click();
@@ -160,7 +166,7 @@ try {
   await page.setViewportSize({ width: 320, height: 1050 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'partial states fit 320px');
   await page.setViewportSize({ width: 390, height: 1050 }); await shot('partial-mobile');
-  report.checks.push('anonymous, restricted, empty, provider error and capped sample states');
+  report.checks.push('anonymous roster waits for explicit selection; anonymous, restricted, empty, provider error and capped sample states');
 
   await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series');
   await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');

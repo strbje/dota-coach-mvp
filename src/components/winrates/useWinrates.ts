@@ -83,7 +83,8 @@ export function useWinrates() {
       const next = await post<Plan>('plan', query, request.signal, 22000);
       if (generation.current !== version || request.signal.aborted) return;
       if (!next?.query || !Array.isArray(next.matches) || !Number.isSafeInteger(next.capturedAt)) throw new Error('provider_error');
-      const slot = query.mode === 'match' ? next.matches[0]?.match?.players.find((player) => player.accountId === preferredAccount)?.slot : undefined;
+      const slot = query.mode === 'match' && preferredAccount !== undefined
+        ? next.matches[0]?.match?.players.find((player) => player.accountId === preferredAccount)?.slot : undefined;
       setPlan(next); setSelectedSlot(slot); setBusy(null);
       if (query.mode === 'series' || slot !== undefined) void loadParticipants(next, slot, {});
     } catch (failure) {
