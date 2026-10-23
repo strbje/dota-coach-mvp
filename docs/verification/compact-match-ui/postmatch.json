@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920,
+    2560
+  ],
+  "checks": [
+    "unified time domain; pregame and post-telemetry events; independent filters; hidden evidence revealed with focus; clustered collision-free markers; keyboard exact-event selection; independent gold/XP gaps; unknown deaths; preserved fight/economy grades",
+    "PR #68: reloading a completed challenge match without new last-hit data preserves 3/3",
+    "accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation",
+    "unavailable item images keep names, times and fallback",
+    "initial/error/empty/partial/unsupported role; malformed success controlled",
+    "late roster and analysis responses discarded after match/player changes",
+    "blocked storage never reports accepted progress; focus and evidence navigation"
+  ],
+  "consoleErrors": []
+}

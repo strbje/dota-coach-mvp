@@ -490,3 +490,18 @@ test('confirmed manual item targets can produce an item grade while missing purc
   assert.equal(runCarryPostMatchRules(confirmed, undefined, {}, lifestealerCarryOverride).grades.items.score, 73);
   assert.equal(runCarryPostMatchRules(match(), undefined, {}, lifestealerCarryOverride).grades.items.score, undefined);
 });
+
+
+test('lane facts preserve source efficiency and distinguish unknown deaths from confirmed zero without a grade', () => {
+  const input = match(51);
+  input.player!.laneReview!.laneEfficiencyPct = 70;
+  delete input.player!.laneReview!.deathsBefore10;
+  const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
+  assert.deepEqual(analysis.laneFacts, { efficiencyPct: 70, deathsAt10: undefined });
+  assert.equal(analysis.training.observation.lastHitsAt10, 51);
+  assert.equal(analysis.training.goal!.target, 56);
+  assert.equal(analysis.grades.lane.score, undefined);
+  assert.doesNotMatch(allCopy(analysis), /Сильный показатель|Рабочий показатель|70\/100/);
+  input.player!.deaths = 0;
+  assert.equal(runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).laneFacts!.deathsAt10, 0);
+});

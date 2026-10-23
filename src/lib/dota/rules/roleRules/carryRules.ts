@@ -68,11 +68,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
 
   const laneSummary = lanePct === undefined
     ? 'Линия без полной телеметрии'
-    : lanePct >= 70
-      ? 'Сильный показатель эффективности линии'
-      : lanePct >= 60
-        ? 'Рабочий показатель эффективности линии'
-        : 'Есть направление для улучшения фарма на линии';
+    : 'Факты линии по данным OpenDota';
 
   const itemsSummary = !trackedTimings.length
     ? 'Нет данных о ключевых покупках'
@@ -171,12 +167,8 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} добитых крипов к 10:00.`, evidence: [], severity: 'info' });
   }
   if (laneDeaths !== undefined && laneDeaths > 0) {
-    const availableLaneMetrics = [
-      p?.laneReview?.lhAt10 !== undefined ? `${Math.round(p.laneReview.lhAt10)} добитых крипов к 10:00` : undefined,
-      lanePct !== undefined ? `${Math.round(lanePct)}% эффективности линии` : undefined
-    ].filter((value): value is string => Boolean(value));
     laneFindings.push({
-      text: `${availableLaneMetrics.length ? `${availableLaneMetrics.join(' и ')}. ` : ''}До 10:00 зафиксировано смертей: ${laneDeaths}. Причины и влияние этих эпизодов по данным матча не установлены.`,
+      text: `До 10:00 зафиксировано смертей: ${laneDeaths}. Причины и влияние этих эпизодов по данным матча не установлены.`,
       evidence: [], severity: 'info'
     });
   }
@@ -292,6 +284,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const review = buildMatchReview(match, deathTimings, [...laneFindings, ...itemsFindings, ...fightsFindings, ...mapFindings]);
 
   return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, durationSeconds: match.durationSeconds, review,
+    laneFacts: { deathsAt10: laneDeaths, efficiencyPct: lanePct },
     training: { observation: { matchId: match.matchId, accountId: match.selectedPlayer.accountId, heroId: match.selectedPlayer.heroId, role: match.selectedPlayer.role ?? 'unknown', startTime: match.startTime, gameMode: match.gameMode, lobbyType: match.lobbyType, durationSeconds: match.durationSeconds, lastHitsAt10: actualLhAt10 }, goal: trainingGoal },
     buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,
     grades: { lane: { score: undefined, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : undefined, summary: mapSummary, findings: mapFindings.slice(0, 3) } },

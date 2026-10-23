@@ -1,4 +1,5 @@
 import { Badge, Panel } from '@/components/ui';
+import styles from './postMatch.module.css';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 
 type GradeTone = 'critical' | 'weak' | 'average' | 'ok' | 'good' | 'excellent';
@@ -25,14 +26,15 @@ export function getGradeLevel(score: number): GradeLevel {
   return { label: 'Отлично', className: 'grade-excellent', tone: 'excellent', description: 'Сильное исполнение' };
 }
 
-export function GradesGrid({ grades }: { grades: PostMatchAnalysis['grades'] }) {
+export function GradesGrid({ grades, categories = ['lane', 'items', 'fights', 'map'] }: { grades: PostMatchAnalysis['grades']; categories?: Array<keyof PostMatchAnalysis['grades']> }) {
   return (
     <Panel>
       <h3>Оценки</h3>
-      <div className="grid grid-2">
-        {Object.entries(grades).map(([key, grade]) => {
+      <div className={`grid grid-2 ${styles.grades}`}>
+        {Object.entries(grades).filter(([key]) => categories.includes(key as keyof typeof grades)).map(([key, grade]) => {
           const level = grade.score === undefined ? null : getGradeLevel(grade.score);
 
+          if (!level) return <details key={key} className={styles.more}><summary>{GRADE_LABELS[key]} · наблюдения</summary><p className="muted">{grade.summary}</p><ul>{grade.findings.map((finding) => <li key={finding.text}>{finding.text}</li>)}</ul></details>;
           return (
             <Panel as="article" key={key} className={`grade-card ${level?.className ?? ''}`}>
               <div className="grade-head">

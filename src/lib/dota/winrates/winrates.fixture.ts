@@ -1,4 +1,5 @@
 // Synthetic IDs/names only. Never a live OpenDota acceptance fixture.
+import { setHeroConstants } from '../data/heroConstants';
 import { normalizeRoster, sample } from './calculation';
 import type { ParticipantResult, Plan, Results } from './types';
 
@@ -12,6 +13,9 @@ export function fixtureRow(id = 1, overrides: Record<string, unknown> = {}) {
   return { match_id: id, start_time: FIXTURE_TIME - 2 * 86400, duration: 2400, lobby_type: 7, game_mode: 22, player_slot: 0, radiant_win: true, ...overrides };
 }
 export function fixturePlan(mode: 'match' | 'series' = 'match'): Plan {
+  const keys = ['antimage', 'axe', 'bane', 'bloodseeker', 'crystal_maiden', 'drow_ranger', 'earthshaker', 'juggernaut', 'mirana', 'morphling'];
+  const names = ['Anti-Mage', 'Axe', 'Bane', 'Bloodseeker', 'Crystal Maiden', 'Drow Ranger', 'Earthshaker', 'Juggernaut', 'Mirana', 'Morphling'];
+  setHeroConstants({ heroKeyById: Object.fromEntries(keys.map((key, index) => [index + 1, key])), heroNameByKey: Object.fromEntries(keys.map((key, index) => [key, names[index]])) });
   const match = normalizeRoster(fixtureMatch(), 9000067);
   const entries = [{ matchId: match.matchId, match: { ...match, selectedSlot: 0 } }];
   if (mode === 'series') {

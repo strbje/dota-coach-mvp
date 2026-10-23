@@ -32,6 +32,15 @@ const chromiumModule = process.env.CHROMIUM_MODULE_PATH ? require(process.env.CH
 const localChromium = chromiumModule?.default ?? chromiumModule;
 const browser = await chromium.launch(localChromium ? { headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || await localChromium.executablePath(), args: localChromium.args } : { headless: true, channel: 'chromium' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
+// Optional local cache of unmodified Steam CDN images for network-restricted browsers.
+if (process.env.ASSET_DIR) await page.route('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/**', async (route) => {
+  const match = new URL(route.request().url()).pathname.match(/\/(heroes|items)\/([a-z0-9_]+)\.png$/);
+  if (!match) return route.continue();
+  try { await route.fulfill({ contentType: 'image/png', body: readFileSync(join(process.env.ASSET_DIR, `${match[1]}-${match[2]}.png`)) }); }
+  catch { await route.continue(); }
+});
+const portraitRequests = [];
+page.on('request', (request) => { if (request.url().includes('/dota_react/heroes/')) portraitRequests.push(request.url()); });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 let scenario = 'ready'; let delay = 0;
@@ -87,7 +96,7 @@ await page.route('**/api/winrates/**', async (route) => {
     }
   }
   result.capturedAt = request.capturedAt; result.basis = request.basis;
-  result.name = `${thisScenario === 'stale' ? 'OLD' : 'Участник'} ${request.accountId}`;
+  result.name = thisScenario === 'long-name' ? 'ОченьДлинноеИмяБезПробелов'.repeat(5) : `${thisScenario === 'stale' ? 'OLD' : 'Участник'} ${request.accountId}`;
   if (thisScenario === 'partial') {
     if ([1002, 1003, 1004].includes(request.accountId)) {
       result.status = { 1002: 'private', 1003: 'empty', 1004: 'provider_error' }[request.accountId];
@@ -102,7 +111,7 @@ await page.route('**/api/winrates/**', async (route) => {
 async function shot(name) {
   await page.evaluate(() => {
     if (document.getElementById('synthetic-note')) return;
-    const note = document.createElement('div'); note.id = 'synthetic-note'; note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #67 · не результаты реальных игроков';
+    const note = document.createElement('div'); note.id = 'synthetic-note'; note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #70 · не результаты реальных игроков';
     note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;'; document.body.prepend(note);
   });
   await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
@@ -134,6 +143,11 @@ try {
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow ${width}`);
+    if (width >= 1440) {
+      const allies = await page.getByRole('region', { name: 'Союзники', exact: true }).boundingBox();
+      const opponents = await page.getByRole('region', { name: 'Соперники', exact: true }).boundingBox();
+      assert.equal(Math.round(allies.y), Math.round(opponents.y)); assert.ok(opponents.x > allies.x);
+    }
     report.widths.push(width);
     if (width === 390 || width === 1440) await shot(`ready-${width}`);
   }
@@ -146,7 +160,20 @@ try {
   await page.getByRole('button', { name: 'Скачать CSV для Excel' }).click();
   const download = await downloadPromise; const csv = readFileSync(await download.path(), 'utf8');
   assert.ok(csv.startsWith('\uFEFF')); assert.match(csv, /Победы 7/); assert.match(csv, /Игры 30/);
-  report.checks.push('explicit selection; 4/5 groups; responsive layout; expandable sample details; UTF-8 CSV download');
+  await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
+  for (const sort of ['rate_desc', 'rate_asc', 'name']) {
+    await page.getByLabel('Сортировка участников', { exact: true }).selectOption(sort);
+    for (const side of ['Союзники', 'Соперники']) {
+      const group = page.getByRole('region', { name: side, exact: true });
+      const values = sort === 'name' ? await group.locator('[class*=identity] strong').allTextContents() : (await group.locator('[class*=miniStats] > span:first-child strong').allTextContents()).map((value) => parseFloat(value));
+      const expected = [...values].sort(sort === 'name' ? (a, b) => a.localeCompare(b, 'ru') : sort === 'rate_desc' ? (a, b) => b - a : (a, b) => a - b);
+      assert.deepEqual(values, expected, `${sort} within ${side}`);
+    }
+  }
+  await page.getByLabel('Сортировка участников', { exact: true }).selectOption('side');
+  await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
+  report.checks.push('rate ascending/descending and name sorting remain stable within each side');
+  report.checks.push('explicit selection; adjacent 4/5 rosters with side averages; responsive layout; expandable sample details; UTF-8 CSV download');
 
   await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('128');
   await complete();
@@ -174,6 +201,13 @@ try {
   assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '', 'anonymous participant must not become an implicit selection');
   assert.equal(seen.filter((item) => item.kind === 'participant').length, beforeAnonymous, 'no history requests before explicit selection with anonymous players');
   await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('0'); await complete();
+  const anonymous = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 2' }) }).locator('summary');
+  assert.match(await anonymous.innerText(), /Axe/);
+  assert.ok(portraitRequests.some((url) => url.endsWith('/heroes/axe.png')));
+  if (process.env.ASSET_DIR) assert.match(await anonymous.locator('img').getAttribute('src'), /heroes\/axe.png$/);
+  const zeroWins = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1008' }) }).locator('summary');
+  assert.equal(await zeroWins.getByText('0%', { exact: true }).count(), 2);
+  assert.equal(await zeroWins.getByText('0 / 5', { exact: true }).count(), 2);
   const cappedSummary = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1005' }) }).locator('summary');
   for (const days of ['7', '30', '7']) {
     await page.getByText(/^Окно (7|30) дней · сортировка$/).click();
@@ -233,6 +267,8 @@ try {
   scenario = 'ready'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
   await complete(27);
   await page.getByRole('heading', { name: 'Уникальные участники · 9', exact: true }).waitFor();
+  assert.equal(await page.locator('table img').count(), 0, 'unique series people never get an arbitrary hero');
+  assert.equal(await page.getByText('Аккаунт и матчи', { exact: true }).count(), 9);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.setViewportSize({ width: 1440, height: 1050 }); await shot('series-desktop');
   await page.getByRole('button', { name: 'Следующие 3 матча · осталось 2', exact: true }).click();
@@ -242,7 +278,16 @@ try {
   const times = new Set(seen.filter((item) => item.kind === 'participant').map((item) => item.request.capturedAt)); assert.equal(times.size, 1);
   report.checks.push('bounded first series; continuation by stable Match IDs; same capture time; final unique-player table');
 
-  scenario = 'empty'; await editInputs(); await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
+  await page.route('**/apps/dota2/images/**', (route) => route.abort());
+  scenario = 'long-name'; await page.goto(`${base}/winrates`); await load('long-name'); await complete();
+  for (const width of [320, 390, 768, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1050 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `long names overflow ${width}`);
+  }
+  assert.equal(await page.locator('[class*=portrait] img').count(), 0, 'failed portraits use safe fallback');
+  report.checks.push('hero portraits from canonical roster metadata; anonymous hero retained; real 0% with 0/5; unique series people without arbitrary hero; long names and unavailable images');
+  await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series'); await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  scenario = 'empty'; await editInputs(); await page.getByRole('button', { name: /^(Загрузить сравнение|Обновить данные)$/ }).click();
   await page.getByText(/Подходящих матчей в полученной выборке нет/).waitFor(); await shot('empty');
   scenario = 'error'; await editInputs(); await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
   await page.getByText(/Ошибка OpenDota. Попробуйте/).waitFor(); await shot('error');
@@ -280,6 +325,9 @@ try {
     } catch (error) { live.error = error.name; }
     writeFileSync(join(output, 'live.json'), JSON.stringify(live, null, 2) + '\n'); console.log(JSON.stringify(live));
   }
+} catch (error) {
+  await shot('failure');
+  throw error;
 } finally {
   await browser.close(); server?.kill(); rmSync(temp, { recursive: true, force: true });
 }

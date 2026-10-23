@@ -291,6 +291,7 @@ export type PostMatchAnalysis = {
   durationSeconds: number;
   review: MatchReview;
   training: { observation: TrainingObservation; goal?: TrainingGoal };
+  laneFacts?: { deathsAt10?: number; efficiencyPct?: number };
   buildPlayed: string[];
   timings: Record<string, string>;
   itemTimings: Array<{ key: string; item: string; time: string; timeSeconds: number; iconUrl?: string; source: 'purchase_log' }>;

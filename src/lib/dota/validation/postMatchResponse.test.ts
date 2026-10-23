@@ -26,4 +26,10 @@ test('malformed report sections are rejected before the UI consumes them', () =>
   }
   assert.equal(isPostMatchSuccessPayload({ analysis: { ...analysis, training: { observation: { ...analysis.training.observation, matchId: 456 } } } }), false);
   assert.equal(isPostMatchSuccessPayload({ analysis: { ...analysis, priorities: [null] } }), false);
+  for (const laneFacts of [null, { deathsAt10: '0' }, { deathsAt10: -1 }, { efficiencyPct: NaN }, { efficiencyPct: {} }]) {
+    assert.equal(isPostMatchSuccessPayload({ analysis: { ...analysis, laneFacts } }), false);
+  }
+  for (const laneFacts of [{}, { deathsAt10: 0, efficiencyPct: 70 }]) {
+    assert.equal(isPostMatchSuccessPayload({ analysis: { ...analysis, laneFacts } }), true);
+  }
 });

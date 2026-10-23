@@ -1,4 +1,5 @@
 import { getMatchPlayerOptions } from '../selection/matchPlayers';
+import { getHeroKeyById, getHeroPortraitUrl } from '../data/heroConstants';
 import type { OpenDotaMatchResponse } from '../types/providers';
 import type { Encounter, Filters, History, HistoryRow, Plan, Results, RosterPlayer, Sample, Sort, TargetMatch, WindowDays } from './types';
 
@@ -54,7 +55,10 @@ export function normalizeRoster(payload: unknown, requestedId: number): TargetMa
     if (matches.length !== 1) return { slot, heroName: 'Герой неизвестен', missing: matches.length ? 'ambiguous' : 'roster_missing' };
     const id = matches[0].account_id;
     const name = option?.playerName ?? (typeof matches[0].personaname === 'string' ? String(matches[0].personaname).slice(0, 120) : undefined);
-    return { slot, heroName: option?.heroName.replace(/^Hero #/, 'Герой №') ?? 'Герой неизвестен', name: name?.slice(0, 120), ...(accountId(id) ? { accountId: id } : { missing: 'anonymous' as const }) };
+    const heroKey = option ? getHeroKeyById(option.heroId) ?? undefined : undefined;
+    return { slot, heroName: option?.heroName.replace(/^Hero #/, 'Герой №') ?? 'Герой неизвестен',
+      heroId: option?.heroId, heroKey: getHeroPortraitUrl(heroKey) ? heroKey : undefined,
+      name: name?.slice(0, 120), ...(accountId(id) ? { accountId: id } : { missing: 'anonymous' as const }) };
   });
   const ids = players.flatMap((player) => player.accountId ? [player.accountId] : []);
   for (const player of players) {
@@ -112,7 +116,8 @@ export function uniquePlayers(rows: Encounter[]) {
 
 export function sortEncounters(rows: Encounter[], results: Results, days: WindowDays, sort: Sort) {
   return [...rows].sort((a, b) => {
-    if (sort === 'name') return (a.player.name ?? a.player.heroName).localeCompare(b.player.name ?? b.player.heroName, 'ru') || a.key.localeCompare(b.key);
+    if (sort === 'name') return (resultFor(a, results)?.name ?? a.player.name ?? a.player.heroName)
+      .localeCompare(resultFor(b, results)?.name ?? b.player.name ?? b.player.heroName, 'ru') || a.key.localeCompare(b.key);
     if (sort === 'rate_asc' || sort === 'rate_desc') {
       const ar = resultFor(a, results)?.samples[days].rate;
       const br = resultFor(b, results)?.samples[days].rate;

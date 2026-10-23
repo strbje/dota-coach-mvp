@@ -89,3 +89,38 @@ test('CSV matches sorted visible results, includes samples/final encounter count
   assert.equal(csvCell(-12.5), '"-12,5"');
   assert.equal(rows.length, 18); assert.equal(rows.at(-1)?.player.accountId !== undefined, true);
 });
+
+
+test('canonical hero metadata survives anonymous rosters and is never assigned to a unique series participant', async () => {
+  const { normalizeHeroes } = await import('../providers/opendotaConstantsProvider');
+  const { setHeroConstants, getHeroPortraitUrl } = await import('../data/heroConstants');
+  const constants = normalizeHeroes({ 42: { id: 42, name: 'npc_dota_hero_skeleton_king', localized_name: 'Wraith King' }, 54: { id: 54, name: 'npc_dota_hero_life_stealer', localized_name: 'Lifestealer' } });
+  setHeroConstants(constants);
+  const raw = fixtureMatch();
+  raw.players[1].hero_id = 42; raw.players[1].account_id = 4294967295;
+  const anonymous = normalizeRoster(raw, raw.match_id).players[1];
+  assert.equal(anonymous.heroId, 42); assert.equal(anonymous.heroKey, 'skeleton_king');
+  assert.equal(anonymous.heroName, 'Wraith King'); assert.equal(anonymous.accountId, undefined);
+  assert.match(getHeroPortraitUrl(anonymous.heroKey)!, /heroes\/skeleton_king.png$/);
+  for (const key of [undefined, '42', 'Wraith King', '../axe', 'https://example.com/axe']) assert.equal(getHeroPortraitUrl(key), undefined);
+  const missing = normalizeRoster({ ...raw, players: [] }, raw.match_id).players[0];
+  assert.equal(missing.heroId, undefined); assert.equal(missing.heroKey, undefined);
+  setHeroConstants(normalizeHeroes({ 42: { id: 42, localized_name: 'Wraith King' } }));
+  const withoutKey = normalizeRoster(raw, raw.match_id).players[1];
+  assert.equal(withoutKey.heroName, 'Wraith King'); assert.equal(withoutKey.heroId, 42); assert.equal(withoutKey.heroKey, undefined);
+  const plan = fixturePlan('series');
+  plan.matches[0].match!.players[1].heroId = 42;
+  plan.matches[1].match!.players[5].heroId = 54;
+  const person = uniquePlayers(encounters(plan)).find((p) => p.accountId === 1001)!;
+  assert.equal('heroId' in person, false); assert.equal('heroKey' in person, false);
+});
+
+test('name sorting uses the displayed profile name and stays ordered within each side', () => {
+  const plan = fixturePlan(); const rows = encounters(plan, 0); const results = fixtureResults(plan);
+  for (const result of Object.values(results)) result.name = `Игрок ${10000 - result.accountId}`;
+  const sorted = sortEncounters(rows, results, 7, 'name');
+  for (const side of ['with', 'against']) {
+    const names = sorted.filter((row) => row.side === side).map((row) => results[resultKey(row.matchId, row.player.accountId!)].name!);
+    assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b, 'ru')));
+  }
+});

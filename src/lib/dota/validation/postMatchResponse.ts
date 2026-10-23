@@ -10,6 +10,7 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
   const review = candidate.review;
   const observation = candidate.training?.observation;
   const goal = candidate.training?.goal;
+  const laneFacts = candidate.laneFacts;
   return Number.isFinite(candidate.matchId)
     && typeof candidate.hero === 'string'
     && Boolean(candidate.grades && typeof candidate.grades === 'object')
@@ -19,6 +20,9 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
       && (priority.target === undefined || Boolean(priority.target && typeof priority.target.text === 'string')))
     && Array.isArray(candidate.itemTimings)
     && Number.isFinite(candidate.durationSeconds)
+    && (laneFacts === undefined || Boolean(laneFacts && typeof laneFacts === 'object'
+      && (laneFacts.deathsAt10 === undefined || Number.isInteger(laneFacts.deathsAt10) && laneFacts.deathsAt10 >= 0)
+      && (laneFacts.efficiencyPct === undefined || Number.isFinite(laneFacts.efficiencyPct) && laneFacts.efficiencyPct >= 0)))
     && Boolean(review && typeof review.headline === 'string' && typeof review.summary === 'string'
       && Array.isArray(review.factors) && review.factors.every((factor) => factor && typeof factor.id === 'string'
         && typeof factor.title === 'string' && typeof factor.fact === 'string' && typeof factor.meaning === 'string'

@@ -13,16 +13,25 @@
 .metric:first-child { border-color: var(--color-focus); }
 .metric h3 { font-size: var(--font-size-lg); }
 .number { font-size: var(--font-size-score); font-family: var(--font-heading); }
+.sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); align-items: start; }
+.side { min-width: 0; display: grid; gap: var(--space-4); }
+.sideHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
+.comparisonNote { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.portrait { width: var(--space-12); aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: var(--radius-control); overflow: hidden; background: var(--color-surface-raised); color: var(--color-text-secondary); }
+.portrait img { width: 100%; height: 100%; object-fit: cover; }
 .roster { display: grid; gap: var(--space-2); }
 .participant { border-top: var(--border-width) solid var(--color-border); }
-.participant summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); cursor: pointer; padding: var(--space-4) 0; min-height: var(--control-size); }
-.participant summary::before { content: '+'; color: var(--color-focus); }
-.participant[open] summary::before { content: '−'; }
+.participant summary { display: grid; grid-template-columns: var(--space-12) minmax(0, 180px) auto; justify-content: start; align-items: center; gap: var(--space-2) var(--space-3); cursor: pointer; padding: var(--space-3) 0; min-height: var(--control-size); }
+.participant summary::marker { content: ''; }
+.participant summary::-webkit-details-marker { display: none; }
+.identity::after { content: 'Подробнее +'; color: var(--color-focus); font-size: var(--font-size-sm); }
+.participant[open] .identity::after { content: 'Свернуть −'; }
 .identity { display: grid; flex: 1; min-width: 0; overflow-wrap: anywhere; gap: var(--space-1); }
-.miniStats { display: flex; gap: var(--space-4); }
+.miniStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); font-variant-numeric: tabular-nums; }
 .miniStats > span { display: grid; gap: var(--space-1); font-size: var(--font-size-sm); }
+.sampleValue { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2); }
 .miniStats strong { font-size: var(--font-size-lg); }
-.participantStatus { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.participantStatus { grid-column: 2 / -1; font-size: var(--font-size-sm); display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .participantBody { display: grid; gap: var(--space-4); padding: 0 0 var(--space-4) var(--space-6); overflow-wrap: anywhere; }
 .samples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
 .samples h3 { font-size: var(--font-size-lg); }
@@ -32,6 +41,7 @@
 .people span { display: block; font-size: var(--font-size-sm); font-weight: 400; margin-top: var(--space-2); }
 .method { max-width: var(--text-measure); }
 .progress { width: 100%; accent-color: var(--color-focus); }
+@media (max-width: 1100px) { .sides { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
   .form, .samples { grid-template-columns: minmax(0, 1fr); }
@@ -39,10 +49,13 @@
   .comparison > :last-child { grid-column: 1 / -1; }
   .metric { padding-left: var(--space-2); }
   .participant summary { gap: var(--space-3); }
-  .miniStats { flex-basis: 100%; }
-  .participant summary > :last-child { flex-basis: 100%; }
+  .participant summary { grid-template-columns: var(--space-12) minmax(0, 1fr); }
+  .miniStats { grid-column: 2; }
+  .participantStatus { grid-column: 1 / -1; }
   .participantBody { padding-left: 0; }
   .people th, .people td { padding: var(--space-3) var(--space-1); }
   .toolbar { align-items: stretch; }
   .toolbar > * { flex-basis: 100%; }
 }
+
+.people summary { min-height: var(--control-size); cursor: pointer; font-weight: 400; font-size: var(--font-size-sm); padding-block: var(--space-2); }

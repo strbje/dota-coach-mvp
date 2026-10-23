@@ -185,7 +185,7 @@ export default function PostMatchPage() {
           </div>
         </Panel>
       </div>
-      {analysis ? <PostMatchReport analysis={analysis} /> : null}
+      {analysis ? <PostMatchReport key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} analysis={analysis} /> : null}
     </PageContainer>
   );
 }

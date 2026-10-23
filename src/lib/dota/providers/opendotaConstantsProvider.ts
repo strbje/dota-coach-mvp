@@ -60,7 +60,18 @@ export async function getGoldReasonConstants(): Promise<Record<string, GoldReaso
 export function normalizeHeroes(heroes: unknown): { heroKeyById: Record<number, string>; heroNameByKey: Record<string, string> } {
   const heroKeyById: Record<number, string> = {}; const heroNameByKey: Record<string, string> = {};
   if (!heroes || typeof heroes !== 'object') return { heroKeyById, heroNameByKey };
-  for (const [key, value] of Object.entries(heroes as Record<string, unknown>)) { if (!key || !value || typeof value !== 'object') continue; const raw=value as Record<string, unknown>; const id=typeof raw.id==='number'?raw.id:undefined; const localizedName=typeof raw.localized_name==='string'?raw.localized_name:undefined; if(!id||id<=0) continue; heroKeyById[id]=key; if(localizedName) heroNameByKey[key]=localizedName; }
+  for (const [entryKey, value] of Object.entries(heroes as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object') continue;
+    const raw = value as Record<string, unknown>;
+    const id = typeof raw.id === 'number' ? raw.id : undefined;
+    // /constants/heroes is keyed by numeric ID; `name` holds the canonical asset key.
+    const candidate = typeof raw.name === 'string' ? raw.name.replace(/^npc_dota_hero_/, '') : entryKey;
+    if (!id || !Number.isSafeInteger(id) || id <= 0) continue;
+    // Keep a known display name even if canonical image metadata is absent.
+    const key = /^[a-z][a-z0-9_]*$/.test(candidate) ? candidate : String(id);
+    heroKeyById[id] = key;
+    if (typeof raw.localized_name === 'string') heroNameByKey[key] = raw.localized_name;
+  }
   return { heroKeyById, heroNameByKey };
 }
 export async function ensureOpenDotaConstantsLoaded(): Promise<void> {

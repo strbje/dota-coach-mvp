@@ -1,20 +1,21 @@
 'use client';
+import { useState } from 'react';
+import { getHeroPortraitUrl } from '@/lib/dota/data/heroConstants';
 import { Badge, Panel } from '@/components/ui';
 import { groupMean, resultFor, seriesMean, uniquePlayers } from '@/lib/dota/winrates/calculation';
 import { coverageText, dateMsk, percent, points, rowStatus, statusText } from '@/lib/dota/winrates/presentation';
-import type { Encounter, Plan, Results, WindowDays } from '@/lib/dota/winrates/types';
+import type { Encounter, Plan, Results, RosterPlayer, WindowDays } from '@/lib/dota/winrates/types';
 import styles from './winrates.module.css';
 
-function Comparison({ rows, results, days }: { rows: Encounter[]; results: Results; days: WindowDays }) {
-  const allies = groupMean(rows, results, days, 'with');
-  const opponents = groupMean(rows, results, days, 'against');
-  return <div className={styles.comparison}>
-    {([{ label: 'Союзники', value: allies }, { label: 'Соперники', value: opponents }]).map(({ label, value }) => <div key={label} className={styles.metric}>
-      <h3>{label}</h3><strong className={styles.number}>{percent(value.mean)}</strong>
-      <span>Данные {value.available} из {value.expected}</span><span className="muted">Полных историй: {value.complete}</span>
-    </div>)}
-    <div className={styles.metric}><h3>Разница</h3><strong className={styles.number}>{points(allies.mean, opponents.mean)}</strong><span className="muted">Союзники минус соперники</span></div>
-  </div>;
+function HeroPortrait({ player }: { player: RosterPlayer }) {
+  const [failed, setFailed] = useState(false);
+  const src = getHeroPortraitUrl(player.heroKey);
+  return <span className={styles.portrait} aria-hidden="true">
+    {src && !failed
+      // eslint-disable-next-line @next/next/no-img-element
+      ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+      : <span>{player.heroId ? '◇' : '?'}</span>}
+  </span>;
 }
 
 export function WinrateReport({ plan, rows, results, days }: { plan: Plan; rows: Encounter[]; results: Results; days: WindowDays }) {
@@ -36,27 +37,36 @@ export function WinrateReport({ plan, rows, results, days }: { plan: Plan; rows:
       return <Panel key={entry.matchId} className="stack">
         <div className={styles.toolbar}><h2>Матч {entry.matchId}</h2><span className="muted">{dateMsk(entry.match?.startTime)} МСК · {days} дней</span></div>
         {entry.error ? <p>{statusText[entry.error]}. Состав не получен; матч не включён в средние.</p> : <>
-          <Comparison rows={matchRows} results={results} days={days} />
-          <p className="muted">Среднее доступных процентов участников. Выбранный игрок исключён. Неполные истории входят в среднее и отмечены в деталях.</p>
-          <div className={styles.roster}>
-            {matchRows.map((row) => {
+          <p className={styles.comparisonNote}>Разница сторон: <strong>{points(groupMean(matchRows, results, days, 'with').mean, groupMean(matchRows, results, days, 'against').mean)}</strong> · союзники минус соперники</p>
+          <div className={styles.sides}>
+            {(['with', 'against'] as const).map((side) => {
+              const value = groupMean(matchRows, results, days, side);
+              return <section className={styles.side} key={side} aria-label={side === 'with' ? 'Союзники' : 'Соперники'}>
+                <div className={styles.metric}>
+                  <div className={styles.sideHeading}><h3>{side === 'with' ? 'Союзники' : 'Соперники'}</h3><strong className={styles.number}>{percent(value.mean)}</strong><span>за {days} дней</span></div>
+                  <span className="muted">Данные {value.available} из {value.expected} · полных историй: {value.complete}</span>
+                </div>
+                <div className={styles.roster}>
+            {matchRows.filter((row) => row.side === side).map((row) => {
               const result = resultFor(row, results);
               const person = people.find((item) => item.accountId === row.player.accountId);
               const complete = result && result.samples[7].complete && result.samples[30].complete;
               return <details key={row.key} className={styles.participant}>
                 <summary>
-                  <span className={styles.identity}><strong>{result?.name ?? row.player.name ?? row.player.heroName}</strong><span className="muted">{row.side === 'with' ? 'Союзник' : 'Соперник'} · {row.player.heroName}</span></span>
+                  <HeroPortrait key={`${row.player.heroId}:${row.player.heroKey}`} player={row.player} />
+                  <span className={styles.identity}><strong>{result?.name ?? row.player.name ?? row.player.heroName}</strong><span className="muted">{row.player.heroName}</span></span>
                   <span className={styles.miniStats}>{([7, 30] as const).map((window) => <span key={window}>
-                    <span>{window} дней</span><strong>{percent(result?.samples[window].rate)}</strong>
+                    <span>{window} дней</span><span className={styles.sampleValue}><strong>{percent(result?.samples[window].rate)}</strong><span title="Победы / игры">{result ? `${result.samples[window].wins} / ${result.samples[window].games}` : '— / —'}</span></span>
                     {result ? <span className="muted" title={coverageText(result.samples[window])}>{result.samples[window].complete ? 'Полное окно' : 'Неполное окно'}</span> : null}
                   </span>)}</span>
-                  <span className={styles.participantStatus}>
-                    <Badge tone={result?.status === 'ready' && complete ? 'info' : 'unknown'}>{result?.status === 'ready' && !complete ? 'Неполная выборка' : rowStatus(row, results)}</Badge>
+                  {result?.status !== 'ready' || !complete || result.refreshError || plan.query.mode === 'series' ? <span className={styles.participantStatus}>
+                    {result?.status !== 'ready' || !complete ? <Badge tone="unknown">{result?.status === 'ready' ? 'Неполная выборка' : rowStatus(row, results)}</Badge> : null}
                     {result?.refreshError ? <Badge tone="warning">Ошибка обновления</Badge> : null}
-                  </span>
+                    {plan.query.mode === 'series' ? <span>Вместе {person?.with.length ?? '—'} · против {person?.against.length ?? '—'}</span> : null}
+                  </span> : null}
                 </summary>
                 <div className={styles.participantBody}>
-                  <p>{row.player.accountId ? `Account ID ${row.player.accountId}` : rowStatus(row, results)} · Вместе {person?.with.length ?? '—'} / против {person?.against.length ?? '—'}</p>
+                  <p>{row.player.accountId ? `Account ID ${row.player.accountId}` : rowStatus(row, results)}</p>
                   {result ? <>
                     {result.refreshError ? <p role="status">{statusText[result.refreshError]}. Показана ранее полученная выборка; время её получения сохранено. Повторите обновление позже.</p> : null}
                     {result.status === 'private' ? <p>OpenDota ограничил историю: она закрыта или источнику не удалось её обновить. Причину источник не уточнил.</p> : null}
@@ -74,7 +84,11 @@ export function WinrateReport({ plan, rows, results, days }: { plan: Plan; rows:
                 </div>
               </details>;
             })}
+                </div>
+              </section>;
+            })}
           </div>
+          <p className={styles.comparisonNote}>У каждого процента — победы / игры. Среднее доступных процентов участников; выбранный игрок исключён. Неполные истории тоже входят в среднее; каждое окно отмечено отдельно.</p>
         </>}
       </Panel>;
     })}
@@ -82,8 +96,8 @@ export function WinrateReport({ plan, rows, results, days }: { plan: Plan; rows:
       <h2>Уникальные участники · {people.length}</h2>
       <p className="muted">{rows.length} встреч в полученных составах, из них {rows.filter((row) => !row.player.accountId).length} без известного аккаунта. Повторный игрок занимает одну строку. Счётчики итоговые для показанной серии; выбранный игрок исключён.</p>
       <table className={styles.people}><caption>Встречи вместе и против по игрокам</caption><thead><tr><th scope="col">Игрок</th><th scope="col">Вместе</th><th scope="col">Против</th></tr></thead>
-        <tbody>{people.map((person) => <tr key={person.accountId}><th scope="row">{person.name ?? `Игрок ${person.accountId}`}<span className="muted">ID {person.accountId}</span></th>
-          {(['with', 'against'] as const).map((side) => <td key={side}><strong>{person[side].length}</strong><span className="muted">Match ID: {person[side].join(', ') || '—'}</span></td>)}
+        <tbody>{people.map((person) => <tr key={person.accountId}><th scope="row">{person.name ?? `Игрок ${person.accountId}`}<details><summary>Аккаунт и матчи</summary><span className="muted">ID {person.accountId}</span><span>Вместе: {person.with.join(', ') || '—'}</span><span>Против: {person.against.join(', ') || '—'}</span></details></th>
+          {(['with', 'against'] as const).map((side) => <td key={side}><strong>{person[side].length}</strong></td>)}
         </tr>)}</tbody>
       </table>
     </Panel> : null}

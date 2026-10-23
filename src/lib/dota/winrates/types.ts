@@ -20,7 +20,7 @@ export type ParticipantResult = {
   fetchedAt: number; expiresAt: number; retryAfter?: number;
 };
 export type RosterPlayer = {
-  slot: number; heroName: string; name?: string; accountId?: number;
+  slot: number; heroName: string; heroId?: number; heroKey?: string; name?: string; accountId?: number;
   missing?: 'anonymous' | 'roster_missing' | 'ambiguous';
 };
 export type TargetMatch = { matchId: number; startTime: number; duration: number; players: RosterPlayer[]; selectedSlot?: number };

@@ -4,7 +4,7 @@ import type { OpenDotaMatchResponse } from '../../types/providers';
 import { setHeroConstants } from '../../data/heroConstants';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean } = {}) {
+export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean } = {}) {
   setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
@@ -24,6 +24,12 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
     radiant_xp_adv: times.map((_, i) => i < 15 ? i * 120 : 1800 - (i - 15) * 470),
     objectives: [{ type: 'building_kill', time: 1120, key: 'npc_dota_badguys_tower1_mid' }, { type: 'building_kill', time: 1440, key: 'npc_dota_goodguys_tower2_mid' }, { type: 'CHAT_MESSAGE_ROSHAN_KILL', time: 1620 }, { type: 'building_kill', time: 2200, key: 'npc_dota_goodguys_melee_rax_mid' }]
   };
+  if (options.temporal) {
+    payload.radiant_gold_adv = times.map((_, i) => [0, 100, NaN, 300][i] ?? NaN);
+    payload.radiant_xp_adv = times.map((_, i) => [0, 150, 230, 400][i] ?? NaN);
+    selected.purchase_log[0].time = -30;
+    if (Array.isArray(payload.objectives)) payload.objectives.push({ type: 'building_kill', time: 1405, key: 'npc_dota_badguys_tower2_top' });
+  }
   if (options.partial || options.empty) {
     delete payload.radiant_gold_adv;
     delete payload.radiant_xp_adv;
