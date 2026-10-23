@@ -27,7 +27,7 @@ const now = Math.floor(Date.now() / 1000);
 let fixtures;
 try {
   fixtures = {
-    ready: await syntheticPostMatch(), low: await syntheticPostMatch({ lowLane: true }),
+    ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
     next: await syntheticPostMatch({ matchId: 9000067, startTime: now + 60, lastHitsAt10: 58 }),
     missing: await syntheticPostMatch({ matchId: 9000068, startTime: now + 120, empty: true }),
@@ -42,13 +42,6 @@ try {
 fixtures.fourthMissing = structuredClone(fixtures.fourth);
 delete fixtures.fourthMissing.analysis.training.observation.lastHitsAt10;
 delete fixtures.fourthMissing.analysis.training.goal;
-fixtures.temporal = structuredClone(fixtures.ready);
-fixtures.temporal.analysis.review.advantage = [{ timeSeconds: 0, gold: 0, xp: 0 }, { timeSeconds: 60, gold: 100, xp: 150 }, { timeSeconds: 120, xp: 230 }, { timeSeconds: 180, gold: 300, xp: 400 }];
-fixtures.temporal.analysis.itemTimings[0].timeSeconds = -30;
-fixtures.temporal.analysis.itemTimings[0].time = '-00:30';
-fixtures.temporal.analysis.review.timeline.find((e) => e.id === 'item-phase_boots').timeSeconds = -30;
-fixtures.temporal.analysis.review.timeline.push({ id: 'close-objective', kind: 'objective', timeSeconds: 1405, label: 'Строение · синтетический пример' });
-fixtures.temporal.analysis.review.timeline.sort((a, b) => a.timeSeconds - b.timeSeconds);
 fixtures.noDeaths = structuredClone(fixtures.ready);
 delete fixtures.noDeaths.analysis.laneFacts.deathsAt10;
 fixtures.rescored = structuredClone(fixtures.ready);
@@ -149,6 +142,9 @@ try {
   assert.equal(await page.getByRole('heading', { name: 'Твои ключевые покупки', exact: true }).isVisible(), true);
   await load('temporal'); await reportReady();
   const chart = page.locator('#team-advantage');
+  assert.match(fixtures.temporal.analysis.review.summary, /3:00/);
+  assert.doesNotMatch(fixtures.temporal.analysis.review.summary, /38:00/);
+  assert.match(fixtures.temporal.analysis.review.coverageNote, /конец матча не покрыт/);
   assert.equal(await chart.locator('polyline').count(), 1, 'the isolated point and separate segment must not connect across a missing gold minute');
   assert.equal(await chart.locator('circle').count(), 1);
   assert.match(await chart.innerText(), /-0:30/);
@@ -161,7 +157,7 @@ try {
   await page.waitForFunction(() => document.activeElement?.id === 'death-4');
   await chart.getByRole('button', { name: /23:25 · Black King Bar/ }).click();
   assert.match(await chart.getByRole('region', { name: 'Выбранный отрезок' }).innerText(), /Black King Bar/);
-  assert.match(await chart.getByRole('region', { name: 'Выбранный отрезок' }).innerText(), /Строение/);
+  assert.match(await chart.getByRole('region', { name: 'Выбранный отрезок' }).innerText(), /Разрушено строение Dire/);
   await chart.getByText(/^Все события по фильтрам/).click();
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -173,6 +169,8 @@ try {
   }
   for (const label of ['Покупки', 'Мои смерти', 'Объекты', 'Линия к 10:00']) await page.getByLabel(label, { exact: true }).uncheck();
   await page.getByText('Все события скрыты фильтрами.', { exact: true }).waitFor();
+  await load('ready'); await reportReady();
+  for (const label of ['Покупки', 'Мои смерти', 'Объекты', 'Линия к 10:00']) await page.getByLabel(label, { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).first().click();
   await page.waitForFunction(() => document.activeElement?.id === 'team-advantage');
   for (const label of ['Покупки', 'Мои смерти', 'Объекты']) assert.equal(await page.getByLabel(label, { exact: true }).isChecked(), true);
