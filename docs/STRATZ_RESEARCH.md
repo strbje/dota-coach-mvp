@@ -1,12 +1,14 @@
 # STRATZ_RESEARCH
 
-## Coordinate study — current status (2026-10-24 MSK, issue #50)
+## Coordinate study — current status (2026-11-03 capture, issue #50)
 
 See the [coordinate research protocol](research/stratz-coordinates/README.md) for the
-post-PR #71/#72 evidence review, verified archive hashes, new OpenDota observations,
-unavailable STRATZ/replay checks, exact episodes and minimal PowerShell capture commands.
-No real STRATZ-to-replay coordinate pair has yet been validated. Historical playback
-counts below are not a coordinate acceptance test. `productReady=false` remains unchanged.
+post-PR #71/#72 evidence review, verified archive hashes and OpenDota observations.
+The [November 3 follow-up](research/stratz-coordinates/2026-11-03.md) processes the owner's
+real STRATZ capture: 2624 usable timed pairs, 8/9 temporal death associations, incomplete
+CS/objective coordinates and non-farm gold events. Replay evidence is still missing;
+no STRATZ-to-replay coordinate pair has been validated. The report provides exact episodes
+and corrected PowerShell replay commands. `productReady=false` remains unchanged.
 
 ## Confirmed status
 - Endpoint `https://api.stratz.com/graphql` works.

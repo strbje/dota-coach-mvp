@@ -1,4 +1,25 @@
-# #50 — сверка координат STRATZ, 24 октября 2026 (МСК)
+# #50 — сверка координат STRATZ
+
+## Текущий результат — 3 ноября 2026 (МСК)
+
+Получена реальная локальная выгрузка владельца для обоих WK: **2624 полные
+позиционные пары**, 9 смертей, CS, gold и objective streams. Повторный STRATZ-запрос
+для этих матчей сейчас не нужен. Существующий adapter выполнен на обоих ответах:
+8/9 смертей привязаны по времени; у двух из восьми XY ближайшей позиции отличается
+от XY события смерти. Это сравнение потоков одного провайдера, **не сверка с реплеем**.
+
+Актуальные таблицы, происхождение, выводы и оставшиеся эпизоды находятся в
+[продолжении от 3 ноября](2026-11-03.md), числовой протокол — в
+[observations-2026-11-03.json](observations-2026-11-03.json).
+Независимых пар «STRATZ + реплей» по-прежнему **0**. `productReady=false`,
+`structural_only`, формулы, порог 5s и продуктовый UI не менялись.
+
+Далее сохранён **отчёт этапа 24 октября**: его утверждения о недоступных X/Y и
+goldEvents относятся к прежним выгрузкам. Новая выгрузка устраняет этот пробел,
+но не подтверждает ориентацию карты, world projection, часы и семантику всех потоков.
+Команды скачивания реплеев внизу обновлены 3 ноября после ошибки копирования.
+
+## Исходный этап — 24 октября 2026 (МСК)
 
 База исследования: `main` **9d6daa5b72edc0769cdc8c48e44b685605fd0a7d**, после PR #71/#72.
 Прочитаны актуальный #50, AGENTS.md, координатный нормализатор и его тесты, STRATZ
@@ -210,26 +231,30 @@ if (Test-Path $capturePath) {
 сети (успешное скачивание из этой среды не подтверждено):
 
 ```powershell
-cd D:\dota-coach
-$replayDir = Join-Path $env:TEMP 'dota50-replays'
-New-Item -ItemType Directory -Force $replayDir | Out-Null
-$replays = @{
-    '9019592113' = 'http://replay185.valve.net/570/9019592113_1795309280.dem.bz2'
-    '9003795847' = 'http://replay273.valve.net/570/9003795847_131812823.dem.bz2'
+cd d:\dota-coach
+new-item -itemtype directory -force "$env:temp\dota50-replays" | out-null
+cd "$env:temp\dota50-replays"
+curl.exe --fail --location --connect-timeout 10 --max-time 180 --output 9019592113.dem.bz2.part http://replay185.valve.net/570/9019592113_1795309280.dem.bz2
+if ($lastexitcode -eq 0) {
+    move-item -force 9019592113.dem.bz2.part 9019592113.dem.bz2
+    get-filehash -algorithm sha256 9019592113.dem.bz2
 }
-foreach ($matchId in $replays.Keys) {
-    $file = Join-Path $replayDir "$matchId.dem.bz2"
-    if (Test-Path $file) { Write-Host "Уже есть: $file"; continue }
-    curl.exe --fail --location --connect-timeout 10 --max-time 180 --output "$file.part" $replays[$matchId]
-    if ($LASTEXITCODE -eq 0) {
-        Move-Item "$file.part" $file
-        Get-FileHash -Algorithm SHA256 $file
-    } else {
-        Remove-Item "$file.part" -ErrorAction SilentlyContinue
-        Write-Host "Реплей $matchId не скачан; HTTP/transport ошибку сохранить отдельно."
-    }
+curl.exe --fail --location --connect-timeout 10 --max-time 180 --output 9003795847.dem.bz2.part http://replay273.valve.net/570/9003795847_131812823.dem.bz2
+if ($lastexitcode -eq 0) {
+    move-item -force 9003795847.dem.bz2.part 9003795847.dem.bz2
+    get-filehash -algorithm sha256 9003795847.dem.bz2
 }
 ```
+
+В предоставленном логе исчезли заглавные латинские буквы (`Join-Path` → `oin-ath`,
+`$LASTEXITCODE` → `$`, `D:` → `:`). Причина повреждения текста не установлена.
+Этот блок целиком в нижнем регистре и без цикла; вставлять без приглашений `PS ...>`.
+PowerShell на Windows допускает такой регистр команд и `$env:temp`.
+Готовый `.dem.bz2` появляется только после успешного curl; `.part` — не готовый реплей.
+Скачивание/распаковка/просмотр этих файлов пока не подтверждены. Ответ 404/410 означает
+недоступность по указанному URL; 403/503 или timeout нужно записать отдельно, не объявляя
+реплей удалённым. В свежем STRATZ-ответе `replaySalt=null`, поэтому новые ссылки из него
+не восстановить. Здесь используются ранее сохранённые URLs OpenDota.
 
 Минимальный визуальный остаток — кадры/короткие клипы перечисленных эпизодов с видимыми
 Match ID, выбранным героем, игровыми часами и всей миникартой; плюс точная версия карты.

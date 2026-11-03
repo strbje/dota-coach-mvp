@@ -1,0 +1,793 @@
+{
+  "reviewDateMsk": "2026-11-03",
+  "sourceCodeCommit": "ccc75edefafd8ce393a6ccc0f47a2177e5a8e34e",
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "pairedStratzReplayChecks": 0,
+  "sourceCapture": {
+    "filename": "stratz-coordinates-20261103-234056.json",
+    "bytes": 1078641,
+    "sha256": "2e8b153a247b862d8f713c41e069891fe0c25627b4be06226c0eed2ba79501b0",
+    "capturedAt": "2026-11-03T20:41:05.432Z",
+    "captureStatus": "complete",
+    "planOmitted": []
+  },
+  "collector": {
+    "path": "scripts/probe-stratz-coordinates.mjs",
+    "lfSha256": "145a4999946abf017f2921e8cd9d8ca8736ce5d424e6000fc473b26626709601",
+    "capturedCrlfSha256": "33f807ad0b28f09d67b4f05c90c3a0f9e00a8044cff5d8d9b0ef52b19d7384c6",
+    "crlfHashMatches": true
+  },
+  "method": {
+    "adapter": "src/lib/dota/adapters/normalizeStratzMatch.ts",
+    "normalizer": "src/lib/dota/normalize/stratzCoordinates.ts",
+    "execution": "Existing TypeScript compiled with repository TypeScript 5.8.3; normalizeStratzMatch({match: probe.raw}, {playerSlot}) executed on both real selected-player captures.",
+    "indices": "Zero-based indices in the original selected-player stream; no deduplication.",
+    "nearest": "Finite timed grid pairs only, minimum absolute time delta; original input order breaks ties, verified against actual adapter output.",
+    "rawXYDelta": "Nearest player position minus event-owned position; same provider, not independent spatial error.",
+    "projections": "Actual output of existing normalizer; candidate arithmetic only, no validated world/map point.",
+    "independentExpectedPoint": null,
+    "independentSpatialError": null,
+    "oldOpenDota": "observations.json, fetched 2026-10-23; ordered death times matched by selected slot/count/order, without changing either clock.",
+    "responseDigests": "Original full HTTP response hashes recorded by collector; only selected player is exported, so full response hashes cannot be recomputed from this file."
+  },
+  "schemaCaptures": [
+    {
+      "startedAt": "2026-11-03T20:40:57.118Z",
+      "completedAt": "2026-11-03T20:40:57.703Z",
+      "httpStatus": 200,
+      "status": "captured",
+      "errors": [],
+      "responseBytes": 25071,
+      "responseSha256": "503ae3cecf51a1dc0aece77968a24e1c6622639d7b05dd50c10fde57a4389790"
+    },
+    {
+      "startedAt": "2026-11-03T20:40:57.703Z",
+      "completedAt": "2026-11-03T20:40:57.917Z",
+      "httpStatus": 200,
+      "status": "captured",
+      "errors": [],
+      "responseBytes": 10226,
+      "responseSha256": "e5a9e07787e9346699e123bf0952bf26ca873c9444b312dacc8d25d059be7a49"
+    },
+    {
+      "startedAt": "2026-11-03T20:40:57.918Z",
+      "completedAt": "2026-11-03T20:40:58.129Z",
+      "httpStatus": 200,
+      "status": "captured",
+      "errors": [],
+      "responseBytes": 2354,
+      "responseSha256": "3c5ab3fb4887a6b9be64bac6706e34d8fd334dde3505272b207746b81f0ea320"
+    }
+  ],
+  "schemaNotes": {
+    "positionTimeXY": "Int!",
+    "eventOwnedXY": "Nullable Int",
+    "relevantFieldDescriptions": "null",
+    "goldCoordinates": "No coordinate fields in captured GoldDetailType",
+    "goldReasonEnum": [
+      "OTHER",
+      "DEATH",
+      "BUY_BACK",
+      "ABADONS",
+      "SELLS",
+      "STRUCTURES",
+      "HEROES",
+      "CREEPS",
+      "NEUTRAL",
+      "ROSHAN",
+      "COURIERS",
+      "BOUNTY",
+      "DOOM_DEVOURER",
+      "WARD_DESTRUCTION",
+      "COURIERS_2",
+      "UKNOWN"
+    ],
+    "buildingTypeEnum": ["FORT", "TOWER", "BARRACKS", "HEALER", "OUTPOST"],
+    "mapLocationEnum": [
+      "RADIANT_BASE",
+      "RADIANT_OFF_LANE",
+      "RADIANT_MID_LANE",
+      "RADIANT_SAFE_LANE",
+      "DIRE_BASE",
+      "DIRE_OFF_LANE",
+      "DIRE_MID_LANE",
+      "DIRE_SAFE_LANE",
+      "RIVER",
+      "ROSHAN",
+      "ROAMING",
+      "RADIANT_FOUNTAIN",
+      "DIRE_FOUNTAIN"
+    ]
+  },
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "playerSlot": 129,
+      "isRadiant": false,
+      "startDateTime": 1790547169,
+      "durationSeconds": 2278,
+      "gameVersionId": 190,
+      "replaySalt": null,
+      "clusterId": 185,
+      "mapBuild": null,
+      "replaySha256": null,
+      "request": {
+        "startedAt": "2026-11-03T20:40:58.130Z",
+        "completedAt": "2026-11-03T20:41:02.981Z",
+        "httpStatus": 200,
+        "status": "captured",
+        "errors": [],
+        "responseBytes": 1304774,
+        "responseSha256": "546d1a5715bfd63f6efa6763c111c3e0ba374ef8b37a0eac9240c4258fe4f0be"
+      },
+      "positions": {
+        "records": 1413,
+        "completeFinitePairs": 1413,
+        "usableTimedGridPairs": 1413,
+        "oneFiniteAxis": 0,
+        "neitherFiniteAxis": 0,
+        "outOfRangePairs": 0,
+        "fractionalPairs": 0,
+        "bothEvenPairs": 1413,
+        "timeRange": [-89, 2250],
+        "xRange": [64, 192],
+        "yRange": [62, 192],
+        "uniqueTimes": 1413,
+        "strictlyIncreasingTimes": true,
+        "gapsOver5Seconds": 50,
+        "largestGap": {"beforeIndex": 1321, "afterIndex": 1322, "seconds": 75},
+        "first": {"time": -89, "x": 182, "y": 178},
+        "last": {"time": 2250, "x": 168, "y": 160}
+      },
+      "deaths": {
+        "statsRecords": 7,
+        "playbackRecords": 7,
+        "sharedFieldsEqual": true,
+        "within5Seconds": 6,
+        "matchedXYDifferent": 2,
+        "rows": [
+          {
+            "eventIndex": 0,
+            "eventTime": 408,
+            "eventXY": [78, 146],
+            "eventProjection": {
+              "map": [0.3058823529411765, 0.5725490196078431],
+              "world": [-6400, 2304],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 341, "time": 408, "x": 78, "y": 146, "signedDeltaSeconds": 0},
+            "tiedNearestIndices": [341],
+            "strictlyBefore": {"index": 340, "time": 407, "x": 78, "y": 148},
+            "strictlyAfter": {"index": 342, "time": 429, "x": 182, "y": 176},
+            "adapterConfidence": "exact",
+            "adapterXY": [78, 146],
+            "nearestProjection": {
+              "map": [0.3058823529411765, 0.5725490196078431],
+              "world": [-6400, 2304],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 409,
+            "stratzMinusOpenDotaSeconds": -1
+          },
+          {
+            "eventIndex": 1,
+            "eventTime": 890,
+            "eventXY": [88, 132],
+            "eventProjection": {
+              "map": [0.34509803921568627, 0.5176470588235295],
+              "world": [-5120, 512],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 660, "time": 890, "x": 88, "y": 132, "signedDeltaSeconds": 0},
+            "tiedNearestIndices": [660],
+            "strictlyBefore": {"index": 659, "time": 889, "x": 86, "y": 132},
+            "strictlyAfter": {"index": 661, "time": 891, "x": 90, "y": 130},
+            "adapterConfidence": "exact",
+            "adapterXY": [88, 132],
+            "nearestProjection": {
+              "map": [0.34509803921568627, 0.5176470588235295],
+              "world": [-5120, 512],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 890,
+            "stratzMinusOpenDotaSeconds": 0
+          },
+          {
+            "eventIndex": 2,
+            "eventTime": 1145,
+            "eventXY": [158, 64],
+            "eventProjection": {
+              "map": [0.6196078431372549, 0.25098039215686274],
+              "world": [3840, -8192],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 781, "time": 1133, "x": 158, "y": 64, "signedDeltaSeconds": -12},
+            "tiedNearestIndices": [781],
+            "strictlyBefore": {"index": 781, "time": 1133, "x": 158, "y": 64},
+            "strictlyAfter": {"index": 782, "time": 1185, "x": 180, "y": 178},
+            "adapterConfidence": "unmatched",
+            "adapterXY": [null, null],
+            "nearestProjection": {
+              "map": [0.6196078431372549, 0.25098039215686274],
+              "world": [3840, -8192],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 1146,
+            "stratzMinusOpenDotaSeconds": -1
+          },
+          {
+            "eventIndex": 3,
+            "eventTime": 1251,
+            "eventXY": [180, 110],
+            "eventProjection": {
+              "map": [0.7058823529411765, 0.43137254901960786],
+              "world": [6656, -2304],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 836, "time": 1252, "x": 182, "y": 110, "signedDeltaSeconds": 1},
+            "tiedNearestIndices": [836],
+            "strictlyBefore": {"index": 835, "time": 1249, "x": 180, "y": 110},
+            "strictlyAfter": {"index": 836, "time": 1252, "x": 182, "y": 110},
+            "adapterConfidence": "high",
+            "adapterXY": [182, 110],
+            "nearestProjection": {
+              "map": [0.7137254901960784, 0.43137254901960786],
+              "world": [6912, -2304],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [2, 0],
+            "archivedOpenDotaTime": 1251,
+            "stratzMinusOpenDotaSeconds": 0
+          },
+          {
+            "eventIndex": 4,
+            "eventTime": 2019,
+            "eventXY": [86, 134],
+            "eventProjection": {
+              "map": [0.33725490196078434, 0.5254901960784314],
+              "world": [-5376, 768],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 1320, "time": 2019, "x": 86, "y": 134, "signedDeltaSeconds": 0},
+            "tiedNearestIndices": [1320],
+            "strictlyBefore": {"index": 1319, "time": 2017, "x": 86, "y": 138},
+            "strictlyAfter": {"index": 1321, "time": 2020, "x": 88, "y": 134},
+            "adapterConfidence": "exact",
+            "adapterXY": [86, 134],
+            "nearestProjection": {
+              "map": [0.33725490196078434, 0.5254901960784314],
+              "world": [-5376, 768],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 2019,
+            "stratzMinusOpenDotaSeconds": 0
+          },
+          {
+            "eventIndex": 5,
+            "eventTime": 2152,
+            "eventXY": [154, 118],
+            "eventProjection": {
+              "map": [0.6039215686274509, 0.4627450980392157],
+              "world": [3328, -1280],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 1359, "time": 2153, "x": 156, "y": 118, "signedDeltaSeconds": 1},
+            "tiedNearestIndices": [1359],
+            "strictlyBefore": {"index": 1358, "time": 2144, "x": 154, "y": 118},
+            "strictlyAfter": {"index": 1359, "time": 2153, "x": 156, "y": 118},
+            "adapterConfidence": "high",
+            "adapterXY": [156, 118],
+            "nearestProjection": {
+              "map": [0.611764705882353, 0.4627450980392157],
+              "world": [3584, -1280],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [2, 0],
+            "archivedOpenDotaTime": 2152,
+            "stratzMinusOpenDotaSeconds": 0
+          },
+          {
+            "eventIndex": 6,
+            "eventTime": 2255,
+            "eventXY": [168, 160],
+            "eventProjection": {
+              "map": [0.6588235294117647, 0.6274509803921569],
+              "world": [5120, 4096],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 1412, "time": 2250, "x": 168, "y": 160, "signedDeltaSeconds": -5},
+            "tiedNearestIndices": [1412],
+            "strictlyBefore": {"index": 1412, "time": 2250, "x": 168, "y": 160},
+            "strictlyAfter": null,
+            "adapterConfidence": "low",
+            "adapterXY": [168, 160],
+            "nearestProjection": {
+              "map": [0.6588235294117647, 0.6274509803921569],
+              "world": [5120, 4096],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 2255,
+            "stratzMinusOpenDotaSeconds": 0
+          }
+        ]
+      },
+      "cs": {
+        "records": 302,
+        "completeFinitePairs": 301,
+        "usableTimedGridPairs": 301,
+        "oneFiniteAxis": 0,
+        "neitherFiniteAxis": 1,
+        "outOfRangePairs": 0,
+        "fractionalPairs": 0,
+        "bothEvenPairs": 75,
+        "finalLastHits": 302,
+        "flagOrder": ["isCreep", "isNeutral", "isAncient"],
+        "flagCounts": {"1,0,0": 117, "0,1,0": 140, "0,0,0": 44, "0,0,1": 1},
+        "allAttacker42": true,
+        "allIsFromIllusionFalse": true,
+        "comparisonToHeroNearest": {"equalWithin5s": 53, "differentWithin5s": 244, "eventPairPresentButUnmatched": 4, "eventPairMissing": 1},
+        "largestPairedRawDifference": {
+          "eventIndex": 245,
+          "event": {
+            "time": 1780,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 845,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 37,
+            "xp": null,
+            "positionX": 93,
+            "positionY": 186,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "DIRE_SAFE_LANE"
+          },
+          "nearest": {"index": 1172, "time": 1780, "x": 84, "y": 180, "signedDeltaSeconds": 0},
+          "nearestMinusEventRawXY": [-9, -6],
+          "squaredRawDistance": 117
+        },
+        "missingPairEvents": [{"eventIndex": 274, "time": 1913, "npcId": 21, "positionX": null, "positionY": null}]
+      },
+      "gold": {
+        "records": 379,
+        "npcIdNull": 379,
+        "reasons": {
+          "OTHER": {
+            "records": 1,
+            "amountSum": 600,
+            "negative": 0,
+            "zero": 0,
+            "positive": 1,
+            "validForStatsTrue": 0,
+            "validForStatsFalse": 1,
+            "validForStatsNull": 0
+          },
+          "BOUNTY": {
+            "records": 10,
+            "amountSum": 652,
+            "negative": 0,
+            "zero": 0,
+            "positive": 10,
+            "validForStatsTrue": 10,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "HEROES": {
+            "records": 35,
+            "amountSum": 4981,
+            "negative": 0,
+            "zero": 0,
+            "positive": 35,
+            "validForStatsTrue": 35,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "CREEPS": {
+            "records": 133,
+            "amountSum": 5589,
+            "negative": 0,
+            "zero": 0,
+            "positive": 133,
+            "validForStatsTrue": 133,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "NEUTRAL": {
+            "records": 183,
+            "amountSum": 5221,
+            "negative": 0,
+            "zero": 0,
+            "positive": 183,
+            "validForStatsTrue": 183,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "DEATH": {
+            "records": 7,
+            "amountSum": -2102,
+            "negative": 7,
+            "zero": 0,
+            "positive": 0,
+            "validForStatsTrue": 0,
+            "validForStatsFalse": 7,
+            "validForStatsNull": 0
+          },
+          "COURIERS": {
+            "records": 2,
+            "amountSum": 105,
+            "negative": 0,
+            "zero": 0,
+            "positive": 2,
+            "validForStatsTrue": 2,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "STRUCTURES": {
+            "records": 5,
+            "amountSum": 587,
+            "negative": 0,
+            "zero": 0,
+            "positive": 5,
+            "validForStatsTrue": 5,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "ROSHAN": {
+            "records": 3,
+            "amountSum": 587,
+            "negative": 0,
+            "zero": 0,
+            "positive": 3,
+            "validForStatsTrue": 3,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          }
+        },
+        "selectedEvents": [
+          {"eventIndex": 0, "time": -88, "amount": 600, "reason": "OTHER", "npcId": null, "isValidForStats": false},
+          {"eventIndex": 279, "time": 1688, "amount": 277, "reason": "ROSHAN", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 280, "time": 1688, "amount": 135, "reason": "ROSHAN", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 306, "time": 1768, "amount": 175, "reason": "ROSHAN", "npcId": null, "isValidForStats": true}
+        ]
+      },
+      "objectives": {
+        "building": {
+          "records": 705,
+          "completeFinitePairs": 38,
+          "usableTimedGridPairs": 38,
+          "oneFiniteAxis": 0,
+          "neitherFiniteAxis": 667,
+          "outOfRangePairs": 0,
+          "fractionalPairs": 0,
+          "bothEvenPairs": 38
+        },
+        "roshan": {
+          "records": 147,
+          "completeFinitePairs": 46,
+          "usableTimedGridPairs": 46,
+          "oneFiniteAxis": 43,
+          "neitherFiniteAxis": 58,
+          "outOfRangePairs": 0,
+          "fractionalPairs": 0,
+          "bothEvenPairs": 46
+        },
+        "buildingInitialExamples": [
+          {"time": -89, "type": "TOWER", "positionX": 168, "positionY": 162, "isRadiant": false, "npcId": 35},
+          {"time": -89, "type": "TOWER", "positionX": 84, "positionY": 86, "isRadiant": true, "npcId": 25},
+          {"time": -89, "type": "TOWER", "positionX": 114, "positionY": 116, "isRadiant": true, "npcId": 17}
+        ],
+        "roshanPartialExamples": [
+          {"eventIndex": 15, "time": 901, "x": 104, "y": 144},
+          {"eventIndex": 16, "time": 902, "x": null, "y": 142},
+          {"eventIndex": 17, "time": 903, "x": 106, "y": null},
+          {"eventIndex": 145, "time": 1688, "x": null, "y": null}
+        ]
+      }
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "playerSlot": 1,
+      "isRadiant": true,
+      "startDateTime": 1789679396,
+      "durationSeconds": 1793,
+      "gameVersionId": 190,
+      "replaySalt": null,
+      "clusterId": 273,
+      "mapBuild": null,
+      "replaySha256": null,
+      "request": {
+        "startedAt": "2026-11-03T20:41:02.981Z",
+        "completedAt": "2026-11-03T20:41:05.432Z",
+        "httpStatus": 200,
+        "status": "captured",
+        "errors": [],
+        "responseBytes": 916135,
+        "responseSha256": "a0cef4aa685ec846b07d3e1026aade8f7f892f4da218ab4a1d1f8922d79ee9b6"
+      },
+      "positions": {
+        "records": 1211,
+        "completeFinitePairs": 1211,
+        "usableTimedGridPairs": 1211,
+        "oneFiniteAxis": 0,
+        "neitherFiniteAxis": 0,
+        "outOfRangePairs": 0,
+        "fractionalPairs": 0,
+        "bothEvenPairs": 1211,
+        "timeRange": [-89, 1726],
+        "xRange": [70, 194],
+        "yRange": [62, 188],
+        "uniqueTimes": 1211,
+        "strictlyIncreasingTimes": true,
+        "gapsOver5Seconds": 29,
+        "largestGap": {"beforeIndex": 41, "afterIndex": 42, "seconds": 26},
+        "first": {"time": -89, "x": 74, "y": 76},
+        "last": {"time": 1726, "x": 166, "y": 176}
+      },
+      "deaths": {
+        "statsRecords": 2,
+        "playbackRecords": 2,
+        "sharedFieldsEqual": true,
+        "within5Seconds": 2,
+        "matchedXYDifferent": 0,
+        "rows": [
+          {
+            "eventIndex": 0,
+            "eventTime": 142,
+            "eventXY": [170, 90],
+            "eventProjection": {
+              "map": [0.6666666666666666, 0.35294117647058826],
+              "world": [5376, -4864],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 155, "time": 141, "x": 170, "y": 90, "signedDeltaSeconds": -1},
+            "tiedNearestIndices": [155, 156],
+            "strictlyBefore": {"index": 155, "time": 141, "x": 170, "y": 90},
+            "strictlyAfter": {"index": 156, "time": 143, "x": 170, "y": 92},
+            "adapterConfidence": "high",
+            "adapterXY": [170, 90],
+            "nearestProjection": {
+              "map": [0.6666666666666666, 0.35294117647058826],
+              "world": [5376, -4864],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 143,
+            "stratzMinusOpenDotaSeconds": -1
+          },
+          {
+            "eventIndex": 1,
+            "eventTime": 1728,
+            "eventXY": [166, 176],
+            "eventProjection": {
+              "map": [0.6509803921568628, 0.6901960784313725],
+              "world": [4864, 6144],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearest": {"index": 1210, "time": 1726, "x": 166, "y": 176, "signedDeltaSeconds": -2},
+            "tiedNearestIndices": [1210],
+            "strictlyBefore": {"index": 1210, "time": 1726, "x": 166, "y": 176},
+            "strictlyAfter": null,
+            "adapterConfidence": "medium",
+            "adapterXY": [166, 176],
+            "nearestProjection": {
+              "map": [0.6509803921568628, 0.6901960784313725],
+              "world": [4864, 6144],
+              "validation": "structural_only",
+              "productReady": false
+            },
+            "nearestMinusEventRawXY": [0, 0],
+            "archivedOpenDotaTime": 1728,
+            "stratzMinusOpenDotaSeconds": 0
+          }
+        ]
+      },
+      "cs": {
+        "records": 281,
+        "completeFinitePairs": 270,
+        "usableTimedGridPairs": 270,
+        "oneFiniteAxis": 0,
+        "neitherFiniteAxis": 11,
+        "outOfRangePairs": 0,
+        "fractionalPairs": 0,
+        "bothEvenPairs": 68,
+        "finalLastHits": 281,
+        "flagOrder": ["isCreep", "isNeutral", "isAncient"],
+        "flagCounts": {"1,0,0": 163, "0,0,0": 33, "0,1,0": 76, "0,0,1": 9},
+        "allAttacker42": true,
+        "allIsFromIllusionFalse": true,
+        "comparisonToHeroNearest": {"equalWithin5s": 45, "differentWithin5s": 222, "eventPairPresentButUnmatched": 3, "eventPairMissing": 11},
+        "largestPairedRawDifference": {
+          "eventIndex": 90,
+          "event": {
+            "time": 805,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 69,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 15,
+            "xp": null,
+            "positionX": 175,
+            "positionY": 79,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "nearest": {"index": 585, "time": 805, "x": 174, "y": 74, "signedDeltaSeconds": 0},
+          "nearestMinusEventRawXY": [-1, -5],
+          "squaredRawDistance": 26
+        },
+        "missingPairEvents": [
+          {"eventIndex": 5, "time": 121, "npcId": 111, "positionX": null, "positionY": null},
+          {"eventIndex": 88, "time": 801, "npcId": 863, "positionX": null, "positionY": null},
+          {"eventIndex": 147, "time": 1039, "npcId": 863, "positionX": null, "positionY": null},
+          {"eventIndex": 234, "time": 1410, "npcId": 863, "positionX": null, "positionY": null},
+          {"eventIndex": 236, "time": 1423, "npcId": 29, "positionX": null, "positionY": null},
+          {"eventIndex": 268, "time": 1603, "npcId": 34, "positionX": null, "positionY": null},
+          {"eventIndex": 269, "time": 1614, "npcId": 49, "positionX": null, "positionY": null},
+          {"eventIndex": 273, "time": 1630, "npcId": 37, "positionX": null, "positionY": null},
+          {"eventIndex": 274, "time": 1647, "npcId": 48, "positionX": null, "positionY": null},
+          {"eventIndex": 276, "time": 1656, "npcId": 45, "positionX": null, "positionY": null},
+          {"eventIndex": 280, "time": 1715, "npcId": 863, "positionX": null, "positionY": null}
+        ]
+      },
+      "gold": {
+        "records": 361,
+        "npcIdNull": 361,
+        "reasons": {
+          "OTHER": {
+            "records": 5,
+            "amountSum": 680,
+            "negative": 0,
+            "zero": 0,
+            "positive": 5,
+            "validForStatsTrue": 4,
+            "validForStatsFalse": 1,
+            "validForStatsNull": 0
+          },
+          "BOUNTY": {
+            "records": 7,
+            "amountSum": 370,
+            "negative": 0,
+            "zero": 0,
+            "positive": 7,
+            "validForStatsTrue": 7,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "CREEPS": {
+            "records": 187,
+            "amountSum": 7957,
+            "negative": 0,
+            "zero": 0,
+            "positive": 187,
+            "validForStatsTrue": 187,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "HEROES": {
+            "records": 36,
+            "amountSum": 3302,
+            "negative": 0,
+            "zero": 0,
+            "positive": 36,
+            "validForStatsTrue": 36,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "DEATH": {
+            "records": 2,
+            "amountSum": -522,
+            "negative": 2,
+            "zero": 0,
+            "positive": 0,
+            "validForStatsTrue": 0,
+            "validForStatsFalse": 2,
+            "validForStatsNull": 0
+          },
+          "COURIERS": {
+            "records": 1,
+            "amountSum": 30,
+            "negative": 0,
+            "zero": 0,
+            "positive": 1,
+            "validForStatsTrue": 1,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "NEUTRAL": {
+            "records": 103,
+            "amountSum": 2851,
+            "negative": 0,
+            "zero": 0,
+            "positive": 103,
+            "validForStatsTrue": 103,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "STRUCTURES": {
+            "records": 18,
+            "amountSum": 2691,
+            "negative": 0,
+            "zero": 0,
+            "positive": 18,
+            "validForStatsTrue": 18,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          },
+          "ROSHAN": {
+            "records": 2,
+            "amountSum": 310,
+            "negative": 0,
+            "zero": 0,
+            "positive": 2,
+            "validForStatsTrue": 2,
+            "validForStatsFalse": 0,
+            "validForStatsNull": 0
+          }
+        },
+        "selectedEvents": [
+          {"eventIndex": 0, "time": -88, "amount": 600, "reason": "OTHER", "npcId": null, "isValidForStats": false},
+          {"eventIndex": 224, "time": 1166, "amount": 135, "reason": "ROSHAN", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 240, "time": 1240, "amount": 175, "reason": "ROSHAN", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 316, "time": 1507, "amount": 20, "reason": "OTHER", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 330, "time": 1575, "amount": 20, "reason": "OTHER", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 333, "time": 1577, "amount": 20, "reason": "OTHER", "npcId": null, "isValidForStats": true},
+          {"eventIndex": 334, "time": 1579, "amount": 20, "reason": "OTHER", "npcId": null, "isValidForStats": true}
+        ]
+      },
+      "objectives": {
+        "building": {
+          "records": 0,
+          "completeFinitePairs": 0,
+          "usableTimedGridPairs": 0,
+          "oneFiniteAxis": 0,
+          "neitherFiniteAxis": 0,
+          "outOfRangePairs": 0,
+          "fractionalPairs": 0,
+          "bothEvenPairs": 0
+        },
+        "roshan": {
+          "records": 0,
+          "completeFinitePairs": 0,
+          "usableTimedGridPairs": 0,
+          "oneFiniteAxis": 0,
+          "neitherFiniteAxis": 0,
+          "outOfRangePairs": 0,
+          "fractionalPairs": 0,
+          "bothEvenPairs": 0
+        },
+        "buildingInitialExamples": [],
+        "roshanPartialExamples": []
+      }
+    }
+  ]
+}
