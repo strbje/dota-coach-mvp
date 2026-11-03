@@ -55,3 +55,6 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Coordinate review stays unavailable in production
+        run: npm run check:coordinate-review

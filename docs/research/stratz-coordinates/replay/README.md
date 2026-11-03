@@ -115,3 +115,28 @@ PowerShell syntax was reviewed but not executed in the Linux research environmen
 is an optional reproduction entry point with explicit prerequisites, not another request
 for local work. Visual validation still needs the correct map asset/build and client;
 these helpers produce no minimap image and do not claim to establish rendering semantics.
+
+## Internal visual review fixture
+
+`build_visual_review.py` derives the compact development-only review fixture from
+the same real inputs and verified decoded outputs. It uses the first increasing
+WK/skeleton `lastHits` counter for all CS (consecutive 1..N and ±2s); no XY-based
+selection is used. Every skeleton kill stays credited to the player. For 13
+preselected examples, all dying entities within ±0.1s are retained as candidates,
+not asserted to be the victim. The script validates capture/decode hashes and the
+complete footer, embeds its source hash, and refuses to overwrite an output.
+
+With `repo` and `study` set by the Linux instructions above:
+
+```bash
+python "$repo/docs/research/stratz-coordinates/replay/build_visual_review.py" \
+  "$study/input/stratz-coordinates-20261103-234056.json" \
+  "$repo/docs/research/stratz-coordinates/observations-2026-11-04.json" \
+  "$study/replays" "$study/visual-review-data.json"
+cmp "$study/visual-review-data.json" \
+  "$repo/docs/research/stratz-coordinates/visual-review-data.json"
+```
+
+The committed fixture contains real research points, no account IDs or complete
+provider capture. See [the visual-stage report](../2026-11-04-visual.md) for screen
+usage, source limits and the remaining map-asset/client validation.

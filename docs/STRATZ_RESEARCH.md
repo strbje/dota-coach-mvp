@@ -2,6 +2,14 @@
 
 ## Coordinate study — current status (2026-11-04 replay verification, issue #50)
 
+The [internal review screen](research/stratz-coordinates/2026-11-04-visual.md) now
+preserves all 583 real CS, including 123 WK skeleton kills credited to the player.
+It is development-only (`/debug/coordinates`, production 404), with filters, all
+nine death cases and replay landmarks. Its cartesian schematic is not a verified
+minimap; local raster uploads remain unvalidated. Exact asset requirements and
+PowerShell extraction commands are in the linked report. Product calculations,
+coordinate readiness and temporal thresholds remain unchanged.
+
 See the [coordinate research protocol](research/stratz-coordinates/README.md) for the
 post-PR #71/#72 evidence review, verified archive hashes and OpenDota observations.
 The [November 4 follow-up](research/stratz-coordinates/2026-11-04.md) compares the owner's
