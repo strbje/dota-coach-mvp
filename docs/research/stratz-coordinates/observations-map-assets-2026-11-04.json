@@ -1,0 +1,159 @@
+{
+  "reviewDateMsk": "2026-11-04",
+  "productReady": false,
+  "methodologyStatus": "research-only",
+  "synthetic": false,
+  "archive": {
+    "name": "dota50-map-assets.zip",
+    "bytes": 3432585,
+    "sha256": "0470ddd24dcd4b5fe0a4a33e495e274f395a4b58a035ea945103c7378a19da16",
+    "entries": 6,
+    "allManifestHashesMatch": true,
+    "manifestMissing": []
+  },
+  "installedClient": {
+    "clientVersion": 6971,
+    "serverVersion": 6971,
+    "sourceRevision": 11200340,
+    "versionDate": "Nov 03 2026",
+    "versionTime": "11:12:15"
+  },
+  "files": [
+    {
+      "path": "materials/overviews/dota.vmat_c",
+      "bytes": 2185,
+      "crc32": "22e00ea5",
+      "sha256": "ad739758ebb3500ade16b19e8cf20902833525cda9a4b36e8b96d33535d9387d"
+    },
+    {
+      "path": "materials/overviews/dota_psd.vtex_c",
+      "bytes": 4196420,
+      "crc32": "a074d027",
+      "sha256": "1d6d07682e9f8132f12ba8db765430bb8f3f54c466e15ab34a272af5caca7348"
+    },
+    {
+      "path": "materials/overviews/dota_psd_8b4a9409.vtex_c",
+      "bytes": 4196388,
+      "crc32": "4545a41a",
+      "sha256": "3a5e1797cad79fa8d8b144ba2e315c9f52a6ed5bc45cf1471ebd8ca2ec6b9419"
+    },
+    {
+      "path": "resource/overviews/dota.txt",
+      "bytes": 153,
+      "crc32": "490b9ecd",
+      "sha256": "fc31a7979950863f262afd2f0c8d7a8bf5ec6ffbdc48c465aa5495cd41d4cc1d"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 1365,
+      "crc32": "cdc22ea7",
+      "sha256": "9e087198159e924ff331d75f1e783aebae65712d4d8a8a5c8688c565173146ab"
+    },
+    {
+      "path": "steam.inf",
+      "bytes": 220,
+      "crc32": "b5198889",
+      "sha256": "957d0c9cfb1eb0f7e8ce9ebe0d21fbb0d1e463b6b7f0c93bd210da9e84aef5a4"
+    }
+  ],
+  "historicalCatalogs": [
+    {
+      "gameVersion": 6933,
+      "commit": "f61235b7975ff3be0131e57076191b61410c15ec",
+      "sha256": "5cf23fc27dc36cdb4c2fbfe6ddf7824819a69b8d46b155c0ba24652773fa910e",
+      "uploadedAssetsMatchSizeAndCrc": true,
+      "missingTexture": {
+        "path": "materials/overviews/dota_tga_d8178876.vtex_c",
+        "crc32": "d9e2fc78",
+        "bytes": 1050660
+      }
+    },
+    {
+      "gameVersion": 6941,
+      "commit": "e84714d6ff871cfae0b59f3f9038860f052fa247",
+      "sha256": "8ad0a4b038e009d14e626c757346d8ed14af3a7df3d2d89795556053fa49ff21",
+      "uploadedAssetsMatchSizeAndCrc": true,
+      "missingTexture": {
+        "path": "materials/overviews/dota_tga_d8178876.vtex_c",
+        "crc32": "d9e2fc78",
+        "bytes": 1050660
+      }
+    }
+  ],
+  "decoder": {
+    "name": "Source2Viewer-CLI",
+    "release": "20.1",
+    "runtimeVersion": "20.1.7467+9e2e6c7f67e3c4e5a5f443a60c3a5d841ba8f304",
+    "platform": "linux-x64",
+    "archiveSha256": "29d25a6d6b62377fc5386c3e5145b0a2180a401a50041afe9494b3f503deaef5"
+  },
+  "overview": {
+    "material": "materials/overviews/dota.vmat",
+    "simpleMaterial": "materials/overviews/dota_minimal.vmat",
+    "posX": -9472,
+    "posY": 9472,
+    "scale": 18.5
+  },
+  "defaultMaterial": {
+    "shader": "ui.vfx",
+    "colorTexture": "materials/overviews/dota_tga_d8178876.vtex",
+    "externalRefId": "6254990AF38249F7",
+    "representativeWidth": 512,
+    "representativeHeight": 512,
+    "missingCompiledDependency": "materials/overviews/dota_tga_d8178876.vtex_c",
+    "referenceComplete": false,
+    "dumpSha256": "70ebc3f12818cdbc3a62334fb681a9d6bddfb705929aa6fbaa297227d0f6aea3"
+  },
+  "decodedSuppliedTextures": [
+    {
+      "path": "materials/overviews/dota_psd.vtex_c",
+      "format": "BGRA8888",
+      "width": 1024,
+      "height": 1024,
+      "mipLevels": 1,
+      "acceptedAsReferencedTexture": false,
+      "png": {
+        "name": "dota_psd.png",
+        "sha256": "c581b2afd0ddb44dcf599dec154dfc0b43fdba0ef874ee7aa4bad3d273707654"
+      },
+      "dumpSha256": "2e13155b0fa69954250a64d590092635e27a0c1a1cae6f37a199078571db6c3a"
+    },
+    {
+      "path": "materials/overviews/dota_psd_8b4a9409.vtex_c",
+      "format": "RGBA8888",
+      "width": 1024,
+      "height": 1024,
+      "mipLevels": 1,
+      "acceptedAsReferencedTexture": false,
+      "png": {
+        "name": "dota_psd_8b4a9409.png",
+        "sha256": "a50c903f2507f9ddab00cb74c8855a6d3fd13a45f9be3f351255d624ebe66584"
+      },
+      "dumpSha256": "e0dd2172b908ab9d3461adeaa8beb1ac7cee8faa0c0d6282f7c1bdabed4863fb"
+    }
+  ],
+  "decodedPixelComparison": {
+    "differingPixels": 2612,
+    "maxChannelDifference": 42
+  },
+  "projection": {
+    "accepted": false,
+    "clientRenderReviewed": false,
+    "sourceSdkAnalogyOnly": true,
+    "sourceSdkCommit": "019e91ccd650a34745934c65cdbbe89ffcc44ede",
+    "conditionalLogicalSize": 1024,
+    "conditionalWorldBounds": [
+      -9472,
+      -9472,
+      9472,
+      9472
+    ],
+    "reason": "Referenced texture missing; active Dota 2 renderer/overview selection not verified. Source SDK WorldToMap is not Dota 2 renderer source."
+  },
+  "nextInput": {
+    "path": "materials/overviews/dota_tga_d8178876.vtex_c",
+    "bytesExpected": 1050660,
+    "crc32Expected": "d9e2fc78",
+    "repeatPriorInputs": false
+  }
+}

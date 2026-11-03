@@ -2,6 +2,12 @@
 
 ## Coordinate study — current status (2026-11-04 replay verification, issue #50)
 
+The [received asset archive](research/stratz-coordinates/2026-11-04-assets.md) passed
+all manifest hashes and the four historical CRC/size comparisons. However, the actual
+material references `dota_tga_d8178876.vtex_c`, absent from the originally requested
+subset. Both supplied PSD textures decode but are not that dependency. The corrected
+request is one ~1 MB texture; no bitmap/crop or product readiness is promoted.
+
 The [internal review screen](research/stratz-coordinates/2026-11-04-visual.md) now
 preserves all 583 real CS, including 123 WK skeleton kills credited to the player.
 It is development-only (`/debug/coordinates`, production 404), with filters, all

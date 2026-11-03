@@ -1,5 +1,58 @@
 # Минимальная выгрузка подложки для #50
 
+## Сейчас нужен один недостающий файл
+
+Первый `dota50-map-assets.zip` **получен, полный и исправный**. Повторять прежнюю
+команду не нужно. [Проверка материала](2026-11-04-assets.md) установила его реальную
+зависимость: `materials/overviews/dota_tga_d8178876.vtex_c` (~1 МБ).
+В нашем первом списке были другие текстуры — это неточность списка, не ошибка владельца.
+
+Ниже самостоятельный блок для PowerShell. Он найдёт уже скачанный Source 2 Viewer
+CLI в прежней временной папке, извлечёт **только этот файл** и откроет Проводник с
+готовым `dota50-map-reference.zip`. Каталог игры только читается; токен не нужен.
+Параметры проверены по [исходнику CLI 20.1](https://github.com/ValveResourceFormat/ValveResourceFormat/blob/20.1/CLI/Decompiler.cs),
+но этот дополнительный блок не выполнялся в Windows.
+
+```powershell
+cd D:\dota-coach
+$ErrorActionPreference = 'Stop'
+$cliFile = Get-ChildItem (Join-Path $env:TEMP 'dota50-map-*\tool\Source2Viewer-CLI.exe') -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (-not $cliFile) { throw 'Не найден ранее скачанный CLI. Сохраните текст ошибки.' }
+$cliPath = $cliFile.FullName
+$steamPath = (Get-ItemProperty 'HKCU:\Software\Valve\Steam').SteamPath
+$libraryPaths = @($steamPath)
+foreach ($line in Get-Content (Join-Path $steamPath 'steamapps\libraryfolders.vdf')) {
+    if ($line -match '"path"\s+"([^"]+)"') { $libraryPaths += $Matches[1].Replace('\\', '\') }
+}
+$dotaPaths = @($libraryPaths | Select-Object -Unique | ForEach-Object {
+    $candidate = Join-Path $_ 'steamapps\common\dota 2 beta\game\dota'
+    if (Test-Path (Join-Path $candidate 'pak01_dir.vpk')) { $candidate }
+})
+if ($dotaPaths.Count -ne 1) { throw 'Не найдена единственная установка Dota 2. Сохраните текст ошибки.' }
+$workDir = Join-Path $env:TEMP ('dota50-map-reference-' + [guid]::NewGuid().ToString('N'))
+$payloadDir = Join-Path $workDir 'files'
+New-Item -ItemType Directory -Path $payloadDir -Force | Out-Null
+$assetPath = 'materials/overviews/dota_tga_d8178876.vtex_c'
+& $cliPath --input (Join-Path $dotaPaths[0] 'pak01_dir.vpk') --output ($payloadDir + '\') --vpk_filepath $assetPath
+if ($LASTEXITCODE -ne 0) { throw 'Ошибка извлечения; сохраните вывод CLI' }
+$assetFile = Join-Path $payloadDir $assetPath
+if (-not (Test-Path -LiteralPath $assetFile)) { throw 'Нужный файл не извлечён; сохраните вывод CLI' }
+$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $assetFile).Hash
+@{ path = $assetPath; bytes = (Get-Item -LiteralPath $assetFile).Length; sha256 = $hash } | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $payloadDir 'manifest.json')
+$archive = Join-Path $workDir 'dota50-map-reference.zip'
+Compress-Archive -Path (Join-Path $payloadDir '*') -DestinationPath $archive
+Get-FileHash -Algorithm SHA256 -LiteralPath $archive
+Write-Host "Прикрепите только этот файл: $archive"
+explorer.exe "/select,$archive"
+```
+
+Ожидаемые по обоим историческим каталогам параметры: **1 050 660 байт**, CRC32
+**`d9e2fc78`**. Проверим их после получения файла. Даже совпадение не заменяет
+проверку активной подложки и эпизодов в клиенте Dota 2.
+
+<details>
+<summary>История: первая выгрузка, уже выполнена — повторять не нужно</summary>
+
 JSON и оба реплея уже получены. Нужны **четыре файла миникарты** и `steam.inf`,
 не полный VPK и не повторная STRATZ-выгрузка. Токены не нужны.
 
@@ -73,3 +126,5 @@ explorer.exe "/select,$archive"
 ориентиры и [контрольные эпизоды](2026-11-04-visual.md#как-воспроизвести-набор-и-что-проверить-визуально).
 Совпадение изображения не доказывает точность времени CS/death и не меняет
 `productReady=false` автоматически.
+
+</details>
