@@ -1,14 +1,18 @@
 # STRATZ_RESEARCH
 
-## Coordinate study — current status (2026-11-03 capture, issue #50)
+## Coordinate study — current status (2026-11-04 replay verification, issue #50)
 
 See the [coordinate research protocol](research/stratz-coordinates/README.md) for the
 post-PR #71/#72 evidence review, verified archive hashes and OpenDota observations.
-The [November 3 follow-up](research/stratz-coordinates/2026-11-03.md) processes the owner's
-real STRATZ capture: 2624 usable timed pairs, 8/9 temporal death associations, incomplete
-CS/objective coordinates and non-farm gold events. Replay evidence is still missing;
-no STRATZ-to-replay coordinate pair has been validated. The report provides exact episodes
-and corrected PowerShell replay commands. `productReady=false` remains unchanged.
+The [November 4 follow-up](research/stratz-coordinates/2026-11-04.md) compares the owner's
+real STRATZ capture with both fully decoded replays. All 2624 position pairs match replay
+cells within an explicit ±1s diagnostic window, but 3 of 8 associated deaths use a different
+cell, and tentative world coordinates omit the measured intra-cell vector. Real CS include
+WK skeleton kills; all 740 gold amounts match combat log order without establishing farm
+semantics or completeness. Named fountains, T2 and Roshan are checked numerically. Map
+asset/crop and client rendering remain unverified. Offline helpers and the numerical
+protocol are linked from that report. `productReady=false` remains unchanged; no product
+code or temporal threshold changed. Earlier reports retain their historical limitations.
 
 ## Confirmed status
 - Endpoint `https://api.stratz.com/graphql` works.
