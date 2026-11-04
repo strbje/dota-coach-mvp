@@ -1,4 +1,28 @@
 import type { PostMatchAnalysis } from '../types/domain';
+import type { FarmIntervalReport } from '../analyze/farmIntervals';
+
+function isFarmReport(value: unknown): value is FarmIntervalReport {
+  if (!value || typeof value !== 'object') return false;
+  const report = value as FarmIntervalReport;
+  const count = (n: unknown) => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+  return ['opendota', 'stratz', 'unavailable'].includes(report.source)
+    && ['complete', 'partial', 'unavailable'].includes(report.eventCoverage)
+    && count(report.receivedEvents) && count(report.rejectedEvents)
+    && (report.reportedLastHits === undefined || count(report.reportedLastHits))
+    && (report.eventCoverage !== 'complete' || report.source === 'stratz' && report.receivedEvents === report.reportedLastHits && report.rejectedEvents === 0)
+    && (report.source !== 'stratz' || report.eventCoverage === 'complete')
+    && Array.isArray(report.intervals) && report.intervals.every((interval) => interval
+      && Number.isFinite(interval.from) && interval.from >= 0 && Number.isFinite(interval.to) && interval.to > interval.from
+      && (interval.lastHits === undefined ? interval.perMinute === undefined && interval.coveredTo === undefined
+        : count(interval.lastHits) && typeof interval.perMinute === 'number' && Number.isFinite(interval.perMinute) && interval.perMinute >= 0
+          && typeof interval.coveredTo === 'number' && interval.coveredTo > interval.from && interval.coveredTo <= interval.to)
+      && (interval.breakdown === undefined || Boolean(interval.breakdown && ['lane', 'neutral', 'ancient', 'unclassified']
+        .every((key) => count(interval.breakdown![key as keyof typeof interval.breakdown])))))
+    && (report.highlightIndex === undefined || Number.isInteger(report.highlightIndex) && report.highlightIndex > 0
+      && report.highlightIndex < report.intervals.length
+      && [report.intervals[report.highlightIndex - 1], report.intervals[report.highlightIndex]]
+        .every((interval) => interval.to - interval.from === 300 && interval.coveredTo === interval.to && interval.perMinute !== undefined));
+}
 
 export type PostMatchSuccessPayload = { analysis: PostMatchAnalysis; debug: unknown };
 
@@ -20,6 +44,7 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
       && (priority.target === undefined || Boolean(priority.target && typeof priority.target.text === 'string')))
     && Array.isArray(candidate.itemTimings)
     && Number.isFinite(candidate.durationSeconds)
+    && (candidate.farmIntervals === undefined || isFarmReport(candidate.farmIntervals))
     && (laneFacts === undefined || Boolean(laneFacts && typeof laneFacts === 'object'
       && (laneFacts.deathsAt10 === undefined || Number.isInteger(laneFacts.deathsAt10) && laneFacts.deathsAt10 >= 0)
       && (laneFacts.efficiencyPct === undefined || Number.isFinite(laneFacts.efficiencyPct) && laneFacts.efficiencyPct >= 0)))

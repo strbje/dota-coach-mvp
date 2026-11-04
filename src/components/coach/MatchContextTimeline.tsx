@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Button, Panel } from '@/components/ui';
 import type { MatchReview, PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { formatGameTime } from '@/lib/dota/constants/items';
-import { allEventFilters, clusterEvents, resourceSegments, revealEvidence, timelineDomain, type EvidenceRequest, type EventFilters, type TimelineSelection } from '@/lib/dota/analyze/timelinePresentation';
+import { allEventFilters, clusterEvents, resourceSegments, revealEvidence, timelineDomain, withinSelection, type EvidenceRequest, type EventFilters, type TimelineSelection } from '@/lib/dota/analyze/timelinePresentation';
 import { ItemIcon } from './ItemTimeline';
 import styles from './postMatch.module.css';
 
@@ -54,7 +54,7 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
   const clusters = clusterEvents(visibleEvents, domain, width);
   const initial = clusters[0];
   const range = selection ?? (initial ? { from: initial.events[0].timeSeconds, to: initial.events.at(-1)!.timeSeconds } : undefined);
-  const selected = range ? visibleEvents.filter((event) => event.timeSeconds >= range.from && event.timeSeconds <= range.to) : [];
+  const selected = range ? visibleEvents.filter((event) => withinSelection(event.timeSeconds, range)) : [];
   const itemFor = (id: string) => items.find((item) => `item-${item.key}` === id);
   function choose(from: number, to: number, id = listId) {
     setSelection({ from, to });

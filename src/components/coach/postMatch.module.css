@@ -89,4 +89,15 @@
 
 .eventMarker > span { width: 100%; }
 
+.farmObservation { display: grid; gap: var(--space-3); border-left: var(--border-width-emphasis) solid var(--color-focus); padding-left: var(--space-4); }
+.farmObservation button { justify-self: start; }
+.farmWindows { list-style: none; margin: 0; padding: 0; }
+.farmWindows > li { padding-block: var(--space-2); border-bottom: var(--border-width) solid var(--color-border); }
+.farmWindowHeading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2); font-variant-numeric: tabular-nums; }
+.farmWindowHeading button { padding-inline: 0; }
+.farmTypes summary { cursor: pointer; display: list-item; min-height: var(--control-size); padding-block: var(--space-3); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.farmTypes dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0 0 var(--space-3); }
+.farmTypes dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.farmTypes dd { margin: 0; font-weight: 700; }
+
 @media (max-width: 1050px) { .planSingle { grid-template-columns: minmax(0, 1fr); } }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { allEventFilters, clusterEvents, resourceSegments, revealEvidence, timelineDomain } from './timelinePresentation';
+import { allEventFilters, clusterEvents, resourceSegments, revealEvidence, timelineDomain, withinSelection } from './timelinePresentation';
 import type { MatchReview, MatchTimelineEvent } from '../types/domain';
 
 const event = (id: string, timeSeconds: number, kind: MatchTimelineEvent['kind'] = 'item'): MatchTimelineEvent => ({ id, timeSeconds, kind, label: id });
@@ -37,4 +37,14 @@ test('evidence enables only its hidden type, selects exact time and identifies f
   assert.deepEqual(result, { filters: { ...filters, item: true }, selection: { from: -60, to: -60 }, focusId: 'purchase' });
   assert.equal(filters.item, false, 'do not mutate previous filter state');
   assert.deepEqual(revealEvidence(events, filters, { id: 'team-advantage', from: 600, to: 900, sequence: 2 }), { filters: { ...filters, death: true }, selection: { from: 600, to: 900 }, focusId: 'team-advantage' });
+});
+
+test('farm windows reveal nearby events once at the boundary while ordinary event selection stays inclusive', () => {
+  const events = [event('before', 299, 'death'), event('boundary', 300, 'item')];
+  const filters = { ...allEventFilters, item: false, death: false };
+  const result = revealEvidence(events, filters, { id: 'farm-0', from: 0, to: 300, endExclusive: true, sequence: 1 });
+  assert.deepEqual(result.filters, { ...filters, death: true });
+  assert.deepEqual(events.filter((e) => withinSelection(e.timeSeconds, result.selection)).map((e) => e.id), ['before']);
+  assert.equal(withinSelection(300, { from: 0, to: 300 }), true);
+  assert.equal(withinSelection(300, { from: 300, to: 600, endExclusive: true }), true);
 });

@@ -33,6 +33,8 @@ try {
   fixtures = {
     ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
+    farmComplete: await syntheticPostMatch({ farm: 'complete' }), farmPartial: await syntheticPostMatch({ farm: 'partial' }),
+    farmPartialOnly: await syntheticPostMatch({ farm: 'partialOnly' }), farmGap: await syntheticPostMatch({ farm: 'gap' }),
     next: await syntheticPostMatch({ matchId: 9000067, startTime: now + 60, lastHitsAt10: 58 }),
     missing: await syntheticPostMatch({ matchId: 9000068, startTime: now + 120, empty: true }),
     third: await syntheticPostMatch({ matchId: 9000069, startTime: now + 180, lastHitsAt10: 50 }),
@@ -112,13 +114,14 @@ async function snapshot(name) {
     note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;';
     document.body.prepend(note);
   });
-  if (name.startsWith('gold-')) {
-    const panel = page.getByRole('heading', { name: 'Источники золота', exact: true }).locator('..');
-    await panel.evaluate((element) => {
+  if (name.startsWith('gold-') || name.startsWith('farm-')) {
+    const isFarm = name.startsWith('farm-');
+    const panel = page.getByRole('heading', { name: isFarm ? 'Фарм по времени' : 'Источники золота', exact: true }).locator('..');
+    await panel.evaluate((element, farm) => {
       const note = document.createElement('p'); note.dataset.synthetic = 'gold';
-      note.textContent = 'СИНТЕТИЧЕСКИЙ ОТЧЁТ · контрольный фрагмент золота #34 · не приёмка live API';
+      note.textContent = farm ? 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка фарма по времени · не реальный матч' : 'СИНТЕТИЧЕСКИЙ ОТЧЁТ · контрольный фрагмент золота #34 · не приёмка live API';
       element.prepend(note);
-    });
+    }, isFarm);
     await panel.screenshot({ path: join(output, `${name}.png`) });
     await panel.locator('[data-synthetic="gold"]').evaluate((element) => element.remove());
   } else await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
@@ -179,6 +182,56 @@ try {
     } else assert.match(text, /не вернул числовую разбивку/);
   }
   results.checks.push('gold: independent income/loss/unknown, unknown-only net zero, confirmed zero, invalid/missing values, keyboard disclosure; 320/390/768/1440');
+  // Farm aggregation uses the real rules/adapter path with explicitly synthetic inputs.
+  await load('farmComplete'); await reportReady();
+  const farmPanel = page.getByRole('heading', { name: 'Фарм по времени', exact: true }).locator('..');
+  const farmRows = farmPanel.getByRole('list', { name: 'Отрезки фарма' }).locator(':scope > li');
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await snapshot(`farm-${width}`);
+  }
+  await farmPanel.getByText('Все отрезки фарма · 8', { exact: true }).focus(); await page.keyboard.press('Enter');
+  assert.equal(await farmRows.count(), 8);
+  assert.match(await farmPanel.innerText(), /Темп: 9 → 3/);
+  assert.match(await farmRows.nth(5).innerText(), /0 добито · 0 в минуту/);
+  await farmRows.nth(4).locator('summary').focus(); await page.keyboard.press('Enter');
+  assert.match(await farmRows.nth(4).innerText(), /Тип не определён\s+3/);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `farm overflow at ${width}`);
+    if (width === 390 || width === 1440) await snapshot(`farm-expanded-${width}`);
+  }
+  for (const label of ['Покупки', 'Мои смерти', 'Объекты', 'Линия к 10:00']) await page.getByLabel(label, { exact: true }).uncheck();
+  await page.keyboard.press('Tab');
+  await farmPanel.getByRole('button', { name: 'Посмотреть события отрезка', exact: true }).focus();
+  assert.notEqual(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle), 'none');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement?.id === 'team-advantage');
+  const selectedFarmEvents = page.getByRole('region', { name: 'Выбранный отрезок', exact: true });
+  assert.match(await selectedFarmEvents.innerText(), /20:00–25:00/);
+  assert.match(await selectedFarmEvents.innerText(), /Black King Bar/);
+  assert.match(await selectedFarmEvents.innerText(), /Твоя смерть/);
+  for (const label of ['Покупки', 'Мои смерти', 'Объекты']) assert.equal(await page.getByLabel(label, { exact: true }).isChecked(), true);
+  await farmPanel.getByRole('button', { name: 'События 25:00–30:00', exact: true }).click();
+  assert.match(await selectedFarmEvents.innerText(), /25:00–30:00/);
+  for (const name of ['farmPartial', 'farmPartialOnly', 'farmGap']) {
+    await load(name); await reportReady();
+    const windows = farmPanel.locator('details').first();
+    if (!await windows.evaluate((element) => element.open)) await windows.locator(':scope > summary').click();
+    assert.equal(await farmPanel.getByRole('button', { name: 'Посмотреть события отрезка', exact: true }).count(), 0);
+    const copy = await farmPanel.innerText();
+    if (name === 'farmGap') assert.match(copy, /только за 20:00–22:00/);
+    else assert.match(copy, /Разбивка STRATZ неполная/);
+    if (name === 'farmPartialOnly') assert.match(copy, /Число добиваний недоступно/);
+    if (name === 'farmPartial') {
+      assert.match(copy, /по минутным счётчикам OpenDota/);
+      assert.match(copy, /только за 35:00–38:00/);
+    }
+  }
+  await load('empty'); await reportReady();
+  assert.equal(await farmPanel.count(), 0);
+  await page.getByText(/Фарм по времени недоступен/).waitFor();
+  results.checks.push('farm: largest comparable drop; category/unknown breakdown; confirmed zero vs missing; partial events and no-series fallback; gaps/truncated end; keyboard filters/focus and selected-window navigation; 320/390/768/1440');
   await load('ready'); await reportReady();
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.getByLabel('Линия к 10:00', { exact: true }).uncheck();

@@ -2,7 +2,7 @@ import type { StratzHeroContext } from '@/lib/dota/types/providers';
 
 export const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
 
-export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!) {
+export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!, $farmAccountId: Long, $includeFarm: Boolean! = false) {
   match(id: $id) {
     id
     durationSeconds
@@ -34,6 +34,13 @@ export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!) {
           time
         }
       }
+    }
+    farmPlayers: players(steamAccountId: $farmAccountId) @include(if: $includeFarm) {
+      steamAccountId
+      playerSlot
+      heroId
+      numLastHits
+      playbackData { csEvents { time isCreep isNeutral isAncient } }
     }
   }
 }`;

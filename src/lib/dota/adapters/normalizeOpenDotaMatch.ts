@@ -140,6 +140,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
     objectiveTimeline: normalizeObjectiveTimeline(payload.objectives, durationSeconds),
     selectedPlayer, player: {
     heroName, isRadiant, durationMinutes, kills, deaths, assists, lastHits,
+    lastHitsByMinute: lhT ? Array.from(lhT, (value) => Number.isSafeInteger(value) && value >= 0 ? value : null) : undefined,
     lastHitsPerMin: durationMinutes > 0 && lastHits !== undefined ? lastHits / durationMinutes : undefined, heroDamage, heroDamagePerMin: durationMinutes > 0 && heroDamage !== undefined ? heroDamage / durationMinutes : undefined, towerDamage,
     gpm: normalizeOptionalNumber(playerRaw.gold_per_min), xpm: normalizeOptionalNumber(playerRaw.xp_per_min), killParticipation: teamKills && kills !== undefined && assists !== undefined ? (kills + assists) / teamKills : undefined,
     item0: rawItemIds[0], item1: rawItemIds[1], item2: rawItemIds[2], item3: rawItemIds[3], item4: rawItemIds[4], item5: rawItemIds[5],

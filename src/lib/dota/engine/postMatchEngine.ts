@@ -45,7 +45,7 @@ async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Pro
 
   const queryResult = await runStratzQuery({
     query: STRATZ_EVENTS_QUERY,
-    variables: { id: matchId },
+    variables: { id: matchId, farmAccountId: selector.accountId ?? null, includeFarm: Number.isSafeInteger(selector.accountId) && selector.accountId! > 0 },
     token
   });
 
@@ -68,6 +68,7 @@ async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Pro
   const normalized = selection.normalized;
   return {
     data: {
+      farmEvents: normalized.normalized.selectedPlayer?.farmEvents,
       deathTimings: normalized.deathTimings,
       deathsByPhase: normalized.deathsByPhase,
       selectedPlayer: {

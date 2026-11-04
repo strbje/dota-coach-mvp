@@ -2,8 +2,12 @@ import type { MatchReview, MatchTimelineEvent, TeamAdvantagePoint } from '../typ
 
 export type EventFilters = Record<MatchTimelineEvent['kind'], boolean>;
 export const allEventFilters: EventFilters = { item: true, death: true, objective: true, lane: true };
-export type TimelineSelection = { from: number; to: number };
-export type EvidenceRequest = { id: string; from: number; to: number; sequence: number };
+export type TimelineSelection = { from: number; to: number; endExclusive?: boolean };
+export type EvidenceRequest = TimelineSelection & { id: string; sequence: number };
+
+export function withinSelection(time: number, selection: TimelineSelection) {
+  return time >= selection.from && (selection.endExclusive ? time < selection.to : time <= selection.to);
+}
 
 export function timelineDomain(review: MatchReview, durationSeconds: number): TimelineSelection {
   const times = [...review.advantage.map((p) => p.timeSeconds), ...review.timeline.flatMap((e) => [e.timeSeconds, e.endSeconds ?? e.timeSeconds])];
@@ -37,12 +41,13 @@ export function clusterEvents(events: MatchTimelineEvent[], domain: TimelineSele
 
 export function revealEvidence(events: MatchTimelineEvent[], filters: EventFilters, request: EvidenceRequest) {
   const event = events.find((entry) => entry.id === request.id);
-  const related = event ? [event] : events.filter((entry) => entry.timeSeconds >= request.from && entry.timeSeconds <= request.to);
+  const related = event ? [event] : events.filter((entry) => withinSelection(entry.timeSeconds, request));
   const revealedFilters = { ...filters };
   for (const entry of related) revealedFilters[entry.kind] = true;
   return {
     filters: revealedFilters,
-    selection: { from: event?.timeSeconds ?? request.from, to: event?.endSeconds ?? event?.timeSeconds ?? request.to },
+    selection: { from: event?.timeSeconds ?? request.from, to: event?.endSeconds ?? event?.timeSeconds ?? request.to,
+      ...(!event && request.endExclusive ? { endExclusive: true } : {}) },
     focusId: event?.id ?? 'team-advantage'
   };
 }
