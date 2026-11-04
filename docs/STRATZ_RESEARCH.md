@@ -2,18 +2,19 @@
 
 ## Coordinate study — current status (2026-11-04 replay verification, issue #50)
 
-The [received asset archive](research/stratz-coordinates/2026-11-04-assets.md) passed
-all manifest hashes and the four historical CRC/size comparisons. However, the actual
-material references `dota_tga_d8178876.vtex_c`, absent from the originally requested
-subset. Both supplied PSD textures decode but are not that dependency. The corrected
-request is one ~1 MB texture; no bitmap/crop or product readiness is promoted.
+Both [asset archives are now verified](research/stratz-coordinates/2026-11-04-reference.md).
+The actual referenced `dota_tga_d8178876.vtex_c` matches both historical catalogs by
+size/CRC, passes the owner's manifest SHA-256 and decodes to 512×512. Six real replay
+landmarks support the overview projection candidate qualitatively; pixel accuracy and
+the active Dota 2 renderer remain unverified. The camera frame is not an accepted bitmap
+crop. No further asset extraction is requested; four short client clips remain.
 
 The [internal review screen](research/stratz-coordinates/2026-11-04-visual.md) now
 preserves all 583 real CS, including 123 WK skeleton kills credited to the player.
 It is development-only (`/debug/coordinates`, production 404), with filters, all
 nine death cases and replay landmarks. Its cartesian schematic is not a verified
-minimap; local raster uploads remain unvalidated. Exact asset requirements and
-PowerShell extraction commands are in the linked report. Product calculations,
+minimap; local raster uploads remain unvalidated. Client evidence requirements and
+the completed asset checks are in the linked report. Product calculations,
 coordinate readiness and temporal thresholds remain unchanged.
 
 See the [coordinate research protocol](research/stratz-coordinates/README.md) for the
@@ -24,7 +25,7 @@ cells within an explicit ±1s diagnostic window, but 3 of 8 associated deaths us
 cell, and tentative world coordinates omit the measured intra-cell vector. Real CS include
 WK skeleton kills; all 740 gold amounts match combat log order without establishing farm
 semantics or completeness. Named fountains, T2 and Roshan are checked numerically. Map
-asset/crop and client rendering remain unverified. Offline helpers and the numerical
+asset selection in the client, exact crop and client rendering remain unverified. Offline helpers and the numerical
 protocol are linked from that report. `productReady=false` remains unchanged; no product
 code or temporal threshold changed. Earlier reports retain their historical limitations.
 
