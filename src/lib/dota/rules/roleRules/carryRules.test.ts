@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { lifestealerCarryOverride } from '../heroOverrides/lifestealer';
 import { runCarryPostMatchRules } from './carryRules';
+import { normalizeFarmEvents } from '../../normalize/farmEvents';
 import type { CarryHeroOverride } from './carryRules';
 import type { NormalizedOpenDotaMatch, PostMatchBenchmarkContext } from '../../types/domain';
 
@@ -23,6 +24,21 @@ function match(lhAt10?: number): NormalizedOpenDotaMatch {
     }
   };
 }
+
+test('farm windows enrich the report without changing training, grades, timeline or role', () => {
+  const input = match(51);
+  input.player!.lastHitsByMinute = Array.from({ length: 41 }, (_, i) => i * 5);
+  const base = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
+  const enriched = runCarryPostMatchRules(input, { farmEvents: normalizeFarmEvents([{ time: 60 }, { time: 300 }], 2, 2400) }, {}, lifestealerCarryOverride);
+  assert.equal(enriched.farmIntervals?.source, 'stratz');
+  assert.equal(base.farmIntervals?.source, 'opendota');
+  assert.deepEqual(enriched.training, base.training);
+  assert.deepEqual(enriched.review, base.review);
+  assert.deepEqual(enriched.grades, base.grades);
+  assert.deepEqual(enriched.priorities, base.priorities);
+  assert.equal(enriched.role, base.role);
+  assert.equal(enriched.stratz?.farmEvents, undefined);
+});
 
 function allCopy(analysis: ReturnType<typeof runCarryPostMatchRules>): string {
   return [

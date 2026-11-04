@@ -160,6 +160,8 @@ export type NormalizedOpenDotaMatch = {
     assists?: number;
     lastHits?: number;
     lastHitsPerMin?: number;
+    // Minute-aligned cumulative counts; null marks an unavailable snapshot.
+    lastHitsByMinute?: Array<number | null>;
     heroDamage?: number;
     heroDamagePerMin?: number;
     towerDamage?: number;
@@ -248,6 +250,7 @@ export type NormalizedOpenDotaMatch = {
 
 
 export type StratzPostMatchData = {
+  farmEvents?: import('../normalize/farmEvents').FarmEvents;
   deathTimings?: Array<{
     timeSeconds: number;
     time: string;
@@ -290,6 +293,7 @@ export type PostMatchAnalysis = {
   result: 'win' | 'loss';
   durationSeconds: number;
   review: MatchReview;
+  farmIntervals?: import('../analyze/farmIntervals').FarmIntervalReport;
   training: { observation: TrainingObservation; goal?: TrainingGoal };
   laneFacts?: { deathsAt10?: number; efficiencyPct?: number };
   buildPlayed: string[];
@@ -445,6 +449,7 @@ export type NormalizedStratzPlayer = {
   positionSamples?: StratzPositionSample[];
   deathPositionSamples?: StratzDeathPositionSample[];
   farmDistribution?: StratzFarmDistribution | null;
+  farmEvents?: import('../normalize/farmEvents').FarmEvents;
   heroAverageBenchmarks?: StratzHeroAverageBenchmark[];
 };
 

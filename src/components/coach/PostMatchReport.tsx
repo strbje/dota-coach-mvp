@@ -11,6 +11,7 @@ import { ItemTimeline } from './ItemTimeline';
 import { PhaseBreakdown } from './PhaseBreakdown';
 import { MatchContextTimeline } from './MatchContextTimeline';
 import { TrainingChallengeCard } from './TrainingChallengeCard';
+import { FarmIntervals } from './FarmIntervals';
 import styles from './postMatch.module.css';
 
 export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
@@ -18,8 +19,8 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
   const [evidence, setEvidence] = useState<EvidenceRequest>();
   const factors = review.factors.filter((factor) => factor.id !== 'personal-start');
   const otherPriorities = analysis.priorities.filter((priority) => priority.id !== 'lane-farm' && priority.id !== 'lane-events');
-  function showEvidence(id: string, from: number, to = from) {
-    setEvidence((previous) => ({ id, from, to, sequence: (previous?.sequence ?? 0) + 1 }));
+  function showEvidence(id: string, from: number, to = from, endExclusive = false) {
+    setEvidence((previous) => ({ id, from, to, ...(endExclusive ? { endExclusive } : {}), sequence: (previous?.sequence ?? 0) + 1 }));
   }
   const [factorsOpen, setFactorsOpen] = useState(true);
   useEffect(() => {
@@ -63,6 +64,7 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
     <div className={styles.main}>
       {review.strengths.length ? <section className={styles.strengths} aria-label="Что сохранить в своей игре"><h3>Что стоит повторить</h3>{review.strengths.map((text) => <p key={text}>{text}</p>)}</section> : null}
       <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" />
+      <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
       <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence} />
       <details className="details">
         <summary>Оценки, фазы и источники данных</summary>

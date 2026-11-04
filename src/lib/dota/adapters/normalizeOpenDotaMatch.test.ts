@@ -79,8 +79,10 @@ test('explicit sample times govern the 10-minute goal and missing totals stay un
     assert.equal(result.player?.gpm, undefined);
     assert.equal(result.player?.heroDamage, undefined);
     assert.equal(result.player?.lastHitsPerMin, undefined);
+    assert.deepEqual(result.player?.lastHitsByMinute, [null, null, 8, 15, null, null, null, null, null, null, 51, 60]);
     const truncated = await normalizeOpenDotaMatch(economyPayload({ times: [120, 180], lh_t: [8, 15, 60] }), { playerSlot: 0 });
     assert.equal(truncated.player?.laneReview?.lhAt10, undefined);
+    assert.equal(truncated.player?.lastHitsByMinute, undefined);
     const dire = await normalizeOpenDotaMatch({ ...payload, players: [{ hero_id: 54, player_slot: 128 }] }, { playerSlot: 128 });
     assert.equal(dire.player?.isRadiant, false);
   } finally { globalThis.fetch = originalFetch; }

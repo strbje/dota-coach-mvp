@@ -13,6 +13,7 @@ import type {
   StratzPositionSample
 } from '../types/domain';
 import { normalizeStratzCoordinates } from '../normalize/stratzCoordinates';
+import { normalizeFarmEvents } from '../normalize/farmEvents';
 import { evaluateDeathRules } from '../rules/deathRules';
 import { evaluateFightRules } from '../rules/fightRules';
 import { selectPlayer, type PlayerSelector } from '../selection/playerSelector';
@@ -88,6 +89,14 @@ export function normalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
 
   const selectedStats = (selected?.stats as UnknownRecord | undefined) ?? {};
   const playbackData = (selected?.playbackData as UnknownRecord | undefined) ?? {};
+  // The optional alias limits farm payloads to one account, without restricting the combat roster.
+  // An absent/mismatched alias cannot change role detection or attach another player's farm.
+  const farmPlayers = asArray<UnknownRecord>(match?.farmPlayers);
+  const farmPlayer = farmPlayers.length === 1 && farmPlayers[0] && selected
+    && ['steamAccountId', 'playerSlot', 'heroId'].every((key) => asNumber(selected[key]) !== undefined && farmPlayers[0][key] === selected[key]) ? farmPlayers[0] : undefined;
+  const farmPlayback = farmPlayer?.playbackData as UnknownRecord | undefined;
+  const farmEvents = normalizeFarmEvents(playbackData.csEvents ?? farmPlayback?.csEvents,
+    selected?.numLastHits ?? farmPlayer?.numLastHits, asNumber(match?.durationSeconds));
   const positionRaw = asArray<UnknownRecord>(playbackData.playerUpdatePositionEvents);
 
   const positionSamples: StratzPositionSample[] = positionRaw
@@ -228,6 +237,7 @@ export function normalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
     positionSamples,
     deathPositionSamples,
     farmDistribution,
+    farmEvents,
     heroAverageBenchmarks: heroAverage
   } : undefined;
 

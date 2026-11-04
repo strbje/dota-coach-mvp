@@ -2,9 +2,10 @@ import { runCarryPostMatchRules, type CarryHeroOverride } from '../roleRules/car
 import { normalizeOpenDotaMatch } from '../../adapters/normalizeOpenDotaMatch';
 import type { OpenDotaMatchResponse } from '../../types/providers';
 import { setHeroConstants } from '../../data/heroConstants';
+import { normalizeFarmEvents } from '../../normalize/farmEvents';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean } = {}) {
+export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
   setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
@@ -36,9 +37,18 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
     delete payload.objectives;
   }
   if (options.empty) payload.players = [{ player_slot: 0, hero_id: 42, isRadiant: true }];
+  if (options.farm === 'gap') selected.lh_t[23] = NaN;
   // Constants must be stubbed by the offline test/capture harness; never call live providers for fixtures.
   const normalized = await normalizeOpenDotaMatch(payload, { playerSlot: 0 });
   normalized.selectedPlayer.role = 'carry';
+  if (options.farm === 'partialOnly') delete normalized.player!.lastHitsByMinute;
+  const syntheticEvents = [25, 26, 40, 45, 15, 0, 20, 9].flatMap((count, window) => Array.from({ length: count }, (_, i) => ({
+    time: window * 300 + 10 + Math.floor(i * (Math.min(300, 2314 - window * 300) - 20) / count),
+    isCreep: i % 4 === 0, isNeutral: i % 4 === 1, isAncient: i % 4 === 2
+  })));
+  const farmEvents = options.farm && options.farm !== 'gap'
+    ? normalizeFarmEvents(options.farm === 'complete' ? syntheticEvents : syntheticEvents.slice(0, -2), syntheticEvents.length, 2314)
+    : undefined;
   const override: CarryHeroOverride = { key: 'synthetic-carry', heroId: 42, heroName: 'Wraith King', position: 'POSITION_1', earlyItemKey: '', timingItemKey: '', getFallbackItemTarget: () => undefined, coreItems: [], suspiciousItems: [], timingItemLateFinding: () => '', timingItemOnTimeFinding: () => '', suspiciousItemFinding: () => '' };
-  return { analysis: runCarryPostMatchRules(normalized, undefined, {}, override), debug: { synthetic: true } };
+  return { analysis: runCarryPostMatchRules(normalized, farmEvents ? { farmEvents } : undefined, {}, override), debug: { synthetic: true } };
 }

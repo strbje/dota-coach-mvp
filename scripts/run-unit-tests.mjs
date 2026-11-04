@@ -29,6 +29,8 @@ const tests = [
   'lib/dota/normalize/matchContext.test.js',
   'lib/dota/analyze/trainingChallenge.test.js',
   'lib/dota/analyze/timelinePresentation.test.js',
+  'lib/dota/analyze/farmIntervals.test.js',
+  'lib/dota/normalize/farmEvents.test.js',
   'lib/dota/rules/postMatch/matchReview.test.js',
   'lib/dota/normalize/economyByPhase.test.js',
   'lib/dota/normalize/goldReasons.test.js',
