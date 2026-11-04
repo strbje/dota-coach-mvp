@@ -1,0 +1,306 @@
+{
+  "reviewDateMsk": "2026-11-04",
+  "productReady": false,
+  "validation": "structural_only",
+  "synthetic": false,
+  "previousArchiveProtocol": "observations-map-assets-2026-11-04.json",
+  "archive": {
+    "name": "dota50-map-reference.zip",
+    "bytes": 628049,
+    "sha256": "c696b7b2bf6fa1c318cf38ac4a9c25ed7c66c08777738e03b22d5e8cf4c28c4b",
+    "crc32": "1606e719",
+    "entries": 2,
+    "manifestHashAndSizeMatch": true
+  },
+  "files": [
+    {
+      "path": "materials/overviews/dota_tga_d8178876.vtex_c",
+      "bytes": 1050660,
+      "sha256": "1ea55acc8b50b26a9a6e456b8746101c994f4c6b664b40c2385f4fc51cc58f2c",
+      "crc32": "d9e2fc78"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 178,
+      "sha256": "b4f3b7210ce7fd72808ac7f37726c5ed79b922bd863b9553180d5bbd26fad9d2",
+      "crc32": "eda66fda"
+    }
+  ],
+  "historicalCatalogs": [
+    {
+      "gameVersion": 6933,
+      "commit": "f61235b7975ff3be0131e57076191b61410c15ec",
+      "catalogSha256": "5cf23fc27dc36cdb4c2fbfe6ddf7824819a69b8d46b155c0ba24652773fa910e",
+      "textureSizeAndCrcMatch": true,
+      "historicalFileSha256Compared": false
+    },
+    {
+      "gameVersion": 6941,
+      "commit": "e84714d6ff871cfae0b59f3f9038860f052fa247",
+      "catalogSha256": "8ad0a4b038e009d14e626c757346d8ed14af3a7df3d2d89795556053fa49ff21",
+      "textureSizeAndCrcMatch": true,
+      "historicalFileSha256Compared": false
+    }
+  ],
+  "assetChain": {
+    "overview": "resource/overviews/dota.txt",
+    "material": "materials/overviews/dota.vmat_c",
+    "colorTexture": "materials/overviews/dota_tga_d8178876.vtex_c",
+    "referenceComplete": true,
+    "simpleMaterialChecked": false,
+    "activeClientMaterialVerified": false
+  },
+  "decoder": {
+    "name": "Source2Viewer-CLI",
+    "release": "20.1",
+    "runtimeVersion": "20.1.7467+9e2e6c7f67e3c4e5a5f443a60c3a5d841ba8f304",
+    "platform": "linux-x64",
+    "archiveSha256": "29d25a6d6b62377fc5386c3e5145b0a2180a401a50041afe9494b3f503deaef5",
+    "textureFormat": "RGBA8888",
+    "width": 512,
+    "height": 512,
+    "mipLevels": 1,
+    "alphaMin": 255,
+    "alphaMax": 255,
+    "resourceHeaderAndBlocksBytes": 2084,
+    "pixelPayloadBytes": 1048576,
+    "externalResourceReferences": [],
+    "dumpSha256": "0c0f2a6dfcd7e6446b805f11680d1b23188b5b39ec695788bee73a2a4ac98471"
+  },
+  "png": {
+    "path": "map-reference/dota_tga_d8178876.png",
+    "bytes": 508016,
+    "sha256": "54555b9d9a9533ab3d39b0719b941ff9ce4b37b9b2777718ef9d87fbc7a12914",
+    "crc32": "50b5e6ef"
+  },
+  "figure": {
+    "path": "map-reference/minimap-reference-comparison.png",
+    "bytes": 643199,
+    "sha256": "5225dd89921bf40909e82cf48b1c0a8a364e7341c7090c509108b9435c7e4b57",
+    "crc32": "032791be",
+    "width": 1440,
+    "height": 900,
+    "plotter": "Matplotlib 3.10.8",
+    "imageReader": "Pillow 12.3.0",
+    "realTextureAndReplayCoordinates": true,
+    "notClientScreenshot": true
+  },
+  "replayDataset": {
+    "path": "visual-review-data.json",
+    "sha256": "81525695edf7b209db45127ba76ca23a88b69caa06b69992d9b5202491ac9078",
+    "matchIds": [
+      9019592113,
+      9003795847
+    ],
+    "sameSixLandmarkWorldPositionsInBoth": true,
+    "figureReferenceMatchId": 9003795847,
+    "secondRoshanSpawnInFirstMatchAfterGameEnd": true
+  },
+  "overviewHypothesis": {
+    "acceptedForProduct": false,
+    "pixelCalibrationVerified": false,
+    "clientRenderReviewed": false,
+    "sourceSdkAnalogyOnly": true,
+    "sourceSdkCommit": "019e91ccd650a34745934c65cdbbe89ffcc44ede",
+    "posX": -9472,
+    "posY": 9472,
+    "scale": 18.5,
+    "logicalSize": 1024,
+    "physicalSize": 512,
+    "pixelCoordinateConvention": "continuous 0..512; actual Dota 2 pixel-center/edge and SIZE-1 convention unverified",
+    "pixelXFormula": "(worldX + 9472) / 37",
+    "pixelYFormula": "(9472 - worldY) / 37",
+    "fittedToLandmarks": false,
+    "measuredPixelError": null
+  },
+  "cameraComparison": {
+    "bounds": {
+      "xMin": -8448,
+      "xMax": 8448,
+      "yMin": -9472,
+      "yMax": 8448
+    },
+    "pixelXFormula": "(worldX + 8448) * 512 / 16896",
+    "pixelYFormula": "(8448 - worldY) * 512 / 17920",
+    "differenceFromOverviewIsNotMeasuredError": true
+  },
+  "landmarks": [
+    {
+      "id": 1,
+      "label": "Фонтан Radiant",
+      "world": [
+        -7456.0,
+        -6938.0
+      ],
+      "cell": [
+        68,
+        72
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": -89.93334425109862,
+      "overviewHypothesisPx": [
+        54.486486486486484,
+        443.5135135135135
+      ],
+      "cameraBoundsPx": [
+        30.060606060606062,
+        439.6
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Фонтан Dire",
+      "world": [
+        7408.0,
+        6848.0
+      ],
+      "cell": [
+        184,
+        180
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": -89.93334425109862,
+      "overviewHypothesisPx": [
+        456.2162162162162,
+        70.91891891891892
+      ],
+      "cameraBoundsPx": [
+        480.4848484848485,
+        45.714285714285715
+      ]
+    },
+    {
+      "id": 3,
+      "label": "Radiant T2 bot",
+      "world": [
+        -360.0,
+        -6256.0
+      ],
+      "cell": [
+        124,
+        78
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": -89.93334425109862,
+      "overviewHypothesisPx": [
+        246.27027027027026,
+        425.0810810810811
+      ],
+      "cameraBoundsPx": [
+        245.0909090909091,
+        420.1142857142857
+      ]
+    },
+    {
+      "id": 4,
+      "label": "Dire T2 top",
+      "world": [
+        -128.0,
+        6016.0
+      ],
+      "cell": [
+        126,
+        174
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": -89.93334425109862,
+      "overviewHypothesisPx": [
+        252.54054054054055,
+        93.4054054054054
+      ],
+      "cameraBoundsPx": [
+        252.12121212121212,
+        69.48571428571428
+      ]
+    },
+    {
+      "id": 5,
+      "label": "Рошан: северо-запад",
+      "world": [
+        -3194.28125,
+        2394.625
+      ],
+      "cell": [
+        102,
+        146
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": -89.93334425109862,
+      "overviewHypothesisPx": [
+        169.66807432432432,
+        191.28040540540542
+      ],
+      "cameraBoundsPx": [
+        159.2035984848485,
+        172.95357142857142
+      ]
+    },
+    {
+      "id": 6,
+      "label": "Рошан: юго-восток",
+      "world": [
+        2859.75,
+        -2764.78125
+      ],
+      "cell": [
+        150,
+        106
+      ],
+      "referenceMatchId": 9003795847,
+      "referenceTimeSeconds": 1660.1001225991822,
+      "overviewHypothesisPx": [
+        333.2905405405405,
+        330.72381756756755
+      ],
+      "cameraBoundsPx": [
+        342.65909090909093,
+        320.36517857142854
+      ]
+    }
+  ],
+  "qualitativeReview": {
+    "fountainsAndBothRoshanAreasConsistentWithOverviewCandidate": true,
+    "t2ExactPixelCentersIndependentlyKnown": false,
+    "conclusion": "Supports orientation/overview candidate only. No fitted transform, no measured pixel accuracy, no client-render validation."
+  },
+  "nextInput": {
+    "additionalMapAssetExtractionRequested": false,
+    "repeatPriorInputs": false,
+    "kind": "Dota client evidence",
+    "clips": [
+      {
+        "matchId": 9019592113,
+        "fromSeconds": 888,
+        "toSeconds": 892,
+        "case": "ordinary death; exact time association differs spatially"
+      },
+      {
+        "matchId": 9003795847,
+        "fromSeconds": 140,
+        "toSeconds": 144,
+        "case": "ordinary death; equidistant position samples"
+      },
+      {
+        "matchId": 9019592113,
+        "fromSeconds": 1778,
+        "toSeconds": 1782,
+        "case": "CS ordinal 246, zero-based index 245; skeleton"
+      },
+      {
+        "matchId": 9003795847,
+        "fromSeconds": 1139,
+        "toSeconds": 1143,
+        "case": "CS ordinals 177/178, zero-based indices 176/177; skeleton and hero"
+      }
+    ]
+  },
+  "checks": {
+    "zipAndManifest": "passed on real uploaded archive",
+    "historicalCatalogHashesSizeAndCrc": "passed",
+    "decodeAndImageInspection": "passed",
+    "landmarksAndProjectionArithmetic": "passed on real replay dataset",
+    "syntheticTestsProveRealCoordinates": false,
+    "windowsCommandsExecuted": false,
+    "applicationCodeChanged": false
+  }
+}

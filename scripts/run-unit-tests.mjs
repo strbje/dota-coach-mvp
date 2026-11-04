@@ -28,6 +28,7 @@ const tests = [
   'lib/dota/selection/matchPlayers.test.js',
   'lib/dota/normalize/matchContext.test.js',
   'lib/dota/analyze/trainingChallenge.test.js',
+  'lib/dota/research/coordinateReview.test.js',
   'lib/dota/analyze/timelinePresentation.test.js',
   'lib/dota/analyze/farmIntervals.test.js',
   'lib/dota/normalize/farmEvents.test.js',

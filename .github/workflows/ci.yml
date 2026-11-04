@@ -44,6 +44,9 @@ jobs:
       - name: Combat tests
         run: npm run test:combat
 
+      - name: STRATZ research capture tests (synthetic)
+        run: npm run test:stratz-research
+
       - name: Benchmark tests
         run: npm run test:benchmarks
 
@@ -52,3 +55,6 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Coordinate review stays unavailable in production
+        run: npm run check:coordinate-review

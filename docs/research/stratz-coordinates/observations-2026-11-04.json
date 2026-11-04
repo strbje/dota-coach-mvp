@@ -1,0 +1,1747 @@
+{
+  "reviewDateMsk": "2026-11-04",
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "stratzCaptureSha256": "2e8b153a247b862d8f713c41e069891fe0c25627b4be06226c0eed2ba79501b0",
+  "adapterBaselineSha256": "fe70396416ed32878ff089bd17acfaefc979c90baed2339be7b6f0899415bd05",
+  "comparatorSha256": "20f226a8d90677c9b8a4150f68cf52d47c3987053782e39b579d16b0a883dc05",
+  "probeSha256": "a4dc495ec15c67a422b2e7551d6bd6c7738cd4d70652dfab742995f666365aca",
+  "decoder": "Clarity 5.0.1 / clarity-protobuf 7.0 / Java 21.0.13",
+  "method": {
+    "clock": "(serverTick minus totalPausedTicks) times replay tick interval minus gameStart; use pauseStartTick while paused",
+    "deathClock": "Combat log timestamp minus gameStart; timestampRaw retains pause time and is not substituted",
+    "deathReference": "Same selected hero handle, first lifeState transition from 0 at combat death within 0.1s; illusions and willReincarnate=true excluded",
+    "positionDiagnostic": "Compare nearest replay sample to STRATZ integer time, then separately search same cell within +/-1s; latter is not exact time validation",
+    "referenceWorld": "cell*128+vec-16384, checked against two initial +600 combat-log locations below",
+    "mapAsset": null,
+    "visualReplayReview": false,
+    "goldJoin": "Original stream order, equal count and every amount; reason correspondence checked separately. No deduplication.",
+    "csExamples": "Match death log by lastHits ordinal and a 2s window, without using XY to select; preserve ambiguity",
+    "objectiveJoin": "Latest decoded state at or before the STRATZ time, per named building handle; match type/team/cell. Initial building records are not kills."
+  },
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "playerSlot": 129,
+      "replaySha256": "6c5dd9690cb514b51d3577d3d665364908803bd6adb199622565244180a4e8b3",
+      "decodeSha256": "aeb8f2e1edaeb0cba43c659178de21d962e29bc02ec4a93c8a272d9844e31905",
+      "decodeRows": 51208,
+      "decodeComplete": true,
+      "gameStart": 213.80002,
+      "file": {
+        "kind": "file",
+        "mapName": "start",
+        "buildNum": 10836,
+        "game": "",
+        "networkProtocol": 48,
+        "matchId": 9019592113,
+        "playbackTime": 2648.4001,
+        "playbackTicks": 79452
+      },
+      "serverInfo": {"kind": "serverInfo", "mapName": "start", "mapCrc": 0, "tickInterval": 0.033333335, "gameDir": "/opt/srcds/dota/dota_v6941/dota"},
+      "context": {
+        "kind": "context",
+        "buildNumber": 10836,
+        "gameVersion": 6941,
+        "clock": {
+          "tick": 5579,
+          "serverTick": 6414,
+          "millisPerTick": 33.333336,
+          "gameStart": 213.80002,
+          "absoluteTime": 213.80001631164552,
+          "gameTime": -1.998901353772453e-06,
+          "paused": false,
+          "totalPausedTicks": 0,
+          "pauseStartTick": 0,
+          "gameState": 5
+        }
+      },
+      "cameraBounds": {
+        "CBodyComponent.m_name": 0,
+        "CBodyComponent.m_hierarchyAttachName": 0,
+        "m_pEntity.m_nameStringTableIndex": -1,
+        "m_vecBoundsMin": {"v": [-8448.0, -9472.0, 0.0]},
+        "m_vecBoundsMax": {"v": [8448.0, 8448.0, 1024.0]}
+      },
+      "selectedResourceIndex": 6,
+      "heroHandle": 16744746,
+      "rawHeroDeathRecords": 13,
+      "reincarnationsExcluded": 6,
+      "totalPausedTicks": 1178,
+      "heroSnapshots": 38282,
+      "positions": {
+        "stratzRecords": 1413,
+        "nearestSampleSameCell": 1233,
+        "sameCellWithinOneSecond": 1413,
+        "signedNearestSameCellRange": [-0.9333437304687351, 0.13332950256349818],
+        "missingIndices": []
+      },
+      "initialWorldCrossCheck": {
+        "hero": {
+          "replayTick": 2885,
+          "serverTick": 3720,
+          "time": -89.80001053955077,
+          "cell": [182, 178],
+          "vec": [38.0, 100.0],
+          "world": [6950.0, 6500.0],
+          "handle": 16744746,
+          "lifeState": 0
+        },
+        "combatGoldLocation": [6950.0, 6499.996],
+        "measuredOffset": [16384.0, 16384.004]
+      },
+      "deaths": [
+        {
+          "index": 0,
+          "stratzTime": 408,
+          "replayCombatTime": 408.96668,
+          "stratzMinusReplaySeconds": -0.9666799999999967,
+          "replayKiller": "npc_dota_hero_magnataur",
+          "stratzEventXY": [78, 146],
+          "adapterXY": [78, 146],
+          "adapterConfidence": "exact",
+          "nearestStratzTime": 408,
+          "replayDying": {
+            "replayTick": 17849,
+            "serverTick": 18684,
+            "time": 409.0000275158691,
+            "cell": [78, 146],
+            "vec": [112.53124, 118.71875],
+            "world": [-6287.46876, 2422.71875],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.03334751586908169,
+          "adapterSameCell": true,
+          "adapterWorld": [-6400, 2304],
+          "adapterMinusReplayWorld": [-112.53124000000025, -118.71875],
+          "adapterErrorLength": 163.57695918894004
+        },
+        {
+          "index": 1,
+          "stratzTime": 890,
+          "replayCombatTime": 890.6332799999999,
+          "stratzMinusReplaySeconds": -0.6332799999998997,
+          "replayKiller": "npc_dota_hero_life_stealer",
+          "stratzEventXY": [88, 132],
+          "adapterXY": [88, 132],
+          "adapterConfidence": "exact",
+          "nearestStratzTime": 890,
+          "replayDying": {
+            "replayTick": 33477,
+            "serverTick": 34312,
+            "time": 890.666730930786,
+            "cell": [90, 130],
+            "vec": [168.65625, 101.53124],
+            "world": [-4695.34375, 357.53124000000025],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.03345093078610262,
+          "adapterSameCell": false,
+          "adapterWorld": [-5120, 512],
+          "adapterMinusReplayWorld": [-424.65625, 154.46875999999975],
+          "adapterErrorLength": 451.87778046724094
+        },
+        {
+          "index": 2,
+          "stratzTime": 1145,
+          "replayCombatTime": 1145.69998,
+          "stratzMinusReplaySeconds": -0.699980000000096,
+          "replayKiller": "npc_dota_hero_life_stealer",
+          "stratzEventXY": [158, 64],
+          "adapterXY": [null, null],
+          "adapterConfidence": "unmatched",
+          "nearestStratzTime": 1133,
+          "replayDying": {
+            "replayTick": 41128,
+            "serverTick": 41963,
+            "time": 1145.7000837216187,
+            "cell": [158, 64],
+            "vec": [192.46875, 62.1875],
+            "world": [4032.46875, -8129.8125],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.0001037216186432488,
+          "adapterSameCell": null,
+          "adapterWorld": null,
+          "adapterMinusReplayWorld": null,
+          "adapterErrorLength": null
+        },
+        {
+          "index": 3,
+          "stratzTime": 1251,
+          "replayCombatTime": 1251.63328,
+          "stratzMinusReplaySeconds": -0.6332800000000134,
+          "replayKiller": "npc_dota_hero_lich",
+          "stratzEventXY": [180, 110],
+          "adapterXY": [182, 110],
+          "adapterConfidence": "high",
+          "nearestStratzTime": 1252,
+          "replayDying": {
+            "replayTick": 44306,
+            "serverTick": 45141,
+            "time": 1251.633425137024,
+            "cell": [182, 110],
+            "vec": [100.6875, 191.65625],
+            "world": [7012.6875, -2112.34375],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.00014513702399199246,
+          "adapterSameCell": true,
+          "adapterWorld": [6912, -2304],
+          "adapterMinusReplayWorld": [-100.6875, -191.65625],
+          "adapterErrorLength": 216.49501338440223
+        },
+        {
+          "index": 4,
+          "stratzTime": 2019,
+          "replayCombatTime": 2019.33348,
+          "stratzMinusReplaySeconds": -0.33348000000000866,
+          "replayKiller": "npc_dota_hero_magnataur",
+          "stratzEventXY": [86, 134],
+          "adapterXY": [86, 134],
+          "adapterConfidence": "exact",
+          "nearestStratzTime": 2019,
+          "replayDying": {
+            "replayTick": 67338,
+            "serverTick": 68173,
+            "time": 2019.3668170437625,
+            "cell": [88, 134],
+            "vec": [81.125, 164.75],
+            "world": [-5038.875, 932.75],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.03333704376245805,
+          "adapterSameCell": false,
+          "adapterWorld": [-5376, 768],
+          "adapterMinusReplayWorld": [-337.125, -164.75],
+          "adapterErrorLength": 375.2277017025795
+        },
+        {
+          "index": 5,
+          "stratzTime": 2152,
+          "replayCombatTime": 2152.2333799999997,
+          "stratzMinusReplaySeconds": -0.23337999999966996,
+          "replayKiller": "npc_dota_hero_life_stealer",
+          "stratzEventXY": [154, 118],
+          "adapterXY": [156, 118],
+          "adapterConfidence": "high",
+          "nearestStratzTime": 2153,
+          "replayDying": {
+            "replayTick": 71324,
+            "serverTick": 72159,
+            "time": 2152.233493847351,
+            "cell": [156, 118],
+            "vec": [2.71875, 223.84375],
+            "world": [3586.71875, -1056.15625],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.00011384735125830048,
+          "adapterSameCell": true,
+          "adapterWorld": [3584, -1280],
+          "adapterMinusReplayWorld": [-2.71875, -223.84375],
+          "adapterErrorLength": 223.86026001866657
+        },
+        {
+          "index": 6,
+          "stratzTime": 2255,
+          "replayCombatTime": 2255.4667799999997,
+          "stratzMinusReplaySeconds": -0.4667799999997442,
+          "replayKiller": "npc_dota_hero_life_stealer",
+          "stratzEventXY": [168, 160],
+          "adapterXY": [168, 160],
+          "adapterConfidence": "low",
+          "nearestStratzTime": 2250,
+          "replayDying": {
+            "replayTick": 74422,
+            "serverTick": 75257,
+            "time": 2255.500168392639,
+            "cell": [168, 160],
+            "vec": [136.21875, 176.0],
+            "world": [5256.21875, 4272.0],
+            "handle": 16744746,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.03338839263915361,
+          "adapterSameCell": true,
+          "adapterWorld": [5120, 4096],
+          "adapterMinusReplayWorld": [-136.21875, -176.0],
+          "adapterErrorLength": 222.5568418439714
+        }
+      ],
+      "landmarks": [
+        {
+          "unitName": "dota_goodguys_tower2_bot",
+          "class": "CDOTA_BaseNPC_Tower",
+          "team": 2,
+          "replayTick": 2878,
+          "serverTick": 3713,
+          "time": -90.03334389068603,
+          "cell": [124, 78],
+          "vec": [152.0, 144.0],
+          "world": [-360.0, -6256.0],
+          "handle": 14287517,
+          "lifeState": 0
+        },
+        {
+          "unitName": "dota_badguys_tower2_top",
+          "class": "CDOTA_BaseNPC_Tower",
+          "team": 3,
+          "replayTick": 2878,
+          "serverTick": 3713,
+          "time": -90.03334389068603,
+          "cell": [126, 174],
+          "vec": [128.0, 128.0],
+          "world": [-128.0, 6016.0],
+          "handle": 6013624,
+          "lifeState": 0
+        },
+        {
+          "unitName": "ent_dota_fountain_bad",
+          "class": "CDOTA_Unit_Fountain",
+          "team": 3,
+          "replayTick": 2878,
+          "serverTick": 3713,
+          "time": -90.03334389068603,
+          "cell": [184, 180],
+          "vec": [240.0, 192.0],
+          "world": [7408.0, 6848.0],
+          "handle": 13566802,
+          "lifeState": 0
+        },
+        {
+          "unitName": "ent_dota_fountain_good",
+          "class": "CDOTA_Unit_Fountain",
+          "team": 2,
+          "replayTick": 2878,
+          "serverTick": 3713,
+          "time": -90.03334389068603,
+          "cell": [68, 72],
+          "vec": [224.0, 230.0],
+          "world": [-7456.0, -6938.0],
+          "handle": 4703224,
+          "lifeState": 0
+        },
+        {
+          "unitName": "npc_dota_roshan",
+          "class": "CDOTA_Unit_Roshan",
+          "team": 4,
+          "replayTick": 2881,
+          "serverTick": 3716,
+          "time": -89.93334388305664,
+          "cell": [102, 146],
+          "vec": [133.71875, 90.625],
+          "world": [-3194.28125, 2394.625],
+          "handle": 14877982,
+          "lifeState": 0
+        },
+        {
+          "unitName": "npc_dota_roshan",
+          "class": "CDOTA_Unit_Roshan",
+          "team": 4,
+          "replayTick": 77208,
+          "serverTick": 78043,
+          "time": 2348.36684214447,
+          "cell": [150, 106],
+          "vec": [43.75, 51.21875],
+          "world": [2859.75, -2764.78125],
+          "handle": 13731845,
+          "lifeState": 0
+        }
+      ],
+      "buildingPairChecks": [
+        {
+          "stratzIndex": 0,
+          "event": {"time": -89, "type": "TOWER", "positionX": 168, "positionY": 162, "isRadiant": false, "npcId": 35},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower4_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [168, 162],
+              "vec": [160.0, 80.0],
+              "world": [5280.0, 4432.0],
+              "handle": 6554304,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 1,
+          "event": {"time": -89, "type": "TOWER", "positionX": 84, "positionY": 86, "isRadiant": true, "npcId": 25},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower4_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [84, 86],
+              "vec": [240.0, 184.0],
+              "world": [-5392.0, -5192.0],
+              "handle": 13632193,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 2,
+          "event": {"time": -89, "type": "TOWER", "positionX": 114, "positionY": 116, "isRadiant": true, "npcId": 17},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower1_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [114, 116],
+              "vec": [248.0, 128.0],
+              "world": [-1544.0, -1408.0],
+              "handle": 15745730,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 3,
+          "event": {"time": -89, "type": "TOWER", "positionX": 176, "positionY": 110, "isRadiant": false, "npcId": 28},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower1_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [176, 110],
+              "vec": [125.34375, 64.0],
+              "world": [6269.34375, -2240.0],
+              "handle": 3490509,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 4,
+          "event": {"time": -89, "type": "OUTPOST", "positionX": 96, "positionY": 124, "isRadiant": true, "npcId": 822},
+          "matches": [
+            {
+              "unitName": "npc_dota_watch_tower_bottom",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [96, 124],
+              "vec": [0.0, 64.0],
+              "world": [-4096.0, -448.0],
+              "handle": 5636818,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 5,
+          "event": {"time": -89, "type": "OUTPOST", "positionX": 154, "positionY": 124, "isRadiant": false, "npcId": 822},
+          "matches": [
+            {
+              "unitName": "npc_dota_watch_tower_top",
+              "replayTick": 2881,
+              "serverTick": 3716,
+              "time": -89.93334388305664,
+              "cell": [154, 124],
+              "vec": [64.0, 64.0],
+              "world": [3392.0, -448.0],
+              "handle": 5735123,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 6,
+          "event": {"time": -89, "type": "TOWER", "positionX": 96, "positionY": 80, "isRadiant": true, "npcId": 24},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower3_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [96, 80],
+              "vec": [144.0, 32.0],
+              "world": [-3952.0, -6112.0],
+              "handle": 1262234,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 7,
+          "event": {"time": -89, "type": "TOWER", "positionX": 90, "positionY": 94, "isRadiant": true, "npcId": 23},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower3_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [90, 94],
+              "vec": [224.0, 208.0],
+              "world": [-4640.0, -4144.0],
+              "handle": 8536731,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 8,
+          "event": {"time": -89, "type": "TOWER", "positionX": 76, "positionY": 100, "isRadiant": true, "npcId": 22},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower3_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [76, 100],
+              "vec": [64.0, 176.0],
+              "world": [-6592.0, -3408.0],
+              "handle": 8094364,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 9,
+          "event": {"time": -89, "type": "TOWER", "positionX": 124, "positionY": 78, "isRadiant": true, "npcId": 21},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower2_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [124, 78],
+              "vec": [152.0, 144.0],
+              "world": [-360.0, -6256.0],
+              "handle": 14287517,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 10,
+          "event": {"time": -89, "type": "TOWER", "positionX": 164, "positionY": 78, "isRadiant": true, "npcId": 18},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower1_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [164, 78],
+              "vec": [251.875, 20.75],
+              "world": [4859.875, -6379.25],
+              "handle": 6587038,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 11,
+          "event": {"time": -89, "type": "TOWER", "positionX": 102, "positionY": 104, "isRadiant": true, "npcId": 20},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower2_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [102, 104],
+              "vec": [137.65625, 145.75],
+              "world": [-3190.34375, -2926.25],
+              "handle": 5030559,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 12,
+          "event": {"time": -89, "type": "TOWER", "positionX": 76, "positionY": 120, "isRadiant": true, "npcId": 19},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower2_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [76, 120],
+              "vec": [155.0, 152.0],
+              "world": [-6501.0, -872.0],
+              "handle": 8618656,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 13,
+          "event": {"time": -89, "type": "TOWER", "positionX": 78, "positionY": 142, "isRadiant": true, "npcId": 16},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower1_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [78, 142],
+              "vec": [64.0, 64.0],
+              "world": [-6336.0, 1856.0],
+              "handle": 8700577,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 14,
+          "event": {"time": -89, "type": "TOWER", "positionX": 82, "positionY": 90, "isRadiant": true, "npcId": 25},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_tower4_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [82, 90],
+              "vec": [176.0, 0.0],
+              "world": [-5712.0, -4864.0],
+              "handle": 12485282,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 15,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 90, "positionY": 92, "isRadiant": true, "npcId": 39},
+          "matches": [
+            {
+              "unitName": "good_rax_melee_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [90, 92],
+              "vec": [192.0, 56.0],
+              "world": [-4672.0, -4552.0],
+              "handle": 10158755,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 16,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 88, "positionY": 94, "isRadiant": true, "npcId": 42},
+          "matches": [
+            {
+              "unitName": "good_rax_range_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [88, 94],
+              "vec": [60.0, 153.0],
+              "world": [-5060.0, -4199.0],
+              "handle": 12534436,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 17,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 94, "positionY": 78, "isRadiant": true, "npcId": 40},
+          "matches": [
+            {
+              "unitName": "good_rax_melee_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [94, 78],
+              "vec": [72.0, 40.0],
+              "world": [-4280.0, -6360.0],
+              "handle": 2032293,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 18,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 94, "positionY": 82, "isRadiant": true, "npcId": 43},
+          "matches": [
+            {
+              "unitName": "good_rax_range_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [94, 82],
+              "vec": [73.0, 35.0],
+              "world": [-4279.0, -5853.0],
+              "handle": 3441318,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 19,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 78, "positionY": 98, "isRadiant": true, "npcId": 38},
+          "matches": [
+            {
+              "unitName": "good_rax_melee_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [78, 98],
+              "vec": [64.0, 82.0],
+              "world": [-6336.0, -3758.0],
+              "handle": 9978535,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 20,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 74, "positionY": 98, "isRadiant": true, "npcId": 41},
+          "matches": [
+            {
+              "unitName": "good_rax_range_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [74, 98],
+              "vec": [68.0, 81.0],
+              "world": [-6844.0, -3759.0],
+              "handle": 14271144,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 21,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 178, "positionY": 154, "isRadiant": false, "npcId": 46},
+          "matches": [
+            {
+              "unitName": "bad_rax_melee_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [178, 154],
+              "vec": [192.0, 64.03124],
+              "world": [6592.0, 3392.0312400000003],
+              "handle": 11240105,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 22,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 174, "positionY": 154, "isRadiant": false, "npcId": 49},
+          "matches": [
+            {
+              "unitName": "bad_rax_range_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [174, 154],
+              "vec": [176.0, 48.0],
+              "world": [6064.0, 3376.0],
+              "handle": 2540202,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 23,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 160, "positionY": 160, "isRadiant": false, "npcId": 48},
+          "matches": [
+            {
+              "unitName": "bad_rax_range_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [160, 160],
+              "vec": [240.0, 87.0],
+              "world": [4336.0, 4183.0],
+              "handle": 7865003,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 24,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 164, "positionY": 156, "isRadiant": false, "npcId": 45},
+          "matches": [
+            {
+              "unitName": "bad_rax_melee_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [164, 156],
+              "vec": [94.0, 240.0],
+              "world": [4702.0, 3824.0],
+              "handle": 15172268,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 25,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 158, "positionY": 170, "isRadiant": false, "npcId": 44},
+          "matches": [
+            {
+              "unitName": "bad_rax_melee_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [158, 170],
+              "vec": [58.03125, 120.0],
+              "world": [3898.03125, 5496.0],
+              "handle": 10584749,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 26,
+          "event": {"time": -89, "type": "BARRACKS", "positionX": 158, "positionY": 174, "isRadiant": false, "npcId": 47},
+          "matches": [
+            {
+              "unitName": "bad_rax_range_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [158, 174],
+              "vec": [54.0, 137.0],
+              "world": [3894.0, 6025.0],
+              "handle": 7111342,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 27,
+          "event": {"time": -89, "type": "FORT", "positionX": 170, "positionY": 166, "isRadiant": false, "npcId": 51},
+          "matches": [
+            {
+              "unitName": "dota_badguys_fort",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [170, 166],
+              "vec": [152.0, 136.0],
+              "world": [5528.0, 5000.0],
+              "handle": 1049263,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 28,
+          "event": {"time": -89, "type": "FORT", "positionX": 80, "positionY": 86, "isRadiant": true, "npcId": 50},
+          "matches": [
+            {
+              "unitName": "dota_goodguys_fort",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [80, 86],
+              "vec": [224.0, 24.0],
+              "world": [-5920.0, -5352.0],
+              "handle": 10486451,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 29,
+          "event": {"time": -89, "type": "TOWER", "positionX": 166, "positionY": 164, "isRadiant": false, "npcId": 35},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower4_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [166, 164],
+              "vec": [80.0, 168.0],
+              "world": [4944.0, 4776.0],
+              "handle": 1917623,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 30,
+          "event": {"time": -89, "type": "TOWER", "positionX": 126, "positionY": 174, "isRadiant": false, "npcId": 29},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower2_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [126, 174],
+              "vec": [128.0, 128.0],
+              "world": [-128.0, 6016.0],
+              "handle": 6013624,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 31,
+          "event": {"time": -89, "type": "TOWER", "positionX": 86, "positionY": 174, "isRadiant": false, "npcId": 26},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower1_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [86, 174],
+              "vec": [101.4375, 148.03125],
+              "world": [-5274.5625, 6036.03125],
+              "handle": 12976825,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 32,
+          "event": {"time": -89, "type": "TOWER", "positionX": 146, "positionY": 144, "isRadiant": false, "npcId": 30},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower2_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [146, 144],
+              "vec": [192.0, 64.0],
+              "world": [2496.0, 2112.0],
+              "handle": 9798330,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 33,
+          "event": {"time": -89, "type": "TOWER", "positionX": 132, "positionY": 132, "isRadiant": false, "npcId": 27},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower1_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [132, 132],
+              "vec": [12.0, 140.0],
+              "world": [524.0, 652.0],
+              "handle": 8471227,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 34,
+          "event": {"time": -89, "type": "TOWER", "positionX": 178, "positionY": 130, "isRadiant": false, "npcId": 31},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower2_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [178, 130],
+              "vec": [0.0, 128.0],
+              "world": [6400.0, 384.0],
+              "handle": 7914172,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 35,
+          "event": {"time": -89, "type": "TOWER", "positionX": 176, "positionY": 150, "isRadiant": false, "npcId": 34},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower3_bot",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [176, 150],
+              "vec": [192.0, 216.0],
+              "world": [6336.0, 3032.0],
+              "handle": 1032893,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 36,
+          "event": {"time": -89, "type": "TOWER", "positionX": 154, "positionY": 172, "isRadiant": false, "npcId": 32},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower3_top",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [154, 172],
+              "vec": [224.0, 144.0],
+              "world": [3552.0, 5776.0],
+              "handle": 1770174,
+              "lifeState": 0
+            }
+          ]
+        },
+        {
+          "stratzIndex": 37,
+          "event": {"time": -89, "type": "TOWER", "positionX": 160, "positionY": 156, "isRadiant": false, "npcId": 33},
+          "matches": [
+            {
+              "unitName": "dota_badguys_tower3_mid",
+              "replayTick": 2878,
+              "serverTick": 3713,
+              "time": -90.03334389068603,
+              "cell": [160, 156],
+              "vec": [176.0, 175.0],
+              "world": [4272.0, 3759.0],
+              "handle": 639679,
+              "lifeState": 0
+            }
+          ]
+        }
+      ],
+      "roshanPairChecks": [
+        {"stratzIndex": 0, "time": -89, "xy": [102, 146], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 15, "time": 901, "xy": [104, 144], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 18, "time": 904, "xy": [108, 140], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 19, "time": 905, "xy": [110, 138], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 22, "time": 908, "xy": [114, 134], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 23, "time": 909, "xy": [116, 132], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 26, "time": 912, "xy": [120, 128], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 27, "time": 913, "xy": [122, 126], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 28, "time": 915, "xy": [124, 124], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 29, "time": 916, "xy": [126, 122], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 31, "time": 918, "xy": [130, 120], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 32, "time": 919, "xy": [132, 118], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 33, "time": 921, "xy": [134, 116], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 35, "time": 923, "xy": [138, 114], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 36, "time": 924, "xy": [140, 112], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 38, "time": 926, "xy": [144, 110], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 41, "time": 929, "xy": [148, 106], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 48, "time": 1202, "xy": [146, 108], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 49, "time": 1203, "xy": [144, 110], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 50, "time": 1205, "xy": [142, 112], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 52, "time": 1207, "xy": [138, 114], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 53, "time": 1208, "xy": [136, 116], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 55, "time": 1210, "xy": [132, 118], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 58, "time": 1213, "xy": [128, 122], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 60, "time": 1215, "xy": [124, 124], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 61, "time": 1216, "xy": [122, 126], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 65, "time": 1220, "xy": [118, 132], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 66, "time": 1221, "xy": [116, 134], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 69, "time": 1224, "xy": [112, 138], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 70, "time": 1225, "xy": [110, 140], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 72, "time": 1227, "xy": [106, 142], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 75, "time": 1230, "xy": [102, 146], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 80, "time": 1501, "xy": [104, 144], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 83, "time": 1504, "xy": [108, 140], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 84, "time": 1505, "xy": [110, 138], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 87, "time": 1508, "xy": [114, 134], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 88, "time": 1509, "xy": [116, 132], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 91, "time": 1512, "xy": [120, 128], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 94, "time": 1515, "xy": [124, 124], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 95, "time": 1516, "xy": [126, 122], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 97, "time": 1518, "xy": [130, 120], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 100, "time": 1521, "xy": [134, 116], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 102, "time": 1523, "xy": [138, 114], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 103, "time": 1524, "xy": [140, 112], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 106, "time": 1527, "xy": [144, 108], "sameCellObservedWithinOneSecond": true},
+        {"stratzIndex": 108, "time": 1529, "xy": [148, 106], "sameCellObservedWithinOneSecond": true}
+      ],
+      "gold": {
+        "records": 379,
+        "orderedAmountDifferences": [],
+        "reasonCodes": {
+          "OTHER": [0],
+          "BOUNTY": [17],
+          "HEROES": [12],
+          "CREEPS": [13],
+          "NEUTRAL": [14],
+          "DEATH": [1],
+          "COURIERS": [16],
+          "STRUCTURES": [11],
+          "ROSHAN": [15]
+        },
+        "stratzMinusReplayTimeRange": [-1.0666800000000194, 1.8333449999999942]
+      },
+      "csExamples": [
+        {
+          "stratzIndex": 0,
+          "event": {
+            "time": 56,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 13,
+            "byAbility": null,
+            "byItem": null,
+            "gold": 39,
+            "xp": 28,
+            "positionX": 81,
+            "positionY": 169,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "DIRE_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 7259,
+            "serverTick": 8094,
+            "time": 56.00000058410646,
+            "cell": [80, 168],
+            "vec": [173.71875, 217.59375],
+            "world": [-5970.28125, 5337.59375],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 56.29998000000003, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_creep_goodguys_melee", "lastHits": 1}]
+        },
+        {
+          "stratzIndex": 12,
+          "event": {
+            "time": 164,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 81,
+            "byAbility": null,
+            "byItem": null,
+            "gold": 14,
+            "xp": 6,
+            "positionX": 86,
+            "positionY": 161,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false,
+            "mapLocation": "DIRE_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 10499,
+            "serverTick": 11334,
+            "time": 164.00000882385254,
+            "cell": [86, 160],
+            "vec": [132.0, 206.25],
+            "world": [-5244.0, 4302.25],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 164.93335, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_neutral_wildkin", "lastHits": 13}]
+        },
+        {
+          "stratzIndex": 65,
+          "event": {
+            "time": 676,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 897,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 42,
+            "xp": 60,
+            "positionX": 116,
+            "positionY": 166,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "ROAMING"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 25859,
+            "serverTick": 26694,
+            "time": 676.0000478863525,
+            "cell": [116, 166],
+            "vec": [112.75, 10.6875],
+            "world": [-1423.25, 4874.6875],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 676.26668, "attacker": "npc_dota_wraith_king_skeleton_warrior", "target": "npc_dota_neutral_grown_frog", "lastHits": 66}]
+        },
+        {
+          "stratzIndex": 179,
+          "event": {
+            "time": 1426,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 257,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 83,
+            "xp": null,
+            "positionX": 138,
+            "positionY": 135,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": true,
+            "mapLocation": "DIRE_MID_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 49536,
+            "serverTick": 50371,
+            "time": 1425.966771770935,
+            "cell": [138, 136],
+            "vec": [100.90624, 17.125],
+            "world": [1380.9062400000003, 1041.125],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [
+            {
+              "time": 1426.0999800000002,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_neutral_prowler_shaman",
+              "lastHits": 180
+            }
+          ]
+        },
+        {
+          "stratzIndex": 245,
+          "event": {
+            "time": 1780,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 845,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 37,
+            "xp": null,
+            "positionX": 93,
+            "positionY": 186,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "DIRE_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 60156,
+            "serverTick": 60991,
+            "time": 1779.9667987789917,
+            "cell": [84, 180],
+            "vec": [130.31248, 66.46875],
+            "world": [-5501.6875199999995, 6722.46875],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [
+            {
+              "time": 1780.2667800000002,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_creep_goodguys_flagbearer",
+              "lastHits": 246
+            },
+            {
+              "time": 1780.66668,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            },
+            {
+              "time": 1780.9333800000002,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            },
+            {
+              "time": 1781.16668,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            },
+            {
+              "time": 1781.4333800000002,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            },
+            {
+              "time": 1781.66668,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            },
+            {
+              "time": 1781.9333800000002,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_wraith_king_skeleton_warrior",
+              "lastHits": 246
+            }
+          ]
+        },
+        {
+          "stratzIndex": 274,
+          "event": {
+            "time": 1913,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 21,
+            "byAbility": null,
+            "byItem": null,
+            "gold": null,
+            "xp": null,
+            "positionX": null,
+            "positionY": null,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 64146,
+            "serverTick": 64981,
+            "time": 1912.9668089260865,
+            "cell": [126, 78],
+            "vec": [210.96875, 145.53125],
+            "world": [-45.03125, -6254.46875],
+            "handle": 16744746,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 1914.00028, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_goodguys_tower2_bot", "lastHits": 275}]
+        }
+      ]
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "playerSlot": 1,
+      "replaySha256": "37330b6f4ccaac79bb93a90e0dbcf2afa6453b05a65b69e66174372ae5c7ff64",
+      "decodeSha256": "ed68d6e16d5e1e4daf5f90d46414c320da93304a036677700785948403df61fa",
+      "decodeRows": 40811,
+      "decodeComplete": true,
+      "gameStart": 252.66669,
+      "file": {
+        "kind": "file",
+        "mapName": "start",
+        "buildNum": 10836,
+        "game": "",
+        "networkProtocol": 48,
+        "matchId": 9003795847,
+        "playbackTime": 2183.7002,
+        "playbackTicks": 65511
+      },
+      "serverInfo": {"kind": "serverInfo", "mapName": "start", "mapCrc": 0, "tickInterval": 0.033333335, "gameDir": "/opt/srcds/dota/dota_v6933/dota"},
+      "context": {
+        "kind": "context",
+        "buildNumber": 10836,
+        "gameVersion": 6933,
+        "clock": {
+          "tick": 6455,
+          "serverTick": 7580,
+          "millisPerTick": 33.333336,
+          "gameStart": 252.66669,
+          "absoluteTime": 252.6666859436035,
+          "gameTime": -1.0681152389224735e-06,
+          "paused": false,
+          "totalPausedTicks": 0,
+          "pauseStartTick": 0,
+          "gameState": 5
+        }
+      },
+      "cameraBounds": {
+        "CBodyComponent.m_name": 0,
+        "CBodyComponent.m_hierarchyAttachName": 0,
+        "m_pEntity.m_nameStringTableIndex": -1,
+        "m_vecBoundsMin": {"v": [-8448.0, -9472.0, 0.0]},
+        "m_vecBoundsMax": {"v": [8448.0, 8448.0, 1024.0]}
+      },
+      "selectedResourceIndex": 1,
+      "heroHandle": 16762208,
+      "rawHeroDeathRecords": 5,
+      "reincarnationsExcluded": 3,
+      "totalPausedTicks": 905,
+      "heroSnapshots": 30875,
+      "positions": {
+        "stratzRecords": 1211,
+        "nearestSampleSameCell": 1069,
+        "sameCellWithinOneSecond": 1211,
+        "signedNearestSameCellRange": [-0.933342648925759, 0.06672754150395122],
+        "missingIndices": []
+      },
+      "initialWorldCrossCheck": {
+        "hero": {
+          "replayTick": 3759,
+          "serverTick": 4884,
+          "time": -89.86667757934569,
+          "cell": [74, 76],
+          "vec": [162.0, 106.0],
+          "world": [-6750.0, -6550.0],
+          "handle": 16762208,
+          "lifeState": 0
+        },
+        "combatGoldLocation": [-6750.0, -6550.004],
+        "measuredOffset": [16384.0, 16384.004]
+      },
+      "deaths": [
+        {
+          "index": 0,
+          "stratzTime": 142,
+          "replayCombatTime": 142.86667000000003,
+          "stratzMinusReplaySeconds": -0.8666700000000276,
+          "replayKiller": "npc_dota_hero_axe",
+          "stratzEventXY": [170, 90],
+          "adapterXY": [170, 90],
+          "adapterConfidence": "high",
+          "nearestStratzTime": 141,
+          "replayDying": {
+            "replayTick": 10741,
+            "serverTick": 11866,
+            "time": 142.86667351013185,
+            "cell": [170, 92],
+            "vec": [93.875, 104.5625],
+            "world": [5469.875, -4503.4375],
+            "handle": 16762208,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 3.5101318189845188e-06,
+          "adapterSameCell": false,
+          "adapterWorld": [5376, -4864],
+          "adapterMinusReplayWorld": [-93.875, -360.5625],
+          "adapterErrorLength": 372.5826512751902
+        },
+        {
+          "index": 1,
+          "stratzTime": 1728,
+          "replayCombatTime": 1728.80011,
+          "stratzMinusReplaySeconds": -0.8001099999999042,
+          "replayKiller": "dota_fountain",
+          "stratzEventXY": [166, 176],
+          "adapterXY": [166, 176],
+          "adapterConfidence": "medium",
+          "nearestStratzTime": 1726,
+          "replayDying": {
+            "replayTick": 59225,
+            "serverTick": 60350,
+            "time": 1728.8334611764526,
+            "cell": [166, 176],
+            "vec": [116.5625, 87.65624],
+            "world": [4980.5625, 6231.65624],
+            "handle": 16762208,
+            "lifeState": 1
+          },
+          "replayReferenceTimeDelta": 0.03335117645269747,
+          "adapterSameCell": true,
+          "adapterWorld": [4864, 6144],
+          "adapterMinusReplayWorld": [-116.5625, -87.65624000000025],
+          "adapterErrorLength": 145.84386451677577
+        }
+      ],
+      "landmarks": [
+        {
+          "unitName": "dota_goodguys_tower2_bot",
+          "class": "CDOTA_BaseNPC_Tower",
+          "team": 2,
+          "replayTick": 3757,
+          "serverTick": 4882,
+          "time": -89.93334425109862,
+          "cell": [124, 78],
+          "vec": [152.0, 144.0],
+          "world": [-360.0, -6256.0],
+          "handle": 7389867,
+          "lifeState": 0
+        },
+        {
+          "unitName": "dota_badguys_tower2_top",
+          "class": "CDOTA_BaseNPC_Tower",
+          "team": 3,
+          "replayTick": 3757,
+          "serverTick": 4882,
+          "time": -89.93334425109862,
+          "cell": [126, 174],
+          "vec": [128.0, 128.0],
+          "world": [-128.0, 6016.0],
+          "handle": 852678,
+          "lifeState": 0
+        },
+        {
+          "unitName": "ent_dota_fountain_bad",
+          "class": "CDOTA_Unit_Fountain",
+          "team": 3,
+          "replayTick": 3757,
+          "serverTick": 4882,
+          "time": -89.93334425109862,
+          "cell": [184, 180],
+          "vec": [240.0, 192.0],
+          "world": [7408.0, 6848.0],
+          "handle": 15778656,
+          "lifeState": 0
+        },
+        {
+          "unitName": "ent_dota_fountain_good",
+          "class": "CDOTA_Unit_Fountain",
+          "team": 2,
+          "replayTick": 3757,
+          "serverTick": 4882,
+          "time": -89.93334425109862,
+          "cell": [68, 72],
+          "vec": [224.0, 230.0],
+          "world": [-7456.0, -6938.0],
+          "handle": 9618438,
+          "lifeState": 0
+        },
+        {
+          "unitName": "npc_dota_roshan",
+          "class": "CDOTA_Unit_Roshan",
+          "team": 4,
+          "replayTick": 3757,
+          "serverTick": 4882,
+          "time": -89.93334425109862,
+          "cell": [102, 146],
+          "vec": [133.71875, 90.625],
+          "world": [-3194.28125, 2394.625],
+          "handle": 13354284,
+          "lifeState": 0
+        },
+        {
+          "unitName": "npc_dota_roshan",
+          "class": "CDOTA_Unit_Roshan",
+          "team": 4,
+          "replayTick": 57163,
+          "serverTick": 58288,
+          "time": 1660.1001225991822,
+          "cell": [150, 106],
+          "vec": [43.75, 51.21875],
+          "world": [2859.75, -2764.78125],
+          "handle": 11257492,
+          "lifeState": 0
+        }
+      ],
+      "buildingPairChecks": [],
+      "roshanPairChecks": [],
+      "gold": {
+        "records": 361,
+        "orderedAmountDifferences": [],
+        "reasonCodes": {
+          "OTHER": [0],
+          "BOUNTY": [17],
+          "CREEPS": [13],
+          "HEROES": [12],
+          "DEATH": [1],
+          "COURIERS": [16],
+          "NEUTRAL": [14],
+          "STRUCTURES": [11],
+          "ROSHAN": [15]
+        },
+        "stratzMinusReplayTimeRange": [-1.0667100000000573, 1.9000099999999804]
+      },
+      "csExamples": [
+        {
+          "stratzIndex": 0,
+          "event": {
+            "time": 58,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 10,
+            "byAbility": null,
+            "byItem": null,
+            "gold": 39,
+            "xp": 28,
+            "positionX": 161,
+            "positionY": 82,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 8195,
+            "serverTick": 9320,
+            "time": 58.00000036865234,
+            "cell": [160, 82],
+            "vec": [171.5, 41.875],
+            "world": [4267.5, -5846.125],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 58.33333999999999, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_creep_badguys_melee", "lastHits": 1}]
+        },
+        {
+          "stratzIndex": 5,
+          "event": {
+            "time": 121,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 111,
+            "byAbility": null,
+            "byItem": null,
+            "gold": null,
+            "xp": null,
+            "positionX": null,
+            "positionY": null,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 10085,
+            "serverTick": 11210,
+            "time": 121.00000517517091,
+            "cell": [168, 94],
+            "vec": [7.4375, 125.6875],
+            "world": [5127.4375, -4226.3125],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 121.20000999999999, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_sentry_wards", "lastHits": 6}]
+        },
+        {
+          "stratzIndex": 43,
+          "event": {
+            "time": 538,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 93,
+            "byAbility": null,
+            "byItem": null,
+            "gold": 18,
+            "xp": 35,
+            "positionX": 160,
+            "positionY": 85,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 22595,
+            "serverTick": 23720,
+            "time": 538.000036989746,
+            "cell": [160, 84],
+            "vec": [28.09375, 150.625],
+            "world": [4124.09375, -5481.375],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 538.53331, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_neutral_gnoll_assassin", "lastHits": 44}]
+        },
+        {
+          "stratzIndex": 90,
+          "event": {
+            "time": 805,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 69,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 15,
+            "xp": null,
+            "positionX": 175,
+            "positionY": 79,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false,
+            "mapLocation": "RADIANT_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 30605,
+            "serverTick": 31730,
+            "time": 805.0000573602294,
+            "cell": [174, 74],
+            "vec": [125.53124, 209.81248],
+            "world": [6013.53124, -6702.1875199999995],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [
+            {
+              "time": 806.0667100000001,
+              "attacker": "npc_dota_wraith_king_skeleton_warrior",
+              "target": "npc_dota_neutral_centaur_outrunner",
+              "lastHits": 91
+            }
+          ]
+        },
+        {
+          "stratzIndex": 176,
+          "event": {
+            "time": 1141,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 10,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": 39,
+            "xp": 105,
+            "positionX": 90,
+            "positionY": 128,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "ROAMING"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 41589,
+            "serverTick": 42714,
+            "time": 1140.9667496591187,
+            "cell": [90, 128],
+            "vec": [66.75, 103.0625],
+            "world": [-4797.25, 103.0625],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 1141.36671, "attacker": "npc_dota_wraith_king_skeleton_warrior", "target": "npc_dota_creep_badguys_melee", "lastHits": 177}]
+        },
+        {
+          "stratzIndex": 177,
+          "event": {
+            "time": 1141,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 89,
+            "byAbility": null,
+            "byItem": null,
+            "gold": 39,
+            "xp": 105,
+            "positionX": 90,
+            "positionY": 128,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": true,
+            "mapLocation": "ROAMING"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 41589,
+            "serverTick": 42714,
+            "time": 1140.9667496591187,
+            "cell": [90, 128],
+            "vec": [66.75, 103.0625],
+            "world": [-4797.25, 103.0625],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 1141.73341, "attacker": "npc_dota_hero_skeleton_king", "target": "npc_dota_neutral_rock_golem", "lastHits": 178}]
+        },
+        {
+          "stratzIndex": 236,
+          "event": {
+            "time": 1423,
+            "attacker": 42,
+            "isFromIllusion": false,
+            "npcId": 29,
+            "byAbility": 5087,
+            "byItem": null,
+            "gold": null,
+            "xp": null,
+            "positionX": null,
+            "positionY": null,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false,
+            "mapLocation": "DIRE_SAFE_LANE"
+          },
+          "heroAtStratzTime": {
+            "replayTick": 50049,
+            "serverTick": 51174,
+            "time": 1422.9667711740112,
+            "cell": [138, 170],
+            "vec": [255.03125, 251.46875],
+            "world": [1535.03125, 5627.46875],
+            "handle": 16762208,
+            "lifeState": 0
+          },
+          "replayDeaths": [{"time": 1423.63351, "attacker": "npc_dota_wraith_king_skeleton_warrior", "target": "npc_dota_badguys_tower2_top", "lastHits": 237}]
+        }
+      ]
+    }
+  ]
+}

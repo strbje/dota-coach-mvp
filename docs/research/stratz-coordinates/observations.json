@@ -1,0 +1,467 @@
+{
+  "reviewDateMsk": "2026-10-24",
+  "baseCommit": "9d6daa5b72edc0769cdc8c48e44b685605fd0a7d",
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "pairedStratzReplayChecks": 0,
+  "sourceCapture": {
+    "filename": "stratz-controlled-study.json",
+    "bytes": 2160774,
+    "sha256": "70fc6eb248182d4478ff597b5010aca22abb77ffd06d69bb6060fef5f4252e74",
+    "capturedAt": "2026-09-30T21:48:15.216Z"
+  },
+  "controlsCapture": {
+    "filename": "stratz-cohort-controls.json",
+    "bytes": 1159577,
+    "sha256": "7d6108767f85fc5a9fd6cb78606cd530ca77455e227a189782ad94b13a8a028a",
+    "coordinateQueries": false
+  },
+  "matches": [
+    {
+      "matchId": 8781054570,
+      "heroId": 54,
+      "stratz": {
+        "playerSlot": 0,
+        "gameVersionId": 186,
+        "durationSeconds": 4732,
+        "playbackStatus": "null",
+        "positionEvents": "not_requested",
+        "goldEvents": "not_requested",
+        "deaths": "not_requested"
+      },
+      "openDota": {
+        "bytes": 380147,
+        "sha256": "ccf691f4013ae57c4469ee309b8c02787d5243c38d6e9f77e61f832cd74cba22",
+        "startTime": 1776810769,
+        "durationSeconds": 4732,
+        "patch": 60,
+        "replayUrl": "http://replay183.valve.net/570/8781054570_367562171.dem.bz2",
+        "playerSlot": 0,
+        "deaths": 9,
+        "lastHits": 676,
+        "deathsLogStatus": "not_returned",
+        "deathsLog": null,
+        "deathPositionWindows": [
+          {
+            "start": 2535,
+            "end": 2579,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "176": {
+                "135": 1
+              }
+            }
+          },
+          {
+            "start": 2905,
+            "end": 2946,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "131": {
+                "104": 1
+              }
+            }
+          },
+          {
+            "start": 3333,
+            "end": 3377,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "116": {
+                "166": 1
+              }
+            }
+          },
+          {
+            "start": 3866,
+            "end": 3930,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "157": {
+                "172": 1
+              }
+            }
+          }
+        ],
+        "roshanEvents": [
+          {
+            "time": 2234,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 2
+          },
+          {
+            "time": 2969,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 3
+          },
+          {
+            "time": 3663,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 2
+          },
+          {
+            "time": 4306,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 2
+          }
+        ]
+      }
+    },
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "stratz": {
+        "playerSlot": 129,
+        "gameVersionId": 190,
+        "durationSeconds": 2278,
+        "playbackStatus": "present",
+        "positionEvents": "not_requested",
+        "goldEvents": "not_requested",
+        "deaths": "not_requested",
+        "csEvents": 302,
+        "finalLastHits": 302,
+        "flagOrder": [
+          "isCreep",
+          "isNeutral",
+          "isAncient"
+        ],
+        "flagCounts": {
+          "1,0,0": 117,
+          "0,1,0": 140,
+          "0,0,0": 44,
+          "0,0,1": 1
+        },
+        "csTimeRange": [
+          56,
+          2236
+        ],
+        "strictBeforeClockComparisons": 38,
+        "strictBeforeClockMismatches": [],
+        "playerUpdateGoldEvents": 2281,
+        "csExamples": {
+          "isCreep": {
+            "time": 56,
+            "npcId": 13,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "isNeutral": {
+            "time": 164,
+            "npcId": 81,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false
+          },
+          "isAncient": {
+            "time": 1426,
+            "npcId": 257,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": true
+          }
+        },
+        "unclassifiedExample": {
+          "time": 676,
+          "npcId": 897,
+          "isCreep": false,
+          "isNeutral": false,
+          "isAncient": false
+        }
+      },
+      "openDota": {
+        "bytes": 287051,
+        "sha256": "48ed6c44a898d7a6b797539068ddd6ad623f2f2058f4d77aae9c574e9cb3c3ec",
+        "startTime": 1790547169,
+        "durationSeconds": 2278,
+        "patch": 60,
+        "replayUrl": "http://replay185.valve.net/570/9019592113_1795309280.dem.bz2",
+        "playerSlot": 129,
+        "deaths": 7,
+        "lastHits": 302,
+        "deathsLogStatus": "present",
+        "deathsLog": [
+          {
+            "time": 409,
+            "gold_lost": 69,
+            "key": "npc_dota_hero_magnataur",
+            "time_dead": 20
+          },
+          {
+            "time": 890,
+            "gold_lost": 172,
+            "key": "npc_dota_hero_life_stealer",
+            "time_dead": 33
+          },
+          {
+            "time": 1146,
+            "gold_lost": 226,
+            "key": "npc_dota_hero_life_stealer",
+            "time_dead": 40
+          },
+          {
+            "time": 1251,
+            "gold_lost": 241,
+            "key": "npc_dota_hero_lich",
+            "time_dead": 42
+          },
+          {
+            "time": 2019,
+            "gold_lost": 470,
+            "key": "npc_dota_hero_magnataur",
+            "time_dead": 75
+          },
+          {
+            "time": 2152,
+            "gold_lost": 480,
+            "key": "npc_dota_hero_life_stealer",
+            "time_dead": 17
+          },
+          {
+            "time": 2255,
+            "gold_lost": 444,
+            "key": "npc_dota_hero_life_stealer"
+          }
+        ],
+        "deathPositionWindows": [
+          {
+            "start": 365,
+            "end": 428,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "79": {
+                "148": 1
+              }
+            }
+          },
+          {
+            "start": 875,
+            "end": 913,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "89": {
+                "133": 1
+              }
+            }
+          },
+          {
+            "start": 1234,
+            "end": 1270,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "182": {
+                "111": 1
+              }
+            }
+          },
+          {
+            "start": 1983,
+            "end": 2034,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "87": {
+                "137": 1
+              }
+            }
+          }
+        ],
+        "roshanEvents": [
+          {
+            "time": 1688,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 3
+          }
+        ]
+      }
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "stratz": {
+        "playerSlot": 1,
+        "gameVersionId": 190,
+        "durationSeconds": 1793,
+        "playbackStatus": "present",
+        "positionEvents": "not_requested",
+        "goldEvents": "not_requested",
+        "deaths": "not_requested",
+        "csEvents": 281,
+        "finalLastHits": 281,
+        "flagOrder": [
+          "isCreep",
+          "isNeutral",
+          "isAncient"
+        ],
+        "flagCounts": {
+          "1,0,0": 163,
+          "0,0,0": 33,
+          "0,1,0": 76,
+          "0,0,1": 9
+        },
+        "csTimeRange": [
+          58,
+          1715
+        ],
+        "strictBeforeClockComparisons": 30,
+        "strictBeforeClockMismatches": [
+          {
+            "tick": 660,
+            "eventCount": 68,
+            "opendotaLastHits": 67
+          }
+        ],
+        "playerUpdateGoldEvents": 1796,
+        "csExamples": {
+          "isCreep": {
+            "time": 58,
+            "npcId": 10,
+            "isCreep": true,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "isNeutral": {
+            "time": 538,
+            "npcId": 93,
+            "isCreep": false,
+            "isNeutral": true,
+            "isAncient": false
+          },
+          "isAncient": {
+            "time": 1141,
+            "npcId": 89,
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": true
+          }
+        },
+        "unclassifiedExample": {
+          "time": 121,
+          "npcId": 111,
+          "isCreep": false,
+          "isNeutral": false,
+          "isAncient": false
+        }
+      },
+      "openDota": {
+        "bytes": 250778,
+        "sha256": "71519d5c3660d5b905e39d58aa1c089a4b612c9e959593c75a4d09e00796e9d5",
+        "startTime": 1789679396,
+        "durationSeconds": 1793,
+        "patch": 60,
+        "replayUrl": "http://replay273.valve.net/570/9003795847_131812823.dem.bz2",
+        "playerSlot": 1,
+        "deaths": 2,
+        "lastHits": 281,
+        "deathsLogStatus": "present",
+        "deathsLog": [
+          {
+            "time": 143,
+            "gold_lost": 26,
+            "key": "npc_dota_hero_axe",
+            "time_dead": 11
+          },
+          {
+            "time": 1728,
+            "gold_lost": 496,
+            "key": "dota_fountain"
+          }
+        ],
+        "deathPositionWindows": [
+          {
+            "start": 1706,
+            "end": 1748,
+            "deaths": 1,
+            "rawDeathsPos": {
+              "167": {
+                "177": 1
+              }
+            }
+          }
+        ],
+        "roshanEvents": [
+          {
+            "time": 1166,
+            "type": "CHAT_MESSAGE_ROSHAN_KILL",
+            "team": 2
+          }
+        ]
+      }
+    }
+  ],
+  "network": [
+    {
+      "key": "replay-8781054570",
+      "url": "https://replay183.valve.net/570/8781054570_367562171.dem.bz2",
+      "startedAt": "2026-10-23T21:48:52.496941+00:00",
+      "httpStatus": "503",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 169,
+      "sha256": "837d67b8d0978aaa265b734b9c2940aef00508410893345982d3b3159ad9c634",
+      "preview": "HTTP/1.1 200 OK\r\ndate: Fri, 23 Oct 2026 21:48:56 GMT\r\n\r\nHTTP/2 503 \r\ncontent-length: 98\r\ncontent-type: text/plain\r\ndate: Fri, 23 Oct 2026 21:48:56 GMT\r\nserver: envoy\r\n\r\n"
+    },
+    {
+      "key": "opendota-8781054570",
+      "url": "https://api.opendota.com/api/matches/8781054570",
+      "startedAt": "2026-10-23T21:48:52.497425+00:00",
+      "httpStatus": "200",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 380147,
+      "sha256": "ccf691f4013ae57c4469ee309b8c02787d5243c38d6e9f77e61f832cd74cba22"
+    },
+    {
+      "key": "replay-9019592113",
+      "url": "https://replay185.valve.net/570/9019592113_1795309280.dem.bz2",
+      "startedAt": "2026-10-23T21:48:52.497917+00:00",
+      "httpStatus": "503",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 169,
+      "sha256": "afd746369079f49c3fe0a81942fe4010b151c0c089fc6481ac88593868c13af2",
+      "preview": "HTTP/1.1 200 OK\r\ndate: Fri, 23 Oct 2026 21:48:55 GMT\r\n\r\nHTTP/2 503 \r\ncontent-length: 98\r\ncontent-type: text/plain\r\ndate: Fri, 23 Oct 2026 21:48:55 GMT\r\nserver: envoy\r\n\r\n"
+    },
+    {
+      "key": "opendota-9019592113",
+      "url": "https://api.opendota.com/api/matches/9019592113",
+      "startedAt": "2026-10-23T21:48:52.498170+00:00",
+      "httpStatus": "200",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 287051,
+      "sha256": "48ed6c44a898d7a6b797539068ddd6ad623f2f2058f4d77aae9c574e9cb3c3ec"
+    },
+    {
+      "key": "replay-9003795847",
+      "url": "https://replay273.valve.net/570/9003795847_131812823.dem.bz2",
+      "startedAt": "2026-10-23T21:48:52.498779+00:00",
+      "httpStatus": "503",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 169,
+      "sha256": "afd746369079f49c3fe0a81942fe4010b151c0c089fc6481ac88593868c13af2",
+      "preview": "HTTP/1.1 200 OK\r\ndate: Fri, 23 Oct 2026 21:48:55 GMT\r\n\r\nHTTP/2 503 \r\ncontent-length: 98\r\ncontent-type: text/plain\r\ndate: Fri, 23 Oct 2026 21:48:55 GMT\r\nserver: envoy\r\n\r\n"
+    },
+    {
+      "key": "opendota-9003795847",
+      "url": "https://api.opendota.com/api/matches/9003795847",
+      "startedAt": "2026-10-23T21:48:52.499049+00:00",
+      "httpStatus": "200",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 250778,
+      "sha256": "71519d5c3660d5b905e39d58aa1c089a4b612c9e959593c75a4d09e00796e9d5"
+    },
+    {
+      "key": "stratz-schema",
+      "url": "https://api.stratz.com/graphql",
+      "startedAt": "2026-10-23T21:48:55.427709+00:00",
+      "httpStatus": "403",
+      "exitCode": 0,
+      "error": "",
+      "bytes": 95,
+      "sha256": "6a69e3ea104ccebb315b8c4e6e3ac4485dac13d6d956848b0c87e1d91d539db7",
+      "preview": "{\n  \"message\":\"A bearer token is required for a request. View more at https://stratz.com/api\"\n}"
+    }
+  ]
+}

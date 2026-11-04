@@ -1,0 +1,37 @@
+{
+  "java": "Temurin 21.0.13+9",
+  "python": "3.12.14",
+  "zstandard": "0.25.0",
+  "jars": [
+    {
+      "file": "clarity-5.0.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/skadistats/clarity/5.0.1/clarity-5.0.1.jar",
+      "sha256": "8d42d78f383b25bd23ed2d1f61d6efe06866b14f98e0a4852163022b44320bd9"
+    },
+    {
+      "file": "clarity-protobuf-7.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/skadistats/clarity-protobuf/7.0/clarity-protobuf-7.0.jar",
+      "sha256": "d2974b5ca60baca1a369541fe2a0a0660295d1b0d2d4e204e069aa2e8f4b7348"
+    },
+    {
+      "file": "snappy-java-1.1.10.7.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/xerial/snappy/snappy-java/1.1.10.7/snappy-java-1.1.10.7.jar",
+      "sha256": "4c766cb3f855415ee734b2392949a0b6f12a60879334a74518deaf6270d32e36"
+    },
+    {
+      "file": "slf4j-api-2.0.17.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar",
+      "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832"
+    },
+    {
+      "file": "fastutil-core-8.5.12.jar",
+      "url": "https://repo.maven.apache.org/maven2/it/unimi/dsi/fastutil-core/8.5.12/fastutil-core-8.5.12.jar",
+      "sha256": "f31c20f5b06312f3d5e06e6160a32e274d819aa6cebf27528b26b6b5c0c1df19"
+    },
+    {
+      "file": "gson-2.8.9.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.8.9/gson-2.8.9.jar",
+      "sha256": "d3999291855de495c94c743761b8ab5176cfeabe281a5ab0d8e8d45326fd703e"
+    }
+  ]
+}
