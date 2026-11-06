@@ -13,9 +13,10 @@ import { MatchContextTimeline } from './MatchContextTimeline';
 import { TrainingChallengeCard } from './TrainingChallengeCard';
 import { formatGameTime } from '@/lib/dota/utils/time';
 import { FarmIntervals } from './FarmIntervals';
+import { MatchParseControl } from './MatchParseControl';
 import styles from './postMatch.module.css';
 
-export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
+export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { analysis: PostMatchAnalysis; onRefresh?: () => Promise<boolean>; refreshing?: boolean }) {
   const { review } = analysis;
   const [evidence, setEvidence] = useState<EvidenceRequest>();
   const factors = review.factors.filter((factor) => factor.id !== 'personal-start');
@@ -67,7 +68,8 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
       {review.strengths.length ? <section className={styles.strengths} aria-label="Что сохранить в своей игре"><h3>Что стоит повторить</h3>{review.strengths.map((text) => <p key={text}>{text}</p>)}</section> : null}
       <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
       {analysis.itemTimings.length ? <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" /> : <p className={styles.note}>Время ключевых покупок недоступно.</p>}
-      <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence} />
+      <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence}
+        dataAction={analysis.meta?.openDotaParsed === false && onRefresh ? <MatchParseControl key={analysis.matchId} matchId={analysis.matchId} onRefresh={onRefresh} refreshing={refreshing} /> : undefined} />
       <details className="details">
         <summary>Подробности и источники</summary>
         <div className="details-content">

@@ -136,6 +136,8 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
 
   return { matchId: toNumber(payload.match_id), didRadiantWin: toBoolean(payload.radiant_win), durationSeconds,
     startTime: normalizeOptionalNumber(payload.start_time), gameMode: normalizeOptionalNumber(payload.game_mode), lobbyType: normalizeOptionalNumber(payload.lobby_type),
+    openDotaParsed: typeof (payload.od_data as { has_parsed?: unknown } | undefined)?.has_parsed === 'boolean'
+      ? (payload.od_data as { has_parsed: boolean }).has_parsed : undefined,
     teamAdvantage: normalizeTeamAdvantage(payload, isRadiant, durationSeconds),
     objectiveTimeline: normalizeObjectiveTimeline(payload.objectives, durationSeconds),
     selectedPlayer, player: {

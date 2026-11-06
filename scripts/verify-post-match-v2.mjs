@@ -32,6 +32,8 @@ let fixtures;
 try {
   fixtures = {
     product: await syntheticPostMatch({ product: true, farm: 'complete', partial: true }),
+    productPartial: await syntheticPostMatch({ product: true, farm: 'partialOnly', partial: true }),
+    xpOnly: await syntheticPostMatch({ resources: 'xp' }), goldOnly: await syntheticPostMatch({ resources: 'gold' }),
     ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
     farmComplete: await syntheticPostMatch({ farm: 'complete' }), farmPartial: await syntheticPostMatch({ farm: 'partial' }),
@@ -84,6 +86,8 @@ const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 let scenario = 'ready';
 let delay = 0;
+let parseCalls = 0;
+let parseFails = false;
 const roleErrors = {
   STRATZ_NOT_CONFIGURED: /подключение к STRATZ не настроено/,
   STRATZ_AUTH_FAILED: /отклонил авторизацию/,
@@ -97,6 +101,7 @@ const players = Array.from({ length: 10 }, (_, index) => ({ playerSlot: index < 
 await page.route('**/api/post-match/**', async (route) => {
   const selectedScenario = scenario;
   const path = new URL(route.request().url()).pathname;
+  if (path.endsWith('/parse')) { parseCalls++; return route.fulfill({ status: parseFails ? 429 : 200, json: parseFails ? { error: 'rate_limit' } : { jobId: 'synthetic-parse-job' } }); }
   if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
   if (selectedScenario === 'network-error') return route.fulfill({ status: 503, json: { errorCode: 'OPENDOTA_UNAVAILABLE' } });
   if (path.endsWith('/players')) return route.fulfill({ json: { players: selectedScenario === 'empty-roster' ? [] : selectedScenario === 'partial' ? players.slice(0, 7) : players } });
@@ -348,8 +353,16 @@ try {
   await load('product'); await reportReady();
   assert.equal(await page.getByRole('region', { name: 'Оценки', exact: true }).isVisible(), true);
   assert.equal(await page.getByRole('group', { name: 'Смерти по времени' }).isVisible(), true);
-  assert.equal(await page.getByText('Как проверяем цель', { exact: true }).count(), 0);
-  assert.equal(await page.getByRole('button', { name: 'Принять челлендж', exact: true }).count(), 0);
+  assert.equal(await page.getByText('Как проверяем цель', { exact: true }).count(), 1);
+  await page.getByRole('button', { name: 'Принять челлендж', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(fixtures.product.analysis.training.goal.baseline, 51);
+  assert.equal(fixtures.product.analysis.training.goal.target, 56);
+  assert.equal(fixtures.product.analysis.training.observation.lastHitsAt10Source, 'stratz');
+  assert.equal(await chart.getByRole('heading', { name: 'События матча', exact: true }).count(), 1);
+  assert.equal(await chart.getByRole('button', { name: /^(Золото|Опыт)$/ }).count(), 0);
+  assert.equal(await chart.getByLabel('Покупки', { exact: true }).count(), 0);
+  assert.equal(await chart.getByLabel('Объекты', { exact: true }).count(), 0);
+  assert.equal(parseCalls, 0, 'viewing a report never automatically requests a parse');
   const bars = farmPanel.getByRole('list', { name: 'Темп фарма по отрезкам' }).getByRole('button');
   assert.equal(await bars.count(), 8);
   assert.equal(await bars.first().isVisible(), true);
@@ -363,7 +376,47 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `product partial ${width}`);
     if (width === 390 || width === 1440) await snapshot(`product-${width}`);
   }
-  results.checks.push('visible farm rates and categories, grades and death times; actionable interval with no LH10; no empty purchase/gold cards or nonexistent goal instructions');
+  await page.getByRole('button', { name: 'Принять челлендж', exact: true }).click();
+  await page.getByText('Челлендж принят · 0/3').waitFor();
+  await page.getByRole('button', { name: 'Снять челлендж', exact: true }).click();
+  parseFails = true;
+  await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).click();
+  await page.getByText(/Лимит запросов OpenDota/).waitFor();
+  parseFails = false;
+  await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).click();
+  await page.getByText(/Запрос отправлен/).waitFor();
+  assert.equal(parseCalls, 2);
+  assert.equal(await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).count(), 0, 'queue acceptance does not enqueue again');
+  scenario = 'STRATZ_TIMEOUT';
+  await page.getByRole('button', { name: 'Обновить разбор', exact: true }).click();
+  await page.getByText(/Не удалось обновить разбор. Показаны ранее полученные данные/).waitFor();
+  assert.equal(await farmPanel.isVisible(), true, 'refresh failure keeps the received report');
+  scenario = 'product';
+  await page.getByRole('button', { name: 'Обновить разбор', exact: true }).click();
+  await page.getByText(/Не удалось обновить разбор/).waitFor({ state: 'hidden' });
+  assert.equal(await chart.locator('svg').count(), 0, 'queue acceptance does not invent parsed data');
+  assert.equal(await page.getByText(/Запрос отправлен/).count(), 1);
+  scenario = 'ready';
+  await page.getByRole('button', { name: 'Обновить разбор', exact: true }).click();
+  await chart.getByRole('heading', { name: 'Как менялась игра', exact: true }).waitFor();
+  assert.equal(await chart.locator('svg').count(), 1);
+  assert.equal(await page.getByText(/Запрос отправлен/).count(), 0);
+  const goldPoints = await chart.locator('polyline').first().getAttribute('points');
+  await chart.getByRole('button', { name: 'Опыт', exact: true }).click();
+  assert.notEqual(await chart.locator('polyline').first().getAttribute('points'), goldPoints);
+  await chart.getByRole('button', { name: 'Золото', exact: true }).click();
+  assert.equal(await chart.locator('polyline').first().getAttribute('points'), goldPoints);
+  assert.equal(parseCalls, 2, 'refresh only rereads the analysis');
+  for (const name of ['xpOnly', 'goldOnly']) {
+    await load(name); await reportReady();
+    assert.equal(await chart.locator('svg').count(), 1);
+    assert.equal(await chart.getByRole('group', { name: 'Показатель команды' }).count(), 0, 'a single available series needs no dead switch');
+    assert.match(await chart.locator('svg desc').textContent(), name === 'xpOnly' ? /опыта/ : /золота/);
+  }
+  await load('productPartial'); await reportReady();
+  assert.equal(await page.getByRole('button', { name: 'Принять челлендж', exact: true }).count(), 0, 'partial events cannot fabricate a checkpoint');
+  assert.equal(await page.getByText('Как проверяем цель', { exact: true }).count(), 0);
+  results.checks.push('complete STRATZ events supply and accept the LH10 goal; partial events remain unknown; events-only timeline has no dead metric/event controls; one real metric remains visible; explicit parse rate limit/retry, queued is not parsed, failed refresh retains report, successful refresh restores working gold/XP switches');
 
   // Force the primary CDN to fail, then the secondary, without conflating missing purchases with missing pixels.
   await page.route('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/**', (route) => route.abort());

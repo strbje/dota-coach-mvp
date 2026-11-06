@@ -44,6 +44,7 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
       && (priority.target === undefined || Boolean(priority.target && typeof priority.target.text === 'string')))
     && Array.isArray(candidate.itemTimings)
     && Number.isFinite(candidate.durationSeconds)
+    && (candidate.meta?.openDotaParsed === undefined || typeof candidate.meta.openDotaParsed === 'boolean')
     && (candidate.farmIntervals === undefined || isFarmReport(candidate.farmIntervals))
     && (laneFacts === undefined || Boolean(laneFacts && typeof laneFacts === 'object'
       && (laneFacts.deathsAt10 === undefined || Number.isInteger(laneFacts.deathsAt10) && laneFacts.deathsAt10 >= 0)
@@ -61,7 +62,8 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
         && (point.gold === undefined || typeof point.gold === 'number' && Number.isFinite(point.gold))
         && (point.xp === undefined || typeof point.xp === 'number' && Number.isFinite(point.xp))))
     && Boolean(observation && observation.matchId === candidate.matchId && Number.isFinite(observation.heroId)
-      && typeof observation.role === 'string' && Number.isFinite(observation.durationSeconds))
+      && typeof observation.role === 'string' && Number.isFinite(observation.durationSeconds)
+      && (observation.lastHitsAt10Source === undefined || ['opendota', 'stratz'].includes(observation.lastHitsAt10Source)))
     && (goal === undefined || Boolean(goal && goal.metric === 'lastHitsAt10' && goal.source === 'training'
       && Number.isSafeInteger(goal.baseline) && goal.baseline >= 0 && goal.baseline === observation?.lastHitsAt10
       && Number.isSafeInteger(goal.target) && goal.target === goal.baseline + 5

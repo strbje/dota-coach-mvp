@@ -2,6 +2,7 @@ export type OpenDotaMatchResponse = {
   match_id: number;
   radiant_win: boolean;
   duration: number;
+  od_data?: unknown;
   radiant_score?: number;
   dire_score?: number;
   start_time?: number;

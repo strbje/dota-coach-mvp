@@ -15,7 +15,8 @@ import { withTimeout } from '@/lib/dota/async/withTimeout';
 import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
 import type { CarryHeroOverride } from '@/lib/dota/rules/roleRules/carryRules';
 
-const OPTIONAL_SOURCE_TIMEOUT_MS = 4_000;
+// This request gates role eligibility and carries playback events; it is not optional for the selected-player flow.
+const ROLE_AND_EVENTS_TIMEOUT_MS = 12_000;
 
 function genericCarryOverride(heroId: number, heroName: string): CarryHeroOverride {
   return {
@@ -41,14 +42,15 @@ type StratzFetchDebug = {
 
 type StratzFetchResult = { data?: StratzPostMatchData; debug: StratzFetchDebug; roleFailure?: RoleVerificationErrorCode };
 
-async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Promise<StratzFetchResult> {
+async function fetchStratzDeaths(matchId: number, selector: PlayerSelector, signal: AbortSignal): Promise<StratzFetchResult> {
   const token = process.env.STRATZ_API_TOKEN;
   if (!token) return { debug: { attempted: false }, roleFailure: 'STRATZ_NOT_CONFIGURED' };
 
   const queryResult = await runStratzQuery({
     query: STRATZ_EVENTS_QUERY,
     variables: { id: matchId, farmAccountId: selector.accountId ?? null, includeFarm: Number.isSafeInteger(selector.accountId) && selector.accountId! > 0 },
-    token
+    token,
+    signal
   });
 
   const debug: StratzFetchDebug = {
@@ -133,13 +135,14 @@ export async function analyzePostMatch(matchId: number, selector: PlayerSelector
   }
 
   const safeStratzDeaths = async (): Promise<StratzFetchResult> => {
+    const controller = new AbortController();
     try {
       const providerSelector = {
         accountId: normalized.selectedPlayer.accountId,
         playerSlot: normalized.selectedPlayer.playerSlot,
         heroId: normalized.selectedPlayer.heroId
       };
-      return await withTimeout(fetchStratzDeaths(matchId, providerSelector), OPTIONAL_SOURCE_TIMEOUT_MS, 'STRATZ events');
+      return await withTimeout(fetchStratzDeaths(matchId, providerSelector, controller.signal), ROLE_AND_EVENTS_TIMEOUT_MS, 'STRATZ events');
     } catch (error) {
       return {
         data: undefined,
@@ -149,7 +152,7 @@ export async function analyzePostMatch(matchId: number, selector: PlayerSelector
           error: error instanceof Error ? error.message : String(error)
         } satisfies StratzFetchDebug
       };
-    }
+    } finally { controller.abort(); }
   };
 
   const [stratzResult, heroBenchmarks, heroAverage, itemTimingScenarios] = await Promise.all([

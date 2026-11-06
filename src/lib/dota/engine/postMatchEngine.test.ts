@@ -21,6 +21,7 @@ test('post-match preserves role verification failures through the full engine an
   const previousToken = process.env.STRATZ_API_TOKEN;
   let events: () => Response | Promise<Response> = () => response([{ ...selected, position: 'POSITION_1' }]);
   let eventRequests = 0;
+  let eventSignal: AbortSignal | null | undefined;
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     if (url.includes(`/matches/${matchId}`)) return Response.json(match);
@@ -28,6 +29,7 @@ test('post-match preserves role verification failures through the full engine an
       const request = JSON.parse(String(init?.body));
       if (request.query.includes('query DebugStratzEvents')) {
         eventRequests += 1;
+        eventSignal = init?.signal;
         assert.deepEqual(request.variables, { id: matchId, farmAccountId: accountId, includeFarm: true });
         return events();
       }
@@ -66,9 +68,24 @@ test('post-match preserves role verification failures through the full engine an
       events = () => new Response('upstream timeout', { status: 504 });
       await expectCode('STRATZ_TIMEOUT', 504);
     });
-    await t.test('deadline is distinguishable from missing or unsupported role', async () => {
+    await t.test('deadline aborts the actual request and stays distinguishable from unsupported role', async (child) => {
+      child.mock.timers.enable({ apis: ['setTimeout'] });
       events = () => new Promise<Response>(() => {});
-      await expectCode('STRATZ_TIMEOUT', 504);
+      const pending = expectCode('STRATZ_TIMEOUT', 504);
+      await new Promise(setImmediate);
+      child.mock.timers.tick(12_001);
+      await pending;
+      assert.equal(eventSignal?.aborted, true);
+      child.mock.timers.reset();
+    });
+    await t.test('valid role response after the old four-second budget is still accepted', async (child) => {
+      child.mock.timers.enable({ apis: ['setTimeout'] });
+      events = () => new Promise((resolve) => setTimeout(() => resolve(response([{ ...selected, position: 'POSITION_1' }])), 5000));
+      const pending = analyzePostMatch(matchId, { playerSlot: 128 });
+      await new Promise(setImmediate);
+      child.mock.timers.tick(5000);
+      assert.equal((await pending).analysis.training.observation.role, 'carry');
+      child.mock.timers.reset();
     });
     await t.test('malformed JSON and rejected GraphQL query have controlled errors', async () => {
       events = () => new Response('{bad json', { headers: { 'Content-Type': 'application/json' } });

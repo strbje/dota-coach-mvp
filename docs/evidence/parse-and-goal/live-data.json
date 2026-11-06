@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "kind": "real OpenDota responses before and after explicit parse requests",
+  "normalizedOffline": true,
+  "constantsNetworkDisabled": true,
+  "stratzLiveRoleVerified": false,
+  "synthetic": false,
+  "parseRequests": [
+    {
+      "matchId": 9075236042,
+      "httpStatus": 200,
+      "jobId": 626532207,
+      "requestedAt": "2026-11-06T12:22:11.000Z"
+    },
+    {
+      "matchId": 9077889775,
+      "httpStatus": 200,
+      "jobId": 626532289,
+      "requestedAt": "2026-11-06T12:22:18.000Z"
+    }
+  ],
+  "matches": [
+    {
+      "matchId": 9075236042,
+      "heroId": 54,
+      "slot": 129,
+      "source": "https://api.opendota.com/api/matches/9075236042",
+      "before": {
+        "savedAt": "2026-11-06T12:15:21.958Z",
+        "sha256": "6531b0f804a2a3e981b55b640da9df77d1005c8dbf25a1dba5044803828bcad9",
+        "httpStatus": 200,
+        "parsed": false,
+        "goldPoints": 0,
+        "xpPoints": 0,
+        "rawPurchases": 0,
+        "normalizedKeyPurchases": 0,
+        "lastHitsAt10": null,
+        "proposedTarget": null
+      },
+      "after": {
+        "savedAt": "2026-11-06T12:25:20.788Z",
+        "sha256": "1d914f800d42f4ee5896129834e4ade78066bb51bd19a02f391a354c1129aa6d",
+        "httpStatus": 200,
+        "parsed": true,
+        "goldPoints": 42,
+        "xpPoints": 42,
+        "rawPurchases": 36,
+        "normalizedKeyPurchases": 5,
+        "lastHitsAt10": 47,
+        "proposedTarget": 52
+      }
+    },
+    {
+      "matchId": 9077889775,
+      "heroId": 42,
+      "slot": 130,
+      "source": "https://api.opendota.com/api/matches/9077889775",
+      "before": {
+        "savedAt": "2026-11-06T12:15:16.162Z",
+        "sha256": "01e0d0b516f6d804717fd776076a3c8f79e9c98b2bed65117fcdb4ce432421df",
+        "httpStatus": 200,
+        "parsed": false,
+        "goldPoints": 0,
+        "xpPoints": 0,
+        "rawPurchases": 0,
+        "normalizedKeyPurchases": 0,
+        "lastHitsAt10": null,
+        "proposedTarget": null
+      },
+      "after": {
+        "savedAt": "2026-11-06T12:25:28.054Z",
+        "sha256": "1392e87b113ea243e930877a70e2a3d80350ee852485e0c3f01dbb18f1d2e12e",
+        "httpStatus": 200,
+        "parsed": true,
+        "goldPoints": 58,
+        "xpPoints": 58,
+        "rawPurchases": 44,
+        "normalizedKeyPurchases": 7,
+        "lastHitsAt10": 45,
+        "proposedTarget": 50
+      }
+    }
+  ]
+}

@@ -528,11 +528,14 @@ test('an existing economy priority opens the measured farm drop even without min
   const events = [40, 20].flatMap((count, i) => Array.from({ length: count }, (_, j) => ({ time: i * 300 + j + 1 })));
   const base = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
   const analysis = runCarryPostMatchRules(input, { farmEvents: normalizeFarmEvents(events, 60, 600) }, context, lifestealerCarryOverride);
-  assert.equal(analysis.training.goal, undefined);
+  assert.equal(analysis.training.goal?.baseline, 60);
+  assert.equal(analysis.training.goal?.target, 65);
+  assert.equal(analysis.training.observation.lastHitsAt10Source, 'stratz');
   assert.match(analysis.priorities[0].title, /5:00–10:00/);
   assert.match(analysis.priorities[0].action, /Если найдёшь лишний переход/);
   assert.equal(analysis.priorities[0].dataState, 'available');
   assert.doesNotMatch(analysis.priorities[0].meaning, /недостаточно|ниже.*OpenDota/);
   assert.deepEqual(analysis.grades, base.grades);
-  assert.deepEqual(analysis.review, base.review);
+  assert.deepEqual(analysis.review.advantage, base.review.advantage);
+  assert.equal(analysis.review.timeline.find((event) => event.id === 'lane-at-ten')?.label, '60 добитых крипов');
 });

@@ -4,7 +4,7 @@ import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, PostM
 import { formatBenchmarkPosition, getPercentileForValue } from '../../analyze/compareToBenchmarks';
 import { findNearestUsableItemTimingBucket } from '../../analyze/itemTimingBenchmarks';
 import { buildMatchReview } from '../postMatch/matchReview';
-import { makeTrainingGoal } from '../../analyze/trainingChallenge';
+import { makeTrainingGoal, resolveLastHitsAt10 } from '../../analyze/trainingChallenge';
 import { buildFarmIntervals } from '../../analyze/farmIntervals';
 
 function fmt(value: number, digits = 1): string { return value.toFixed(digits).replace(/\.0$/, ''); }
@@ -241,7 +241,8 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     actual !== undefined && (comparison.lowerPercentile !== undefined || comparison.upperPercentile !== undefined)
       ? { actual, percentileRange: comparison.percentileRange, lowerPercentile: comparison.lowerPercentile, upperPercentile: comparison.upperPercentile, label: comparison.label }
       : undefined;
-  const actualLhAt10 = actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10;
+  const laneCheckpoint = resolveLastHitsAt10(match.durationSeconds, actualAtMinute(10)?.cs ?? p?.laneReview?.lhAt10, farmEvents);
+  const actualLhAt10 = laneCheckpoint?.value;
   const trainingGoal = makeTrainingGoal(actualLhAt10);
   const hasPhaseEconomy = p?.economyByPhaseSource !== 'unavailable'
     && Object.values(p?.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
@@ -287,12 +288,12 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const fightBaseBenchmarkScore = benchmarkScore(hdBench);
   const fightScore = fightBaseBenchmarkScore;
   const deathRiskAdjustment = 0;
-  const review = buildMatchReview(match, deathTimings, [...laneFindings, ...itemsFindings, ...fightsFindings, ...mapFindings]);
+  const review = buildMatchReview(match, deathTimings, [...laneFindings, ...itemsFindings, ...fightsFindings, ...mapFindings], actualLhAt10);
 
   return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, durationSeconds: match.durationSeconds, review,
     farmIntervals,
     laneFacts: { deathsAt10: laneDeaths, efficiencyPct: lanePct },
-    training: { observation: { matchId: match.matchId, accountId: match.selectedPlayer.accountId, heroId: match.selectedPlayer.heroId, role: match.selectedPlayer.role ?? 'unknown', startTime: match.startTime, gameMode: match.gameMode, lobbyType: match.lobbyType, durationSeconds: match.durationSeconds, lastHitsAt10: actualLhAt10 }, goal: trainingGoal },
+    training: { observation: { matchId: match.matchId, accountId: match.selectedPlayer.accountId, heroId: match.selectedPlayer.heroId, role: match.selectedPlayer.role ?? 'unknown', startTime: match.startTime, gameMode: match.gameMode, lobbyType: match.lobbyType, durationSeconds: match.durationSeconds, lastHitsAt10: actualLhAt10, lastHitsAt10Source: laneCheckpoint?.source }, goal: trainingGoal },
     buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,
     grades: { lane: { score: undefined, summary: laneSummary, findings: laneFindings.slice(0, 3) }, items: { score: itemsScore, summary: itemsSummary, findings: itemsFindings.slice(0, 3) }, fights: { score: fightScore, summary: fightsSummary, findings: fightsFindings.slice(0, 3) }, map: { score: benchmarkScore(gpmBench) !== undefined && benchmarkScore(lhBench) !== undefined ? Math.round((benchmarkScore(gpmBench)! + benchmarkScore(lhBench)!) / 2) : undefined, summary: mapSummary, findings: mapFindings.slice(0, 3) } },
     scoreBreakdown: fightBaseBenchmarkScore === undefined ? undefined : { fights: { baseBenchmarkScore: fightBaseBenchmarkScore, deathRiskAdjustment, finalScore: fightScore! } },
@@ -300,6 +301,6 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     nextGameAdjustments,
     priorities: priorities.slice(0, 2),
     finalVerdict: { mainReason: review.summary, biggestRisk, nextMatchFocus },
-    meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75 }
+    meta: { source: ['opendota', 'rules'], confidence: trackedTimings.length ? 0.83 : 0.75, openDotaParsed: match.openDotaParsed }
   };
 }

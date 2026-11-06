@@ -8,7 +8,8 @@ const signed = (value: number) => `${value > 0 ? '+' : ''}${number(value)}`;
 export function buildMatchReview(
   match: NormalizedOpenDotaMatch,
   deathTimings: Array<{ timeSeconds: number }> | undefined,
-  positiveFindings: AnalysisFinding[]
+  positiveFindings: AnalysisFinding[],
+  lastHitsAt10 = match.player?.laneReview?.lhAt10
 ): MatchReview {
   const player = match.player;
   const won = player?.isRadiant === match.didRadiantWin;
@@ -51,7 +52,7 @@ export function buildMatchReview(
     factors.push({ id: 'team-xp', title: 'Опыт команды', fact: `В ${formatGameTime(lastXp.timeSeconds)} разница опыта: ${signed(lastXp.xp)}.`,
       meaning: 'Это общий опыт команды; распределение уровней между героями здесь не оценено.', confidence: 'observation', timeSeconds: lastXp.timeSeconds, evidenceId: 'team-advantage' });
   }
-  const lh = player?.laneReview?.lhAt10;
+  const lh = lastHitsAt10;
   if (lh !== undefined && match.durationSeconds >= 600) {
     timeline.push({ id: 'lane-at-ten', timeSeconds: 600, kind: 'lane', label: `${number(lh)} добитых крипов`, detail: 'Твой результат к 10:00, включая нейтралов' });
     factors.push({ id: 'personal-start', title: 'Твой старт', fact: `К 10:00 ты добил ${number(lh)} крипов${player?.laneReview?.deathsBefore10 !== undefined ? `; смертей за этот отрезок — ${player.laneReview.deathsBefore10}` : ''}.`,

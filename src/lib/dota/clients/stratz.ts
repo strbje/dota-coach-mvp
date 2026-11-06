@@ -49,6 +49,7 @@ type RunStratzQueryParams = {
   query: string;
   variables?: Record<string, unknown>;
   token: string;
+  signal?: AbortSignal;
 };
 
 export type RunStratzQueryResult = {
@@ -63,7 +64,7 @@ export type RunStratzQueryResult = {
   error?: string;
 };
 
-export async function runStratzQuery({ query, variables, token }: RunStratzQueryParams): Promise<RunStratzQueryResult> {
+export async function runStratzQuery({ query, variables, token, signal }: RunStratzQueryParams): Promise<RunStratzQueryResult> {
   try {
     const response = await fetch(STRATZ_GRAPHQL_URL, {
       method: 'POST',
@@ -73,6 +74,7 @@ export async function runStratzQuery({ query, variables, token }: RunStratzQuery
         'User-Agent': 'dota-coach-mvp/0.1 local-dev'
       },
       body: JSON.stringify({ query, variables }),
+      signal,
       cache: 'no-store'
     });
 

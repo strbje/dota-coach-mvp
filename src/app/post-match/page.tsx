@@ -72,8 +72,12 @@ export default function PostMatchPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (selectedSlot === '') return;
-    setData(null);
+    await analyze();
+  }
+
+  async function analyze(refresh = false): Promise<boolean> {
+    if (selectedSlot === '') return false;
+    if (!refresh) setData(null);
     setAnalysisErrorCode(null);
     setLoading(true);
     analysisAbortController.current?.abort();
@@ -89,7 +93,7 @@ export default function PostMatchPage() {
         signal: controller.signal
       });
       const payload = await response.json() as Payload | { errorCode?: unknown };
-      if (requestSequence !== analysisRequestSequence.current) return;
+      if (requestSequence !== analysisRequestSequence.current) return false;
       if (!response.ok) {
         const responseError = payload as { errorCode?: unknown };
         setAnalysisErrorCode(
@@ -97,17 +101,19 @@ export default function PostMatchPage() {
             ? responseError.errorCode
             : 'POST_MATCH_FAILED'
         );
-        return;
+        return false;
       }
       if (!isPostMatchSuccessPayload(payload) || payload.analysis.matchId !== Number(matchId)) {
         setAnalysisErrorCode('POST_MATCH_FAILED');
-        return;
+        return false;
       }
       setData(payload);
       setShowSelection(false);
+      return true;
     } catch {
-      if (controller.signal.aborted || requestSequence !== analysisRequestSequence.current) return;
+      if (controller.signal.aborted || requestSequence !== analysisRequestSequence.current) return false;
       setAnalysisErrorCode('POST_MATCH_FAILED');
+      return false;
     } finally {
       if (requestSequence === analysisRequestSequence.current) setLoading(false);
     }
@@ -185,7 +191,8 @@ export default function PostMatchPage() {
           </div>
         </Panel>
       </div>
-      {analysis ? <PostMatchReport key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} analysis={analysis} /> : null}
+      {analysis && analysisErrorCode && !showSelection ? <Alert tone="warning">Не удалось обновить разбор. Показаны ранее полученные данные. {getPostMatchErrorCopy(locale, analysisErrorCode)}</Alert> : null}
+      {analysis ? <PostMatchReport key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} analysis={analysis} onRefresh={() => analyze(true)} refreshing={loading} /> : null}
     </PageContainer>
   );
 }
