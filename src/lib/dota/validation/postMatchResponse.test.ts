@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { isPostMatchSuccessPayload } from './postMatchResponse';
 import { buildFarmIntervals } from '../analyze/farmIntervals';
+import { normalizeFarmEvents } from '../normalize/farmEvents';
 
 test('a successful response without analysis is rejected at the product boundary', () => {
   assert.equal(isPostMatchSuccessPayload({ debug: {} }), false);
@@ -48,4 +49,14 @@ test('farm payload rejects unsafe coverage, counts and highlight indices before 
     { ...farm, source: 'stratz', eventCoverage: 'complete', reportedLastHits: undefined },
     { ...farm, intervals: [{ ...farm.intervals[0], perMinute: null }] },
     { ...farm, highlightIndex: undefined, intervals: [{ ...farm.intervals[0], breakdown: { lane: '5' } }] }]) assert.equal(accept(farmIntervals), false);
+  const targets = buildFarmIntervals(600, undefined, normalizeFarmEvents([
+    { time: 60, npcId: 111, isCreep: false, isNeutral: false, isAncient: false }
+  ], 1, 600, 190));
+  assert.equal(accept(targets), true);
+  const target = targets.intervals[0].otherTargets![0];
+  for (const otherTargets of [null, {}, [null], [target, target], [{ ...target, count: 2 }],
+    [{ ...target, count: -1 }], [{ ...target, count: '1' }], [{ ...target, npcId: 1.2 }],
+    [{ ...target, kind: 'guess' }], [{ ...target, label: null }], [{ ...target, label: '' }]]) {
+    assert.equal(accept({ ...targets, intervals: [{ ...targets.intervals[0], otherTargets }, targets.intervals[1]] }), false);
+  }
 });

@@ -109,6 +109,7 @@
 .lane { background: var(--farm-lane); }
 .neutral { background: var(--farm-neutral); }
 .ancient { background: var(--farm-ancient); }
+.other { background: var(--farm-other); }
 .unclassified { background: var(--farm-unknown); }
 .total { background: var(--color-info); height: 100%; }
 .farmChart { display: flex; min-width: 0; gap: var(--space-2); }
@@ -153,6 +154,13 @@
 .farmReadout dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .farmReadout dd { margin: 0; font-weight: 700; }
 .farmReadout button { justify-self: start; }
+.farmBreakdown { display: grid; gap: var(--space-2); }
+.farmOtherTargets summary { min-height: var(--control-size); padding-block: var(--space-3); cursor: pointer; font-weight: 700; }
+.farmOtherTargets[open] summary { margin-bottom: var(--space-2); }
+.farmTargetGroup { display: grid; gap: var(--space-2); padding-block: var(--space-2); }
+.farmTargetGroup dl { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; }
+.farmTargetGroup dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
+.farmTargetGroup dt { overflow-wrap: anywhere; }
 .recommended { display: block; color: var(--color-focus); font-size: var(--font-size-sm); }
 .resourceReadout { display: grid; gap: var(--space-2); }
 .resourceReadout input { width: 100%; min-height: var(--control-size); accent-color: var(--color-focus); }

@@ -6,6 +6,7 @@ export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!, $farmAcc
   match(id: $id) {
     id
     durationSeconds
+    gameVersionId
     chatEvents {
       time
       type
@@ -40,7 +41,7 @@ export const STRATZ_EVENTS_QUERY = `query DebugStratzEvents($id: Long!, $farmAcc
       playerSlot
       heroId
       numLastHits
-      playbackData { csEvents { time isCreep isNeutral isAncient } }
+      playbackData { csEvents { time npcId isCreep isNeutral isAncient } }
     }
   }
 }`;

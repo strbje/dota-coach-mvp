@@ -1,0 +1,356 @@
+{
+  "source": "stratz-coordinates-20261103-234056.json",
+  "sha256": "2e8b153a247b862d8f713c41e069891fe0c25627b4be06226c0eed2ba79501b0",
+  "capturedAt": "2026-11-03T20:41:05.432Z",
+  "synthetic": false,
+  "replayEvidenceSha256": "81525695edf7b209db45127ba76ca23a88b69caa06b69992d9b5202491ac9078",
+  "verifiedTargetIds": [
+    21,
+    29,
+    34,
+    37,
+    45,
+    48,
+    49,
+    111,
+    133,
+    265,
+    861,
+    863,
+    896,
+    897,
+    898,
+    899,
+    900,
+    901
+  ],
+  "verification": "Real saved responses processed offline and identities cross-checked against existing replay counter joins; not a fresh API request, new replay decode, visual replay viewing, role-gated product run or coordinate validation.",
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "gameVersionId": 190,
+      "replayDecodeSha256": "aeb8f2e1edaeb0cba43c659178de21d962e29bc02ec4a93c8a272d9844e31905",
+      "source": "stratz",
+      "intervals": [
+        {
+          "from": 0,
+          "to": 300,
+          "breakdown": {
+            "lane": 24,
+            "neutral": 2,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 26,
+          "coveredTo": 300,
+          "perMinute": 5.2
+        },
+        {
+          "from": 300,
+          "to": 600,
+          "breakdown": {
+            "lane": 19,
+            "neutral": 6,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 25,
+          "coveredTo": 600,
+          "perMinute": 5
+        },
+        {
+          "from": 600,
+          "to": 900,
+          "breakdown": {
+            "lane": 19,
+            "neutral": 16,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 35,
+          "coveredTo": 900,
+          "perMinute": 7
+        },
+        {
+          "from": 900,
+          "to": 1200,
+          "breakdown": {
+            "lane": 14,
+            "neutral": 33,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 47,
+          "coveredTo": 1200,
+          "perMinute": 9.4
+        },
+        {
+          "from": 1200,
+          "to": 1500,
+          "breakdown": {
+            "lane": 17,
+            "neutral": 46,
+            "ancient": 1,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 64,
+          "coveredTo": 1500,
+          "perMinute": 12.8
+        },
+        {
+          "from": 1500,
+          "to": 1800,
+          "breakdown": {
+            "lane": 19,
+            "neutral": 38,
+            "ancient": 0,
+            "other": 1,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 133,
+              "kind": "roshan",
+              "label": "Рошан",
+              "count": 1
+            }
+          ],
+          "lastHits": 58,
+          "coveredTo": 1800,
+          "perMinute": 11.6
+        },
+        {
+          "from": 1800,
+          "to": 2100,
+          "breakdown": {
+            "lane": 4,
+            "neutral": 19,
+            "ancient": 3,
+            "other": 1,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 21,
+              "kind": "building",
+              "label": "Т2 Radiant · нижняя линия",
+              "count": 1
+            }
+          ],
+          "lastHits": 27,
+          "coveredTo": 2100,
+          "perMinute": 5.4
+        },
+        {
+          "from": 2100,
+          "to": 2278,
+          "breakdown": {
+            "lane": 1,
+            "neutral": 19,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 20,
+          "coveredTo": 2278,
+          "perMinute": 6.741573033707865
+        }
+      ],
+      "eventCoverage": "complete",
+      "receivedEvents": 302,
+      "reportedLastHits": 302,
+      "rejectedEvents": 0,
+      "highlightIndex": 6
+    },
+    {
+      "matchId": 9003795847,
+      "gameVersionId": 190,
+      "replayDecodeSha256": "ed68d6e16d5e1e4daf5f90d46414c320da93304a036677700785948403df61fa",
+      "source": "stratz",
+      "intervals": [
+        {
+          "from": 0,
+          "to": 300,
+          "breakdown": {
+            "lane": 21,
+            "neutral": 0,
+            "ancient": 0,
+            "other": 1,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 111,
+              "kind": "ward",
+              "label": "Сентри",
+              "count": 1
+            }
+          ],
+          "lastHits": 22,
+          "coveredTo": 300,
+          "perMinute": 4.4
+        },
+        {
+          "from": 300,
+          "to": 600,
+          "breakdown": {
+            "lane": 27,
+            "neutral": 3,
+            "ancient": 0,
+            "other": 0,
+            "unclassified": 0
+          },
+          "lastHits": 30,
+          "coveredTo": 600,
+          "perMinute": 6
+        },
+        {
+          "from": 600,
+          "to": 900,
+          "breakdown": {
+            "lane": 24,
+            "neutral": 33,
+            "ancient": 0,
+            "other": 1,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 863,
+              "kind": "summon",
+              "label": "Бесы Warlock",
+              "count": 1
+            }
+          ],
+          "lastHits": 58,
+          "coveredTo": 900,
+          "perMinute": 11.6
+        },
+        {
+          "from": 900,
+          "to": 1200,
+          "breakdown": {
+            "lane": 45,
+            "neutral": 32,
+            "ancient": 3,
+            "other": 1,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 863,
+              "kind": "summon",
+              "label": "Бесы Warlock",
+              "count": 1
+            }
+          ],
+          "lastHits": 81,
+          "coveredTo": 1200,
+          "perMinute": 16.2
+        },
+        {
+          "from": 1200,
+          "to": 1500,
+          "breakdown": {
+            "lane": 35,
+            "neutral": 22,
+            "ancient": 3,
+            "other": 3,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 29,
+              "kind": "building",
+              "label": "Т2 Dire · верхняя линия",
+              "count": 1
+            },
+            {
+              "npcId": 861,
+              "kind": "tormentor",
+              "label": "Терзатель",
+              "count": 1
+            },
+            {
+              "npcId": 863,
+              "kind": "summon",
+              "label": "Бесы Warlock",
+              "count": 1
+            }
+          ],
+          "lastHits": 63,
+          "coveredTo": 1500,
+          "perMinute": 12.6
+        },
+        {
+          "from": 1500,
+          "to": 1793,
+          "breakdown": {
+            "lane": 11,
+            "neutral": 3,
+            "ancient": 3,
+            "other": 10,
+            "unclassified": 0
+          },
+          "otherTargets": [
+            {
+              "npcId": 34,
+              "kind": "building",
+              "label": "Т3 Dire · нижняя линия",
+              "count": 1
+            },
+            {
+              "npcId": 37,
+              "kind": "building",
+              "label": "Постройка на базе Dire",
+              "count": 1
+            },
+            {
+              "npcId": 45,
+              "kind": "building",
+              "label": "Мили-барак Dire · мид",
+              "count": 1
+            },
+            {
+              "npcId": 48,
+              "kind": "building",
+              "label": "Рендж-барак Dire · мид",
+              "count": 1
+            },
+            {
+              "npcId": 49,
+              "kind": "building",
+              "label": "Рендж-барак Dire · нижняя линия",
+              "count": 1
+            },
+            {
+              "npcId": 265,
+              "kind": "summon",
+              "label": "Скелеты Clinkz",
+              "count": 4
+            },
+            {
+              "npcId": 863,
+              "kind": "summon",
+              "label": "Бесы Warlock",
+              "count": 1
+            }
+          ],
+          "lastHits": 27,
+          "coveredTo": 1793,
+          "perMinute": 5.5290102389078495
+        }
+      ],
+      "eventCoverage": "complete",
+      "receivedEvents": 281,
+      "reportedLastHits": 281,
+      "rejectedEvents": 0,
+      "highlightIndex": 4
+    }
+  ]
+}

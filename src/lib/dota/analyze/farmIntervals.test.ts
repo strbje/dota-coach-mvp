@@ -29,7 +29,7 @@ test('complete events partition once at boundaries, include match end and preser
   assert.equal(result.source, 'stratz');
   assert.deepEqual(result.intervals.map((w) => w.lastHits), [2, 2, 0, 1]);
   assert.equal(result.intervals.reduce((sum, w) => sum + w.lastHits!, 0), 5);
-  assert.deepEqual(result.intervals[2].breakdown, { lane: 0, neutral: 0, ancient: 0, unclassified: 0 });
+  assert.deepEqual(result.intervals[2].breakdown, { lane: 0, neutral: 0, ancient: 0, other: 0, unclassified: 0 });
   assert.equal(result.highlightIndex, 2);
 });
 
@@ -62,4 +62,21 @@ test('ties choose the first decline, a rising series and short final zero have n
   assert.equal(buildFarmIntervals(901, undefined, farm).highlightIndex, 1);
   assert.equal(buildFarmIntervals(599, undefined, normalizeFarmEvents([{ time: 1 }], 1, 599)).highlightIndex, undefined);
   assert.equal(buildFarmIntervals(600, Array.from({ length: 11 }, (_, i) => i * i)).highlightIndex, undefined);
+});
+
+test('named targets aggregate once per window while totals, rates and partial-source rules stay unchanged', () => {
+  const events = [[299, 111], [300, 265], [300, 265], [600, 861], [600, 9999]]
+    .map(([time, npcId]) => ({ time, npcId, isCreep: false, isNeutral: false, isAncient: false }));
+  const farm = normalizeFarmEvents(events, 5, 600, 190);
+  const report = buildFarmIntervals(600, undefined, farm);
+  assert.deepEqual(report.intervals.map((w) => w.lastHits), [1, 4]);
+  assert.deepEqual(report.intervals.map((w) => w.perMinute), [0.2, 0.8]);
+  assert.deepEqual(report.intervals.map((w) => w.breakdown?.other), [1, 3]);
+  assert.equal(report.intervals[1].breakdown?.unclassified, 1);
+  assert.deepEqual(report.intervals[1].otherTargets?.map(({ npcId, count }) => [npcId, count]), [[265, 2], [861, 1]]);
+  const partial = buildFarmIntervals(600, Array.from({ length: 11 }, (_, i) => i * 10), normalizeFarmEvents(events, 6, 600, 190));
+  assert.equal(partial.source, 'opendota');
+  assert.equal(partial.eventCoverage, 'partial');
+  assert.deepEqual(partial.intervals.map((w) => w.lastHits), [50, 50]);
+  assert.deepEqual(partial.intervals[1].otherTargets, report.intervals[1].otherTargets);
 });

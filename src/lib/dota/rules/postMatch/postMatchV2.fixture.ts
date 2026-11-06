@@ -5,7 +5,7 @@ import { setHeroConstants } from '../../data/heroConstants';
 import { normalizeFarmEvents } from '../../normalize/farmEvents';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; resources?: 'gold' | 'xp'; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
+export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; resources?: 'gold' | 'xp'; farmTargets?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
   setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
@@ -47,10 +47,11 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
   if (options.farm === 'partialOnly') delete normalized.player!.lastHitsByMinute;
   const syntheticEvents = [25, 26, 40, 45, 15, 0, 20, 9].flatMap((count, window) => Array.from({ length: count }, (_, i) => ({
     time: window * 300 + 10 + Math.floor(i * (Math.min(300, 2314 - window * 300) - 20) / count),
-    isCreep: i % 4 === 0, isNeutral: i % 4 === 1, isAncient: i % 4 === 2
+    isCreep: i % 4 === 0, isNeutral: i % 4 === 1, isAncient: i % 4 === 2,
+    npcId: options.farmTargets && i % 4 === 3 ? [111, 265, 863, 21, 133, 861, 9999][Math.floor(i / 4) % 7] : undefined
   })));
   const farmEvents = options.farm && options.farm !== 'gap'
-    ? normalizeFarmEvents(options.farm === 'complete' ? syntheticEvents : syntheticEvents.slice(0, -2), syntheticEvents.length, 2314)
+    ? normalizeFarmEvents(options.farm === 'complete' ? syntheticEvents : syntheticEvents.slice(0, -2), syntheticEvents.length, 2314, options.farmTargets ? 190 : undefined)
     : undefined;
   if (options.product) {
     delete normalized.player!.economyCheckpoints;

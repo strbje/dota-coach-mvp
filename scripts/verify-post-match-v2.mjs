@@ -37,6 +37,8 @@ try {
     ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
     farmComplete: await syntheticPostMatch({ farm: 'complete' }), farmPartial: await syntheticPostMatch({ farm: 'partial' }),
+    farmTargets: await syntheticPostMatch({ farm: 'complete', farmTargets: true }),
+    farmTargetsPartial: await syntheticPostMatch({ farm: 'partial', farmTargets: true }),
     farmPartialOnly: await syntheticPostMatch({ farm: 'partialOnly' }), farmGap: await syntheticPostMatch({ farm: 'gap' }),
     next: await syntheticPostMatch({ matchId: 9000067, startTime: now + 60, lastHitsAt10: 58 }),
     missing: await syntheticPostMatch({ matchId: 9000068, startTime: now + 120, empty: true }),
@@ -237,10 +239,53 @@ try {
     } else assert.match(text, /не вернул числовую разбивку/);
   }
   results.checks.push('gold: independent income/loss/unknown, unknown-only net zero, confirmed zero, invalid/missing values, keyboard disclosure; 320/390/768/1440');
+  // Other targets have a real normalizer/dictionary path but these match events are SYNTHETIC.
+  await load('farmTargets'); await reportReady();
+  {
+    const panel = page.getByRole('heading', { name: 'Фарм по времени', exact: true }).locator('..');
+    const readout = panel.getByRole('region', { name: 'Числа выбранного отрезка' });
+    const bars = panel.getByRole('list', { name: 'Темп фарма по отрезкам' }).getByRole('button');
+    const legend = panel.getByRole('list', { name: 'Типы добиваний' });
+    assert.match(await legend.innerText(), /Другие цели/);
+    assert.match(await legend.innerText(), /Тип не определён/);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.keyboard.press('Tab'); await bars.nth(3).focus(); await page.keyboard.press('Enter'); await page.mouse.move(0, 0);
+      const disclosure = readout.locator('summary');
+      assert.equal(await disclosure.innerText(), 'Другие цели · 10');
+      assert.match(await readout.innerText(), /Тип не определён\s+1/);
+      await disclosure.focus();
+      assert.notEqual(await disclosure.evaluate((el) => getComputedStyle(el).outlineStyle), 'none');
+      await page.keyboard.press('Enter');
+      assert.equal(await disclosure.locator('..').getAttribute('open'), '');
+      const copy = await readout.innerText();
+      for (const text of ['Саммоны · 4', 'Скелеты Clinkz', 'Бесы Warlock', 'Варды · 2', 'Сентри', 'Строения · 2', 'Т2 Radiant', 'Рошан · 1', 'Терзатель · 1']) assert.ok(copy.includes(text), text);
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `other target overflow ${width}`);
+      if (width === 390 || width === 1440) await snapshot(`farm-targets-${width}`);
+      await bars.last().focus(); await page.keyboard.press('Tab');
+      assert.equal(await readout.locator('summary').evaluate((el) => el === document.activeElement), true, 'entering readout from a preview retains focus');
+      assert.match(await readout.innerText(), /35:00–38:34/);
+      await bars.nth(5).click(); await page.mouse.move(0, 0);
+      assert.equal(await readout.locator('summary').count(), 0, 'zero window has no empty target categories');
+      assert.match(await readout.innerText(), /добиваний нет/);
+    }
+    // Partial target counts stay in details; they must not be presented as the complete OD total.
+    await load('farmTargetsPartial'); await reportReady();
+    assert.equal(await panel.getByRole('list', { name: 'Типы добиваний' }).count(), 0);
+    assert.equal(await readout.locator('summary').count(), 0);
+    await panel.getByText(/^Точные значения и источники/).click();
+    const row = panel.getByRole('list', { name: 'Отрезки фарма' }).locator(':scope > li').nth(3);
+    await row.locator('summary').first().click();
+    await row.getByText('Другие цели · 10', { exact: true }).click();
+    assert.match(await row.innerText(), /Типы в полученной части событий/);
+    assert.match(await row.innerText(), /Скелеты Clinkz/);
+  }
+  results.checks.push('other targets: separate from unknown, exact groups/names/counts, keyboard disclosure, zero categories hidden, partial stream stays in details; 320/390/768/1440');
   // Farm aggregation uses the real rules/adapter path with explicitly synthetic inputs.
   await load('farmComplete'); await reportReady();
   const farmPanel = page.getByRole('heading', { name: 'Фарм по времени', exact: true }).locator('..');
   const farmRows = farmPanel.getByRole('list', { name: 'Отрезки фарма' }).locator(':scope > li');
+  assert.equal(await farmPanel.getByRole('list', { name: 'Типы добиваний' }).getByText('Другие цели', { exact: true }).count(), 0, 'absent other targets are not shown in the legend');
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await snapshot(`farm-${width}`);
