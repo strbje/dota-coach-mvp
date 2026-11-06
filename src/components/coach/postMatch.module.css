@@ -31,7 +31,7 @@
 .priority + .priority { border-top: var(--border-width) solid var(--color-border); padding-top: var(--space-4); }
 .priority h3 { font-size: var(--font-size-lg); }
 .action { padding-left: var(--space-3); border-left: var(--border-width-emphasis) solid var(--color-focus); }
-.challenge { display: grid; gap: var(--space-3); background: var(--color-surface-raised); }
+.challenge { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--color-surface-raised); }
 .challenge h3 { font-size: var(--font-size-xl); }
 .targetGoal { color: var(--color-focus); }
 .progress { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
@@ -115,7 +115,7 @@
 .farmAxis { display: flex; flex-direction: column; justify-content: space-between; padding-top: var(--space-6); padding-bottom: var(--space-12); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 .farmPlot { overflow-x: auto; flex: 1; min-width: 0; }
 .farmBars { display: flex; list-style: none; padding: 0; margin: 0; gap: var(--space-2); }
-.farmBars li { flex: 1; min-width: var(--control-size); margin: 0; }
+.farmBars li { flex: 1; min-width: calc(var(--control-size) + var(--space-8)); margin: 0; }
 .farmBar { width: 100%; padding: var(--space-1); }
 .farmBar > span { display: grid; width: 100%; gap: var(--space-1); }
 .barValue, .barLabel { font-size: var(--font-size-sm); font-variant-numeric: tabular-nums; font-weight: 400; }
@@ -134,3 +134,29 @@
 
 .gradeOutOf { font-size: var(--font-size-sm); font-weight: 400; color: var(--color-text-secondary); }
 .gradeCompact :global(.grade-bar) { margin-bottom: 0; }
+.loadedForm { grid-template-columns: minmax(0, 1fr); }
+.playerPicker { border: 0; padding: 0; margin: 0; min-width: 0; }
+.playerPicker legend { font-family: var(--font-heading); font-size: var(--font-size-lg); font-weight: 700; }
+.rosterGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-top: var(--space-3); }
+.playerChoice { display: flex; align-items: center; gap: var(--space-3); min-height: var(--control-size); padding: var(--space-2); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-control); cursor: pointer; overflow-wrap: anywhere; }
+.playerChoice:has(input:checked) { border-color: var(--color-focus); background: var(--color-surface-raised); }
+.playerChoice input { accent-color: var(--color-focus); flex-shrink: 0; }
+.playerChoice > span:last-child { min-width: 0; }
+@media (max-width: 600px) { .rosterGrid { grid-template-columns: minmax(0, 1fr); } }
+.recentMatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-3); }
+.recentMatch { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.recentMatch a { justify-content: start; text-align: left; overflow-wrap: anywhere; }
+
+.farmReadout { display: grid; gap: var(--space-2); padding: var(--space-3); background: var(--color-surface-raised); border-radius: var(--radius-control); }
+.farmReadout h3 { font-size: var(--font-size-base); }
+.farmReadout dl { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; }
+.farmReadout dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.farmReadout dd { margin: 0; font-weight: 700; }
+.farmReadout button { justify-self: start; }
+.recommended { display: block; color: var(--color-focus); font-size: var(--font-size-sm); }
+.resourceReadout { display: grid; gap: var(--space-2); }
+.resourceReadout input { width: 100%; min-height: var(--control-size); accent-color: var(--color-focus); }
+.sampleLine { stroke: var(--color-text-secondary); stroke-width: 1; stroke-dasharray: 4; }
+.priority summary, .challenge > details > summary { min-height: var(--control-size); padding-block: var(--space-2); cursor: pointer; color: var(--color-text-secondary); }
+
+.rosterStats { margin-left: auto; font-size: var(--font-size-sm); white-space: nowrap; font-variant-numeric: tabular-nums; }

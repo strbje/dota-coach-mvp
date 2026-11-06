@@ -121,7 +121,7 @@ async function shot(name) {
 async function load(name, id = '9000067', selectPlayer = true) {
   scenario = name;
   await editInputs();
-  await page.getByLabel('Match ID', { exact: true }).fill(id);
+  await page.getByLabel('ID матча', { exact: true }).fill(id);
   await page.getByRole('button', { name: /^(Загрузить сравнение|Обновить данные)$/ }).click();
   const player = page.getByLabel('Выбранный игрок', { exact: true });
   await player.waitFor();
@@ -136,9 +136,9 @@ async function headerGeometry() {
   await page.evaluate(() => document.fonts.ready);
   return page.getByRole('banner').evaluate((header) => {
     const top = header.getBoundingClientRect().top;
-    return [header.firstElementChild, header.querySelector('a'), header.querySelector('nav'), header.querySelector('[role="group"]')].map((element) => {
+    return [header.firstElementChild, header.querySelector('a'), header.querySelector('nav'), header.querySelector('button')].map((element) => {
       const rect = element.getBoundingClientRect();
-      return { x: rect.x, y: rect.y - top, width: rect.width, height: rect.height };
+      return { x: rect.x, y: rect.height ? rect.y - top : 0, width: rect.width, height: rect.height };
     });
   });
 }
@@ -160,52 +160,57 @@ try {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} fits ${width}`);
       const geometry = await headerGeometry();
       assert.ok(geometry[1].height < 30, 'brand stays on one line');
-      assert.equal(geometry[2].height, 44, 'navigation labels stay on one line');
+      assert.equal(geometry[2].height, width <= 900 ? 0 : 44, 'desktop nav is a row; mobile uses an explicit menu');
       if (path === '/') report.headerPositions[width] = geometry;
-      else assert.deepEqual(geometry, report.headerPositions[width], `${path}: logo, navigation and language controls must stay in the same position at ${width}px`);
+      else assert.deepEqual(geometry, report.headerPositions[width], `${path}: logo and navigation controls must stay in the same position at ${width}px`);
       if (path !== '/winrates' && [390, 1440, 1920].includes(width)) await shot(`${asset}-${width}`);
     }
   }
   report.checks.push('four distinct local backgrounds including Allstars home, HTTP 200 WebP, non-interactive decoration; stable header geometry on every page at 320/390/768/900/901/1440/1920/2560 without wrapped brand/navigation');
   await page.setViewportSize({ width: 1440, height: 1050 });
-  for (const locale of ['RU', 'EN']) {
-    await page.getByRole('banner').getByRole('button', { name: locale, exact: true }).click();
-    let expected;
-    for (const path of ['/', '/post-match', '/pre-game', '/winrates', '/']) {
-      const link = page.getByRole('navigation').locator(`a[href="${path}"]`);
-      await link.click();
-      await page.waitForURL((url) => url.pathname === path);
-      assert.equal(await link.getAttribute('aria-current'), 'page');
-      const geometry = await headerGeometry();
-      if (!expected) expected = geometry;
-      else assert.deepEqual(geometry, expected, `${locale} header stays fixed on client navigation to ${path}`);
-    }
+  assert.equal(await page.getByRole('button', { name: /^(RU|EN)$/ }).count(), 0);
+  let expected;
+  for (const path of ['/', '/post-match', '/pre-game', '/winrates', '/']) {
+    const link = page.getByRole('navigation').locator(`a[href="${path}"]`);
+    await link.click(); await page.waitForURL((url) => url.pathname === path);
+    assert.equal(await link.getAttribute('aria-current'), 'page');
+    const geometry = await headerGeometry();
+    if (!expected) expected = geometry; else assert.deepEqual(geometry, expected);
   }
-  await page.getByRole('banner').getByRole('button', { name: 'RU', exact: true }).click();
-  report.checks.push('logo/menu/language positions remain unchanged during client navigation in both RU and EN; active link follows route');
+  await page.setViewportSize({ width: 390, height: 900 });
+  const menu = page.getByRole('button', { name: 'Меню', exact: true });
+  await menu.focus(); await page.keyboard.press('Enter');
+  assert.equal(await menu.getAttribute('aria-expanded'), 'true');
+  await page.getByRole('navigation').getByRole('link', { name: 'Разбор матча', exact: true }).click();
+  assert.equal(await menu.getAttribute('aria-expanded'), 'false');
+  await menu.click(); await page.keyboard.press('Escape');
+  assert.equal(await menu.getAttribute('aria-expanded'), 'false');
+  assert.equal(await menu.evaluate((el) => el === document.activeElement), true);
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  report.checks.push('stable header on all pages; explicit keyboard-operable mobile menu; Escape restores focus; no partial English switch');
   await page.goto(`${base}/winrates`);
   assert.equal(await page.getByLabel('Представление', { exact: true }).count(), 0);
-  await page.getByLabel('Account ID · Steam32', { exact: true }).waitFor();
+  await page.getByLabel('ID игрока · Steam32', { exact: true }).waitFor();
   assert.equal(await page.getByLabel('История участников', { exact: true }).inputValue(), 'match');
   await page.getByText('Игры за 7 и 30 дней до начала каждого матча. Более поздние игры не учитываются.', { exact: true }).waitFor();
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `input form fits ${width}`);
     if (width >= 1440) {
-      const boxes = await Promise.all(['Account ID · Steam32', 'Твои матчи за', 'История участников'].map((label) => page.getByLabel(label, { exact: true }).boundingBox()));
+      const boxes = await Promise.all(['ID игрока · Steam32', 'Твои матчи за', 'История участников'].map((label) => page.getByLabel(label, { exact: true }).boundingBox()));
       assert.ok(boxes.every((box) => Math.abs(box.y - boxes[0].y) < 1), 'inputs align independently of hint height');
       assert.ok((await page.locator('#wr-inputs').boundingBox()).width <= 1120, 'form has a readable desktop width');
     }
     if (width === 390 || width === 1440) await shot(`initial-${width}`);
   }
-  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('4294967295');
+  await page.getByLabel('ID игрока · Steam32', { exact: true }).fill('4294967295');
   await page.keyboard.press('Enter');
-  await page.getByText('Введите числовой Steam32 ID от 1 до 4294967294.', { exact: true }).waitFor();
+  await page.getByText('Введи числовой Steam32 ID от 1 до 4294967294.', { exact: true }).waitFor();
   assert.equal(seen.length, 0, 'invalid account does not fetch');
-  assert.equal(await page.getByLabel('Account ID · Steam32', { exact: true }).getAttribute('aria-invalid'), 'true');
+  assert.equal(await page.getByLabel('ID игрока · Steam32', { exact: true }).getAttribute('aria-invalid'), 'true');
   report.checks.push('standalone account history without presentation selector; aligned form at 1440/1920; responsive 320/390/768; default historic cutoff explained; validation');
   await page.goto(`${base}/winrates?matchId=9000067`);
-  await page.getByLabel('Match ID', { exact: true }).fill('9000067');
+  await page.getByLabel('ID матча', { exact: true }).fill('9000067');
   await page.keyboard.press('Enter');
   await page.getByLabel('Выбранный игрок', { exact: true }).waitFor();
   assert.equal(seen.filter((item) => item.kind === 'participant').length, 0, 'no guessed default player');
@@ -214,6 +219,10 @@ try {
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow ${width}`);
+    if (width <= 390) assert.ok(await page.locator('[class*="miniStats"] > span').evaluateAll((windows) => windows.length > 0 && windows.every((window) => {
+      const [label, value] = window.children;
+      return value.getBoundingClientRect().top >= label.getBoundingClientRect().bottom;
+    })), `mobile window labels stay above percentage and sample at ${width}`);
     if (width >= 1440) {
       const allies = await page.getByRole('region', { name: 'Твоя сторона', exact: true }).boundingBox();
       const opponents = await page.getByRole('region', { name: 'Соперники', exact: true }).boundingBox();
@@ -279,10 +288,10 @@ try {
   assert.equal(await zeroWins.getByText('0 / 5', { exact: true }).count(), 2);
   const cappedSummary = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1005' }) }).locator('summary');
   for (const days of ['7', '30', '7']) {
-    await page.getByLabel('Средние сторон за', { exact: true }).selectOption(days);
-    assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Полное/);
-    assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /Неполное/);
-    assert.equal(await cappedSummary.getByText('Неполное', { exact: true }).count(), 1);
+    await page.getByLabel('Средний винрейт команд за', { exact: true }).selectOption(days);
+    assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Все доступные игры/);
+    assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /История неполная/);
+    assert.equal(await cappedSummary.getByText('История неполная', { exact: true }).count(), 1);
     assert.equal(await cappedSummary.getByText('Данные получены', { exact: true }).count(), 0);
   }
   await page.getByText('История ограничена OpenDota', { exact: true }).waitFor();
@@ -338,8 +347,8 @@ try {
   report.checks.push('empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error');
 
   await page.getByRole('link', { name: 'К истории игрока', exact: true }).click();
-  await page.getByLabel('Account ID · Steam32', { exact: true }).waitFor();
-  assert.equal(await page.getByLabel('Account ID · Steam32', { exact: true }).inputValue(), '1000');
+  await page.getByLabel('ID игрока · Steam32', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('ID игрока · Steam32', { exact: true }).inputValue(), '1000');
   assert.equal(await page.getByRole('region', { name: 'Твоя сторона', exact: true }).count(), 0, 'navigation discards the previous match report');
   scenario = 'ready'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
   await complete(30);
@@ -366,20 +375,20 @@ try {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `long names overflow ${width}`);
   }
-  assert.equal(await page.locator('[class*=portrait] img').count(), 0, 'failed portraits use safe fallback');
+  assert.equal(await page.locator('[class*=heroPortrait] img').count(), 0, 'failed portraits use safe fallback');
   report.checks.push('hero portraits from canonical roster metadata; anonymous hero retained; real 0% with 0/5; unique series people without arbitrary hero; long names and unavailable images');
   await page.getByRole('link', { name: 'К истории игрока', exact: true }).click();
-  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  await page.getByLabel('ID игрока · Steam32', { exact: true }).fill('1000');
   scenario = 'empty'; await editInputs(); await page.getByRole('button', { name: /^(Загрузить сравнение|Обновить данные)$/ }).click();
   await page.getByText(/Подходящих матчей в полученной выборке нет/).waitFor(); await shot('empty');
   scenario = 'error'; await editInputs(); await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
-  await page.getByText(/Ошибка OpenDota. Попробуйте/).waitFor(); await shot('error');
+  await page.getByText(/Ошибка OpenDota. Попробуй/).waitFor(); await shot('error');
 
   scenario = 'ready'; await page.goto(`${base}/winrates?matchId=9000067&accountId=1000`);
-  assert.equal(await page.getByLabel('Match ID', { exact: true }).inputValue(), '9000067');
+  assert.equal(await page.getByLabel('ID матча', { exact: true }).inputValue(), '9000067');
   await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click(); await complete();
   assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '0');
-  assert.equal(await page.locator('nav a[aria-current="page"]').textContent(), 'Доля побед');
+  assert.equal(await page.locator('nav a[aria-current="page"]').textContent(), 'Винрейт игроков');
   report.checks.push('empty/error states; post-match deep link preselects account; active navigation');
   await editInputs(); await page.getByLabel('История участников', { exact: true }).selectOption('now');
   await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click(); await complete();
@@ -394,14 +403,14 @@ try {
   await page.unroute('**/apps/dota2/images/**');
   await page.clock.install();
   await page.goto(`${base}/winrates`);
-  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  await page.getByLabel('ID игрока · Steam32', { exact: true }).fill('1000');
   scenario = 'budget'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
   await page.getByText(/Обработано 20 из 30 участников/).waitFor();
   const captureBefore = seen.filter((item) => item.kind === 'participant').at(-1).request.capturedAt;
   await page.clock.fastForward(45001);
   await page.getByText(/Пауза после 45 секунд/).waitFor();
   assert.equal(await page.getByRole('progressbar').count(), 0, 'no endless progress after the budget');
-  const thirdMatch = page.getByRole('group', { name: 'Твои матчи' }).getByRole('button', { name: /Матч 9000069/ });
+  const thirdMatch = page.getByRole('group', { name: 'Твои матчи' }).getByRole('button', { name: /матч 9000069/i });
   assert.match(await thirdMatch.innerText(), /0\/10 обработано.*не загружено полностью/);
   await thirdMatch.click();
   assert.equal(await page.getByText('Не загружено', { exact: true }).count(), 10);

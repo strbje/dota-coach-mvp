@@ -1,4 +1,4 @@
-import { getHeroNameById } from '../data/heroConstants';
+import { getHeroNameById, getHeroKeyById } from '../data/heroConstants';
 import { normalizeOptionalNumber } from '../adapters/normalizeOptionalNumber';
 import type { OpenDotaMatchResponse } from '../types/providers';
 
@@ -6,6 +6,7 @@ export type MatchPlayerOption = {
   playerSlot: number;
   heroId: number;
   heroName: string;
+  heroKey?: string;
   playerName?: string;
   accountId?: number;
   kills?: number;
@@ -34,7 +35,8 @@ export function getMatchPlayerOptions(payload: OpenDotaMatchResponse): MatchPlay
     return [{
       playerSlot,
       heroId,
-      heroName: getHeroNameById(heroId) ?? `Hero #${heroId}`,
+      heroName: getHeroNameById(heroId) ?? `Герой ${heroId}`,
+      heroKey: getHeroKeyById(heroId) ?? undefined,
       ...(playerName ? { playerName: playerName.trim() } : {}),
       ...(accountId === undefined ? {} : { accountId }),
       ...(kills === undefined ? {} : { kills }),

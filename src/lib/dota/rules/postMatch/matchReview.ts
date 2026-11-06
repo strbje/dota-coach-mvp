@@ -54,7 +54,7 @@ export function buildMatchReview(
   }
   const lh = lastHitsAt10;
   if (lh !== undefined && match.durationSeconds >= 600) {
-    timeline.push({ id: 'lane-at-ten', timeSeconds: 600, kind: 'lane', label: `${number(lh)} добитых крипов`, detail: 'Твой результат к 10:00, включая нейтралов' });
+    timeline.push({ id: 'lane-at-ten', timeSeconds: 600, kind: 'lane', label: `${number(lh)} добиваний`, detail: 'Твой результат к 10:00, включая нейтралов' });
     factors.push({ id: 'personal-start', title: 'Твой старт', fact: `К 10:00 ты добил ${number(lh)} крипов${player?.laneReview?.deathsBefore10 !== undefined ? `; смертей за этот отрезок — ${player.laneReview.deathsBefore10}` : ''}.`,
       meaning: 'Возьми этот результат за основу тренировки добивания и сравни его с целью в следующей игре.', confidence: 'observation', timeSeconds: 0, endSeconds: 600, evidenceId: 'lane-at-ten', stat: { value: number(lh), label: 'твоих добиваний к 10:00' } });
   }
@@ -71,7 +71,7 @@ export function buildMatchReview(
     : won ? 'Победа. Разберём твою игру' : 'Поражение. Разберём твою игру';
   const available = [lh !== undefined ? 'стартовый фарм' : null, player?.itemTimings?.length ? 'покупки' : null, deathTimings?.length ? 'смерти по времени' : null].filter(Boolean);
   const summary = lastGold
-    ? `В ${formatGameTime(lastGold.timeSeconds)} ${lastGold.gold === 0 ? 'золото команд было равным' : `${lastGold.gold > 0 ? 'ваша команда имела' : 'соперник имел'} преимущество в ${number(Math.abs(lastGold.gold))} золота`}. Ниже — важный отрезок команды и твой личный результат.`
+    ? `В ${formatGameTime(lastGold.timeSeconds)} ${lastGold.gold === 0 ? 'золото команд было равным' : `${lastGold.gold > 0 ? 'твоя команда имела' : 'соперник имел'} преимущество в ${number(Math.abs(lastGold.gold))} золота`}. Ниже — важный отрезок команды и твой личный результат.`
     : lastXp ? `Для разбора доступна динамика опыта команд до ${formatGameTime(lastXp.timeSeconds)}. Разница опыта твоей команды в этот момент: ${signed(lastXp.xp)}.`
     : available.length ? `Для разбора доступны ${available.join(', ')}. Начнём с этих отрезков твоей игры.` : 'Есть итог матча. Для подробного разбора пока не хватает событий и минутных показателей.';
   return {

@@ -1,0 +1,8 @@
+{
+  "synthetic": true,
+  "checks": [
+    "empty initial picks; explicit example; fixed supported hero/role; Russian aliases; exact matchup; legacy English ignored; no JSON block; keyboard submit; five viewport widths",
+    "unknown matchup stays unknown; edited picks hide old plan; duplicate picks rejected before fetch; late response discarded; malformed/error handled; successful retry"
+  ],
+  "consoleErrors": []
+}

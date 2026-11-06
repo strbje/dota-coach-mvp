@@ -167,7 +167,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const laneFindings: AnalysisFinding[] = [];
   if (lanePct !== undefined) laneFindings.push({ text: `${Math.round(lanePct)}% эффективности линии.`, evidence: ['по данным линии OpenDota'], severity: 'info' });
   if (p?.laneReview?.lhAt10 !== undefined) {
-    laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} добитых крипов к 10:00.`, evidence: [], severity: 'info' });
+    laneFindings.push({ text: `${Math.round(p.laneReview.lhAt10)} добиваний к 10:00.`, evidence: [], severity: 'info' });
   }
   if (laneDeaths !== undefined && laneDeaths > 0) {
     laneFindings.push({
@@ -200,7 +200,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const mapFindings: AnalysisFinding[] = [
     ...(gpm !== undefined && formatBenchmarkPosition(gpmBench.lowerPercentile, gpmBench.upperPercentile) ? [{ text: `${Math.round(gpm)} золота в минуту — ${formatBenchmarkPosition(gpmBench.lowerPercentile, gpmBench.upperPercentile)}.`, evidence: ['общая экономика матча'], severity: benchmarkSeverity(gpmBench) }] : []),
     ...(xpm !== undefined && formatBenchmarkPosition(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} опыта в минуту — ${formatBenchmarkPosition(xpmBench.lowerPercentile, xpmBench.upperPercentile)}.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
-    ...(lastHitsPerMin !== undefined && formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добитых крипов в минуту — ${formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile)}.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
+    ...(lastHitsPerMin !== undefined && formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добиваний в минуту — ${formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile)}.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
   ];
   if (p?.economyByPhaseSource !== 'unavailable' && p?.economyByPhase) {
     const phaseLabels: Record<MatchPhase, string> = { laning: '0–10 мин', earlyMid: '10–20 мин', midGame: '20–35 мин', lateGame: 'после 35 мин' };
@@ -253,15 +253,15 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
 
   if (lanePct !== undefined && lanePct < 60) priorities.push({
     id: 'lane-farm', title: 'Улучшить фарм на линии',
-    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов к 10:00; ` : ''}эффективность линии — ${Math.round(lanePct)}%${laneDeaths !== undefined ? `; смертей до 10:00 — ${laneDeaths}` : '; число смертей до 10:00 недоступно'}.`,
+    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добиваний к 10:00; ` : ''}эффективность линии — ${Math.round(lanePct)}%${laneDeaths !== undefined ? `; смертей до 10:00 — ${laneDeaths}` : '; число смертей до 10:00 недоступно'}.`,
     meaning: 'Фарм первых десяти минут — доступное направление для тренировки. Проверь, на каких волнах терялись добивания.',
     action: 'Пересмотри первые 10 минут и выбери один повторяющийся пропуск добивания. В следующей игре следи за здоровьем такого крипа до удара.',
-    target: trainingGoal ? { text: `${trainingGoal.baseline} → ${trainingGoal.target} добитых крипов к 10:00.`, source: 'training' } : undefined,
+    target: trainingGoal ? { text: `${trainingGoal.baseline} → ${trainingGoal.target} добиваний к 10:00.`, source: 'training' } : undefined,
     dataState: laneDeaths === undefined || actualLhAt10 === undefined ? 'partial' : 'available', severity: 'warning'
   });
   if (laneDeaths !== undefined && laneDeaths >= 2 && priorities.length < 2) priorities.push({
     id: 'lane-events', title: 'Разобрать повторяющиеся ранние эпизоды',
-    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добитых крипов и ` : ''}${laneDeaths} ${laneDeaths === 1 ? 'смерть' : 'смерти'} к 10:00${lanePct !== undefined ? `; эффективность линии — ${Math.round(lanePct)}%` : ''}.`,
+    fact: `В этой игре: ${actualLhAt10 !== undefined ? `${Math.round(actualLhAt10)} добиваний и ` : ''}${laneDeaths} ${laneDeaths === 1 ? 'смерть' : 'смерти'} к 10:00${lanePct !== undefined ? `; эффективность линии — ${Math.round(lanePct)}%` : ''}.`,
     meaning: 'Несколько ранних смертей дают конкретные эпизоды для просмотра. Их причины нужно проверить в записи.',
     action: 'Перед следующей игрой пересмотри 20 секунд до каждой ранней смерти. Выбери одно повторяющееся решение и заранее определи, как поступить иначе.',
     dataState: actualLhAt10 === undefined ? 'partial' : 'available', severity: 'info'

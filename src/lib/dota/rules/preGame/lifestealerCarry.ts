@@ -47,7 +47,7 @@ export function runLifestealerCarryPreGameRules(input: PreGameDraftInput): PreGa
           stage: '0-7',
           goals: [
             'prioritize creeps and HP over long melee trades',
-            'use Rage for guaranteed survival or secure farm windows'
+            'save Rage for a dangerous trade or disengage'
           ]
         }
       ],
@@ -77,7 +77,7 @@ export function runLifestealerCarryPreGameRules(input: PreGameDraftInput): PreGa
     hero: 'Lifestealer',
     role: 'carry',
     lane: {
-      difficulty: 'medium',
+      difficulty: 'unknown',
       reasons: ['lane pattern not in hardcoded matchup set; using safe baseline plan']
     },
     threats: ['chain_control_after_rage'],

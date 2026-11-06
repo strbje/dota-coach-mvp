@@ -20,7 +20,7 @@ test('internal errors return a stable code without leaking the raw message', asy
 
   try {
     const result = await handlePreGameAnalyze(
-      { hero: 'Lifestealer', role: 'carry' },
+      { hero: 'Lifestealer', role: 'carry', allies: ['Lifestealer', 'Lion'], enemies: ['Tusk', 'Axe'], lanes: { safe: { ally: ['Lifestealer', 'Lion'], enemy: ['Tusk', 'Axe'] } } },
       async () => { throw new Error('private upstream failure'); }
     );
 
@@ -31,4 +31,10 @@ test('internal errors return a stable code without leaking the raw message', asy
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test('incomplete draft returns a validation error without running the engine', async () => {
+  const result = await handlePreGameAnalyze({ hero: 'Lifestealer', role: 'carry' }, async () => { assert.fail('must not analyze an incomplete draft'); });
+  assert.equal(result.status, 400);
+  assert.deepEqual(result.body, { errorCode: 'INVALID_PRE_GAME_DRAFT' });
 });

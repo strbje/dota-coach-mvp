@@ -1,4 +1,5 @@
-import { Badge, Panel } from '@/components/ui';
+import { Panel } from '@/components/ui';
+import { formatBenchmarkPosition } from '@/lib/dota/analyze/compareToBenchmarks';
 import styles from './postMatch.module.css';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 
@@ -13,7 +14,7 @@ type GradeLevel = {
 const GRADE_LABELS: Record<string, string> = {
   lane: 'Линия',
   items: 'Предметы',
-  fights: 'Драки',
+  fights: 'Урон по героям',
   map: 'Фарм и экономика'
 };
 
@@ -26,18 +27,25 @@ export function getGradeLevel(score: number): GradeLevel {
   return { label: 'Отлично', className: 'grade-excellent', tone: 'excellent', description: 'Сильное исполнение' };
 }
 
-export function GradesGrid({ grades, categories = ['lane', 'items', 'fights', 'map'] }: { grades: PostMatchAnalysis['grades']; categories?: Array<keyof PostMatchAnalysis['grades']> }) {
-  const visible = Object.entries(grades).filter(([key, grade]) => categories.includes(key as keyof typeof grades) && grade.score !== undefined);
+export function GradesGrid({ grades, benchmarkSummary, hero, categories = ['fights', 'map'] }: Pick<PostMatchAnalysis, 'grades' | 'benchmarkSummary' | 'hero'> & { categories?: Array<'fights' | 'map'> }) {
+  const visible = Object.entries(grades).filter(([key, grade]) => categories.includes(key as 'fights' | 'map') && grade.score !== undefined);
   if (!visible.length) return null;
   return <section aria-label="Оценки" className={`grid grid-2 ${styles.grades}`}>
     {visible.map(([key, grade]) => {
-      const level = getGradeLevel(grade.score!);
+      const keys = key === 'fights' ? ['heroDamagePerMin'] as const : key === 'map' ? ['gpm', 'lhPerMin'] as const : [];
+      const labels = { heroDamagePerMin: 'урона в минуту', gpm: 'золота в минуту', lhPerMin: 'добиваний в минуту' };
       return <Panel as="article" key={key} className={styles.gradeCompact}>
         <h3>{GRADE_LABELS[key]}</h3>
-        <div className={styles.gradeValue}><strong><span>{grade.score}</span><span className={styles.gradeOutOf}> / 100</span></strong><Badge tone={level.tone}>{level.label}</Badge></div>
-        <div className={`grade-bar ${level.className}`} aria-label={`Оценка: ${grade.score} из 100`}><span style={{ width: `${grade.score}%` }} /></div>
-        <p className={styles.note}>{grade.summary}</p>
-        <details><summary>Из чего складывается оценка</summary><ul>{grade.findings.slice(0, 3).map((finding) => <li key={finding.text}>{finding.text}</li>)}</ul><p className={styles.note}>Сравнение показателей на том же герое. Оценка не определяет качество отдельных решений.</p></details>
+        {keys.map((metricKey) => {
+          const metric = benchmarkSummary?.metrics[metricKey];
+          return metric ? <div key={metricKey}><p className={styles.gradeValue}><strong>{metric.actual.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} <span className={styles.gradeOutOf}>{labels[metricKey]}</span></strong></p><p className={styles.note}>{formatBenchmarkPosition(metric.lowerPercentile, metric.upperPercentile) ?? 'Сравнение недоступно'}</p></div> : null;
+        })}
+        <details><summary>Как сравниваем</summary>
+          <p className={styles.note}>Выборка матчей на {hero}; без подбора по рейтингу, роли, патчу и длительности.</p>
+          <p>{key === 'fights' ? 'Урон не оценивает выбор цели, контроль и качество решений в драке.' : 'Доход и добивания показываем отдельно: высокий темп добиваний не обязательно означает высокий доход.'}</p>
+          <p className={styles.note}>Расчётный индекс: {grade.score}/100.{key === 'map' ? ' Среднее индексов дохода и добиваний.' : ' По положению урона в выборке.'} Это не оценка всех твоих действий.</p>
+          <ul>{grade.findings.slice(0, 3).map((finding) => <li key={finding.text}>{finding.text}</li>)}</ul>
+        </details>
       </Panel>;
     })}
   </section>;

@@ -1,22 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { getHeroPortraitUrl } from '@/lib/dota/data/heroConstants';
+import { HeroPortrait } from '@/components/ui/HeroPortrait';
 import { Badge, Button, Panel } from '@/components/ui';
 import { groupMean, resultFor, seriesMean, uniquePlayers } from '@/lib/dota/winrates/calculation';
 import { coverageText, dateMsk, percent, points, rowStatus, statusText } from '@/lib/dota/winrates/presentation';
-import type { Encounter, Plan, Results, RosterPlayer, WindowDays } from '@/lib/dota/winrates/types';
+import type { Encounter, Plan, Results, WindowDays } from '@/lib/dota/winrates/types';
 import styles from './winrates.module.css';
-
-function HeroPortrait({ player }: { player: RosterPlayer }) {
-  const [failed, setFailed] = useState(false);
-  const src = getHeroPortraitUrl(player.heroKey);
-  return <span className={styles.portrait} aria-hidden="true">
-    {src && !failed
-      // eslint-disable-next-line @next/next/no-img-element
-      ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
-      : <span>{player.heroId ? '◇' : '?'}</span>}
-  </span>;
-}
 
 export function WinrateReport({ plan, rows, results, days, loading = false }: { plan: Plan; rows: Encounter[]; results: Results; days: WindowDays; loading?: boolean }) {
   const [selectedMatch, setSelectedMatch] = useState<number>();
@@ -25,22 +14,23 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
   const average = seriesMean(rows, results, days);
   return <div className="page-stack">
     {plan.query.mode === 'series' && plan.matches.length > 0 ? <Panel className="stack">
-      <h2>Твои матчи · среднее сторон</h2>
+      <h2>Средний винрейт команд</h2>
       <div className={styles.comparison}>
         <div className={styles.metric}><h3>Твоя сторона</h3><strong className={styles.number}>{percent(average.with)}</strong></div>
         <div className={styles.metric}><h3>Соперники</h3><strong className={styles.number}>{percent(average.against)}</strong></div>
         <div className={styles.metric}><h3>Разница</h3><strong className={styles.number}>{points(average.with, average.against)}</strong></div>
       </div>
-      <p className="muted">За {days} дней · учтено {average.pairs} из {plan.matches.length} матчей с данными обеих сторон. Покрытие — в составах.</p>
+      <p className="muted">За {days} дней · учтено {average.pairs} из {plan.matches.length} матчей с данными обеих сторон. Число учтённых игроков — в составах.</p>
     </Panel> : null}
     {plan.query.mode === 'series' && plan.matches.length > 0 ? <div className={styles.matchPicker} role="group" aria-label="Твои матчи">{plan.matches.map((entry) => {
       const entries = rows.filter((row) => row.matchId === entry.matchId);
       const done = entries.filter((row) => row.player.missing || resultFor(row, results)).length;
+      const player = entries.find((row) => row.isSelected)?.player;
       const a = groupMean(entries, results, days, 'with');
       const b = groupMean(entries, results, days, 'against');
       return <Button key={entry.matchId} type="button" variant="secondary" aria-pressed={activeMatch === entry.matchId} onClick={() => setSelectedMatch(entry.matchId)}>
-        <strong>Матч {entry.matchId}</strong><span>{dateMsk(entry.match?.startTime)} МСК</span>
-        <span>{percent(a.mean)} / {percent(b.mean)} · {days} дней</span>
+        <span className={styles.matchIdentity}><HeroPortrait key={player?.heroKey ?? entry.matchId} heroKey={player?.heroKey}/><strong>{player?.heroName ?? 'Состав недоступен'}</strong></span><span>{dateMsk(entry.match?.startTime)} МСК</span>
+        <span>Твоя команда {percent(a.mean)} · соперники {percent(b.mean)}</span><span className="muted">За {days} дней · матч {entry.matchId}</span>
         <span>{entry.error ? statusText[entry.error] : `${done}/${entries.length} обработано${done < entries.length ? loading ? ' · загрузка' : ' · не загружено полностью' : ''}`}</span>
       </Button>;
     })}</div> : null}
@@ -58,7 +48,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
               return <section className={styles.side} key={side} aria-label={side === 'with' ? 'Твоя сторона' : 'Соперники'}>
                 <div className={styles.metric}>
                   <div className={styles.sideHeading}><h3>{side === 'with' ? 'Твоя сторона' : 'Соперники'}</h3><strong className={styles.number}>{percent(value.mean)}</strong><span>за {days} дней</span></div>
-                  <span className="muted">Данные {value.available} из {value.expected} · полных историй: {value.complete}</span>
+                  <span className="muted">Учтены {value.available} из {value.expected} игроков · полных историй: {value.complete}</span>
                 </div>
                 <div className={styles.roster}>
             {matchRows.filter((row) => row.side === side).map((row) => {
@@ -66,11 +56,11 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
               const status = !loading && !result && !row.player.missing ? 'Не загружено' : rowStatus(row, results);
               return <details key={row.key} className={`${styles.participant} ${row.isSelected ? styles.selectedPlayer : ''}`}>
                 <summary>
-                  <HeroPortrait key={`${row.player.heroId}:${row.player.heroKey}`} player={row.player} />
+                  <HeroPortrait key={`${row.player.heroId}:${row.player.heroKey}`} heroKey={row.player.heroKey} />
                   <span className={styles.identity}><strong>{result?.name ?? row.player.name ?? row.player.heroName}</strong><span className="muted">{row.player.heroName}{row.isSelected ? ' · выбранный игрок' : ''}</span></span>
                   <span className={styles.miniStats}>{([7, 30] as const).map((window) => <span key={window}>
                     <span>{window} дней</span><span className={styles.sampleValue}><strong>{percent(result?.samples[window].rate)}</strong><span title="Победы / игры">{result ? `${result.samples[window].wins} / ${result.samples[window].games}` : '— / —'}</span></span>
-                    {result ? <span className="muted" title={coverageText(result.samples[window])}>{result.samples[window].complete ? 'Полное' : 'Неполное'}</span> : null}
+                    {result ? <span className="muted" title={coverageText(result.samples[window])}>{result.samples[window].complete ? 'Все доступные игры' : 'История неполная'}</span> : null}
                   </span>)}</span>
                   {(!result || result.status !== 'ready' || result.refreshError) ? <span className={styles.participantStatus}>
                     {!result || result.status !== 'ready' ? <span>{status}</span> : null}
@@ -80,7 +70,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
                 <div className={styles.participantBody}>
                   <p>{row.player.accountId ? `Account ID ${row.player.accountId}` : rowStatus(row, results)}</p>
                   {result ? <>
-                    {result.refreshError ? <p role="status">{statusText[result.refreshError]}. Показана ранее полученная выборка; время её получения сохранено. Повторите обновление позже.</p> : null}
+                    {result.refreshError ? <p role="status">{statusText[result.refreshError]}. Показана ранее полученная выборка; время её получения сохранено. Повтори обновление позже.</p> : null}
                     {result.status === 'private' ? <p>OpenDota ограничил историю: она закрыта или источнику не удалось её обновить. Причину источник не уточнил.</p> : null}
                     <div className={styles.samples}>{([7, 30] as const).map((window) => {
                       const value = result.samples[window];
@@ -100,7 +90,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
               </section>;
             })}
           </div>
-          <p className={styles.comparisonNote}>Процент · победы / игры. Выбранный игрок включён в свою сторону. Неполные окна входят в среднее и отмечены отдельно.</p>
+          <p className={styles.comparisonNote}>Процент · победы / игры. Выбранный игрок включён в свою сторону. Неполные истории входят в среднее и отмечены отдельно.</p>
         </>}
       </Panel>;
     })}

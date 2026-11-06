@@ -1,10 +1,10 @@
 import type { FarmIntervalReport } from './farmIntervals';
 
 export const farmTypes = [
-  { key: 'lane', label: 'Линейные' },
+  { key: 'lane', label: 'Крипы на линии' },
   { key: 'neutral', label: 'Нейтралы' },
-  { key: 'ancient', label: 'Древние' },
-  { key: 'unclassified', label: 'Тип неизвестен' }
+  { key: 'ancient', label: 'Эншенты' },
+  { key: 'unclassified', label: 'Тип не определён' }
 ] as const;
 
 // A partial event stream must never be drawn as the composition of a complete total.

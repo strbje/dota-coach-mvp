@@ -1,4 +1,5 @@
 import type { PreGameDraftInput } from '../../../../lib/dota/types/domain';
+import { validLaneInput } from '../../../../lib/dota/validation/preGameDraft';
 
 export const PRE_GAME_ERROR_CODES = {
   unsupportedInput: 'UNSUPPORTED_PRE_GAME_INPUT',
@@ -27,6 +28,8 @@ export async function handlePreGameAnalyze(
       status: 400
     };
   }
+
+  if (!validLaneInput(body)) return { body: { errorCode: 'INVALID_PRE_GAME_DRAFT' }, status: 400 };
 
   try {
     return { body: await analyze(body as PreGameDraftInput), status: 200 };
