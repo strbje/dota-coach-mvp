@@ -26,7 +26,7 @@ export function csvCell(value: unknown): string {
 export function exportCsv(plan: Plan, rows: Encounter[], results: Results, days: WindowDays): string {
   const table: unknown[][] = [
     ['Доля побед участников · источник OpenDota'],
-    ['Загрузка (МСК)', dateMsk(plan.capturedAt), 'Момент', plan.query.basis === 'match' ? 'На момент матча' : 'Сейчас', 'Окно средних (дни)', days],
+    ['Загрузка (МСК)', dateMsk(plan.capturedAt), 'История участников', plan.query.basis === 'match' ? 'До начала каждого матча' : 'До начала загрузки', 'Окно средних (дни)', days],
     ['Только рейтинговые', plan.query.rankedOnly ? 'Да' : 'Нет', 'Без Turbo', plan.query.excludeTurbo ? 'Да' : 'Нет', 'Период серии', plan.query.days],
     ['Средние — равный вес участников; сводка — равный вес парных матчей. Это не вероятность победы.'],
     ['Матч', 'Твоя сторона, %', 'Данные из 5', 'Соперники, %', 'Данные из 5', 'Разница, п.п.', 'Состояние']

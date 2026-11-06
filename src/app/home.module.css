@@ -1,5 +1,4 @@
 .hero { position: relative; display: grid; gap: var(--space-6); padding-block: var(--space-12); }
-.hero::after { content: ''; position: absolute; inset: 0 0 auto 55%; height: 100%; opacity: .18; background: repeating-linear-gradient(135deg, transparent 0 24px, var(--color-border) 25px 26px); pointer-events: none; }
 .copy { position: relative; z-index: 1; max-width: 760px; display: grid; gap: var(--space-4); }
 .title { font-size: var(--font-size-hero); }
 .lead { max-width: 650px; color: var(--color-text-secondary); font-size: var(--font-size-lg); }

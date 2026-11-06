@@ -69,7 +69,7 @@ export default function PreGamePage() {
   const localizedData = useMemo(() => data ? localizePreGameAnalysis(data, locale) : null, [data, locale]);
 
   return (
-    <PageContainer className="page-stack">
+    <PageContainer atmosphere="pre-game" className="page-stack">
 <header className="stack">
 <span className="eyebrow">{copy.eyebrow}</span>
 <h1 className="page-title">{copy.title}</h1>

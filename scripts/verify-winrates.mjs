@@ -110,6 +110,7 @@ await page.route('**/api/winrates/**', async (route) => {
   return route.fulfill({ json: result }).catch(() => undefined);
 });
 async function shot(name) {
+  await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => {
     if (document.getElementById('synthetic-note')) return;
     const note = document.createElement('div'); note.id = 'synthetic-note'; note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса · не результаты реальных игроков';
@@ -133,8 +134,46 @@ async function editInputs() {
 async function complete(count = 10) { await page.getByText(new RegExp(`Обработано ${count} из ${count} участников`)).waitFor(); }
 const report = { synthetic: true, widths: [], checks: [] };
 try {
+  for (const [path, asset] of [['/', 'home-ancient'], ['/pre-game', 'pre-game-shop'], ['/winrates', 'winrates-river'], ['/post-match', 'post-match-battlefield']]) {
+    await page.goto(`${base}${path}`);
+    await page.locator('main').waitFor();
+    const decoration = await page.locator('main').evaluate((main) => {
+      const css = getComputedStyle(main.parentElement, '::before');
+      return { image: css.backgroundImage, pointerEvents: css.pointerEvents };
+    });
+    assert.ok(decoration.image.includes(`${asset}.webp`), `${path} has its own scene`);
+    assert.equal(decoration.pointerEvents, 'none');
+    const image = await page.request.get(`${base}/images/${asset}.webp`);
+    assert.equal(image.status(), 200); assert.match(image.headers()['content-type'], /image\/webp/);
+    for (const width of [320, 390, 768, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 1050 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} fits ${width}`);
+      if (path !== '/winrates' && (width === 390 || width === 1440)) await shot(`${asset}-${width}`);
+    }
+  }
+  report.checks.push('four distinct local backgrounds, HTTP 200 WebP, non-interactive decoration; home/pre-game/post-match/winrates fit 320/390/768/1440/1920');
   await page.goto(`${base}/winrates`);
-  await shot('initial-desktop');
+  assert.equal(await page.getByLabel('Представление', { exact: true }).count(), 0);
+  await page.getByLabel('Account ID · Steam32', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('История участников', { exact: true }).inputValue(), 'match');
+  await page.getByText('Игры за 7 и 30 дней до начала каждого матча. Более поздние игры не учитываются.', { exact: true }).waitFor();
+  for (const width of [320, 390, 768, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1050 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `input form fits ${width}`);
+    if (width >= 1440) {
+      const boxes = await Promise.all(['Account ID · Steam32', 'Твои матчи за', 'История участников'].map((label) => page.getByLabel(label, { exact: true }).boundingBox()));
+      assert.ok(boxes.every((box) => Math.abs(box.y - boxes[0].y) < 1), 'inputs align independently of hint height');
+      assert.ok((await page.locator('#wr-inputs').boundingBox()).width <= 1120, 'form has a readable desktop width');
+    }
+    if (width === 390 || width === 1440) await shot(`initial-${width}`);
+  }
+  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('4294967295');
+  await page.keyboard.press('Enter');
+  await page.getByText('Введите числовой Steam32 ID от 1 до 4294967294.', { exact: true }).waitFor();
+  assert.equal(seen.length, 0, 'invalid account does not fetch');
+  assert.equal(await page.getByLabel('Account ID · Steam32', { exact: true }).getAttribute('aria-invalid'), 'true');
+  report.checks.push('standalone account history without presentation selector; aligned form at 1440/1920; responsive 320/390/768; default historic cutoff explained; validation');
+  await page.goto(`${base}/winrates?matchId=9000067`);
   await page.getByLabel('Match ID', { exact: true }).fill('9000067');
   await page.keyboard.press('Enter');
   await page.getByLabel('Выбранный игрок', { exact: true }).waitFor();
@@ -209,7 +248,7 @@ try {
   assert.equal(await zeroWins.getByText('0 / 5', { exact: true }).count(), 2);
   const cappedSummary = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1005' }) }).locator('summary');
   for (const days of ['7', '30', '7']) {
-    await page.getByLabel('Окно для средних', { exact: true }).selectOption(days);
+    await page.getByLabel('Средние сторон за', { exact: true }).selectOption(days);
     assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Полное/);
     assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /Неполное/);
     assert.equal(await cappedSummary.getByText('Неполное', { exact: true }).count(), 1);
@@ -223,6 +262,14 @@ try {
   await page.setViewportSize({ width: 390, height: 1050 }); await shot('partial-mobile');
   report.checks.push('anonymous roster waits for explicit selection; anonymous, restricted, empty, provider error and capped sample states');
   report.checks.push('7-day and 30-day coverage is labelled independently while switching the mean window 7/30/7');
+  await page.goto(`${base}/winrates?matchId=9000067&accountId=1000`);
+  await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
+  await complete();
+  assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '0');
+  await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('1');
+  await complete();
+  assert.equal(await page.getByRole('link', { name: 'К истории игрока', exact: true }).getAttribute('href'), '/winrates', 'anonymous selection must not reuse the account supplied by the deep link');
+  report.checks.push('anonymous selection does not reuse the deep-linked account when navigating to player history');
 
   await load('retry-sample'); await complete();
   const retry = page.getByRole('button', { name: 'Продолжить / повторить · 1', exact: true });
@@ -259,10 +306,16 @@ try {
   assert.notEqual(await allyCard.innerText(), previousMean); assert.match(await allyCard.innerText(), /28%/);
   report.checks.push('empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error');
 
-  await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series');
-  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  await page.getByRole('link', { name: 'К истории игрока', exact: true }).click();
+  await page.getByLabel('Account ID · Steam32', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Account ID · Steam32', { exact: true }).inputValue(), '1000');
+  assert.equal(await page.getByRole('region', { name: 'Твоя сторона', exact: true }).count(), 0, 'navigation discards the previous match report');
   scenario = 'ready'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
   await complete(30);
+  await page.getByRole('heading', { name: 'История до начала матча', exact: true }).waitFor();
+  await page.getByText('Для каждого матча — свои предыдущие 7 и 30 дней.', { exact: true }).waitFor();
+  await editInputs();
+  for (const width of [390, 1440]) { await page.setViewportSize({ width, height: 1050 }); await shot(`history-controls-${width}`); }
   await page.getByText('Повторные встречи · 9 игроков', { exact: true }).waitFor();
   await page.getByText('Повторные встречи · 9 игроков', { exact: true }).click();
   assert.equal(await page.locator('table img').count(), 0, 'unique series people never get an arbitrary hero');
@@ -277,14 +330,15 @@ try {
   report.checks.push('bounded first series; continuation by stable Match IDs; same capture time; final unique-player table');
 
   await page.route('**/apps/dota2/images/**', (route) => route.abort());
-  scenario = 'long-name'; await page.goto(`${base}/winrates`); await load('long-name'); await complete();
+  scenario = 'long-name'; await page.goto(`${base}/winrates?matchId=9000067`); await load('long-name'); await complete();
   for (const width of [320, 390, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `long names overflow ${width}`);
   }
   assert.equal(await page.locator('[class*=portrait] img').count(), 0, 'failed portraits use safe fallback');
   report.checks.push('hero portraits from canonical roster metadata; anonymous hero retained; real 0% with 0/5; unique series people without arbitrary hero; long names and unavailable images');
-  await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series'); await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  await page.getByRole('link', { name: 'К истории игрока', exact: true }).click();
+  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
   scenario = 'empty'; await editInputs(); await page.getByRole('button', { name: /^(Загрузить сравнение|Обновить данные)$/ }).click();
   await page.getByText(/Подходящих матчей в полученной выборке нет/).waitFor(); await shot('empty');
   scenario = 'error'; await editInputs(); await page.getByRole('button', { name: 'Обновить данные', exact: true }).click();
@@ -296,9 +350,12 @@ try {
   assert.equal(await page.getByLabel('Выбранный игрок', { exact: true }).inputValue(), '0');
   assert.equal(await page.locator('nav a[aria-current="page"]').textContent(), 'Доля побед');
   report.checks.push('empty/error states; post-match deep link preselects account; active navigation');
-  await editInputs(); await page.getByLabel('Момент расчёта', { exact: true }).selectOption('now');
+  await editInputs(); await page.getByLabel('История участников', { exact: true }).selectOption('now');
   await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click(); await complete();
-  await page.getByRole('heading', { name: 'Сейчас · единый момент расчёта', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'История на сегодня', exact: true }).waitFor();
+  await page.getByText(/Общая граница:/).waitFor();
+  await page.getByText(/Загрузка начата/).waitFor();
+  await page.getByText(/История за 7 дней до .*Сам этот матч исключён/).waitFor();
   const currentRequests = seen.filter((item) => item.kind === 'participant' && item.request.basis === 'now');
   assert.equal(currentRequests.length, 10); assert.equal(new Set(currentRequests.map((item) => item.request.capturedAt)).size, 1);
   report.checks.push('current mode is separately labelled and all participants share one capture time');
@@ -306,7 +363,6 @@ try {
   await page.unroute('**/apps/dota2/images/**');
   await page.clock.install();
   await page.goto(`${base}/winrates`);
-  await page.getByLabel('Представление', { exact: true }).selectOption('series');
   await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
   scenario = 'budget'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
   await page.getByText(/Обработано 20 из 30 участников/).waitFor();
@@ -314,7 +370,7 @@ try {
   await page.clock.fastForward(45001);
   await page.getByText(/Пауза после 45 секунд/).waitFor();
   assert.equal(await page.getByRole('progressbar').count(), 0, 'no endless progress after the budget');
-  const thirdMatch = page.getByRole('group', { name: 'Матчи серии' }).getByRole('button', { name: /Матч 9000069/ });
+  const thirdMatch = page.getByRole('group', { name: 'Твои матчи' }).getByRole('button', { name: /Матч 9000069/ });
   assert.match(await thirdMatch.innerText(), /0\/10 обработано.*не загружено полностью/);
   await thirdMatch.click();
   assert.equal(await page.getByText('Не загружено', { exact: true }).count(), 10);
