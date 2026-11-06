@@ -1,6 +1,8 @@
 .heading { display: grid; gap: var(--space-3); max-width: var(--text-measure); }
 .heading h1 { font-size: var(--font-size-report-title); }
-.form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: end; }
+.inputs { width: 100%; max-width: var(--layout-form); }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.historyForm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .checks, .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
 .checks { grid-column: 1 / -1; }
 .checks label { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-size); cursor: pointer; }
@@ -43,9 +45,9 @@
 .method { max-width: var(--text-measure); }
 .progress { width: 100%; accent-color: var(--color-focus); }
 @media (max-width: 1100px) { .sides { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 900px) { .form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .form, .historyForm { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
-  .form, .samples { grid-template-columns: minmax(0, 1fr); }
+  .form, .historyForm, .samples { grid-template-columns: minmax(0, 1fr); }
   .comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
   .comparison > :last-child { grid-column: 1 / -1; }
   .metric { padding-left: var(--space-2); }
@@ -69,6 +71,10 @@
 .matchPicker button > span { display: grid; gap: var(--space-1); font-weight: 400; font-size: var(--font-size-sm); }
 .matchPicker button[aria-pressed='true'] { border-color: var(--color-focus); background: var(--color-surface-raised); }
 
-.reportControls { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.reportControls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.reportControls:has(> :nth-child(3)) { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
 .loadStatus { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
-@media (max-width: 700px) { .reportControls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reportControls > :first-child:nth-last-child(3) { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .reportControls, .reportControls:has(> :nth-child(3)) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reportControls > :first-child:nth-last-child(3) { grid-column: 1 / -1; } }
+
+@media (max-width: 900px) and (min-width: 601px) { .historyForm > :nth-child(3) { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .reportControls, .reportControls:has(> :nth-child(3)) { grid-template-columns: minmax(0, 1fr); } }

@@ -25,7 +25,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
   const average = seriesMean(rows, results, days);
   return <div className="page-stack">
     {plan.query.mode === 'series' && plan.matches.length > 0 ? <Panel className="stack">
-      <h2>Серия · среднее по матчам</h2>
+      <h2>Твои матчи · среднее сторон</h2>
       <div className={styles.comparison}>
         <div className={styles.metric}><h3>Твоя сторона</h3><strong className={styles.number}>{percent(average.with)}</strong></div>
         <div className={styles.metric}><h3>Соперники</h3><strong className={styles.number}>{percent(average.against)}</strong></div>
@@ -33,7 +33,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
       </div>
       <p className="muted">За {days} дней · учтено {average.pairs} из {plan.matches.length} матчей с данными обеих сторон. Покрытие — в составах.</p>
     </Panel> : null}
-    {plan.query.mode === 'series' && plan.matches.length > 0 ? <div className={styles.matchPicker} role="group" aria-label="Матчи серии">{plan.matches.map((entry) => {
+    {plan.query.mode === 'series' && plan.matches.length > 0 ? <div className={styles.matchPicker} role="group" aria-label="Твои матчи">{plan.matches.map((entry) => {
       const entries = rows.filter((row) => row.matchId === entry.matchId);
       const done = entries.filter((row) => row.player.missing || resultFor(row, results)).length;
       const a = groupMean(entries, results, days, 'with');
@@ -48,8 +48,9 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
       const matchRows = rows.filter((row) => row.matchId === entry.matchId);
       if (!matchRows.length && !entry.error) return null;
       return <Panel key={entry.matchId} className="stack">
-        <div className={styles.toolbar}><h2>Матч {entry.matchId}</h2><span className="muted">{dateMsk(entry.match?.startTime)} МСК · {days} дней</span></div>
+        <div className={styles.toolbar}><h2>Матч {entry.matchId}</h2><span className="muted">Начало: {dateMsk(entry.match?.startTime)} МСК</span></div>
         {entry.error ? <p>{statusText[entry.error]}. Состав не получен; матч не включён в средние.</p> : <>
+          <p className={styles.comparisonNote}>История за {days} дней до {dateMsk(plan.query.basis === 'match' ? entry.match?.startTime : plan.capturedAt)} МСК. Сам этот матч исключён.</p>
           <p className={styles.comparisonNote}>Разница сторон: <strong>{points(groupMean(matchRows, results, days, 'with').mean, groupMean(matchRows, results, days, 'against').mean)}</strong> · твоя сторона минус соперники</p>
           <div className={styles.sides}>
             {(['with', 'against'] as const).map((side) => {
@@ -104,7 +105,7 @@ export function WinrateReport({ plan, rows, results, days, loading = false }: { 
       </Panel>;
     })}
     {plan.query.mode === 'series' && rows.length > 0 ? <details className="details"><summary>Повторные встречи · {people.length} игроков</summary><div className="details-content">
-      <p className="muted">{rows.filter((row) => !row.isSelected).length} встреч с другими игроками, из них {rows.filter((row) => !row.isSelected && !row.player.accountId).length} без известного аккаунта. Повторный игрок занимает одну строку. Счётчики итоговые для показанной серии; выбранный игрок исключён.</p>
+      <p className="muted">{rows.filter((row) => !row.isSelected).length} встреч с другими игроками, из них {rows.filter((row) => !row.isSelected && !row.player.accountId).length} без известного аккаунта. Повторный игрок занимает одну строку. Счётчики итоговые для показанных матчей; выбранный игрок исключён.</p>
       <table className={styles.people}><caption>Встречи вместе и против по игрокам</caption><thead><tr><th scope="col">Игрок</th><th scope="col">Вместе</th><th scope="col">Против</th></tr></thead>
         <tbody>{people.map((person) => <tr key={person.accountId}><th scope="row">{person.name ?? `Игрок ${person.accountId}`}<details><summary>Аккаунт и матчи</summary><span className="muted">ID {person.accountId}</span><span>Вместе: {person.with.join(', ') || '—'}</span><span>Против: {person.against.join(', ') || '—'}</span></details></th>
           {(['with', 'against'] as const).map((side) => <td key={side}><strong>{person[side].length}</strong></td>)}

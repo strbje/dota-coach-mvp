@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-11-06",
+  "method": "built-in image generation",
+  "synthetic": true,
+  "format": "WebP quality 82; 1672×941; original composition preserved",
+  "assets": [
+    {
+      "page": "home",
+      "path": "public/images/home-ancient.webp",
+      "prompt": "Use case: stylized-concept. Asset type: wide decorative website background, landscape 16:9. Dota 2 inspired dark fantasy environment, painterly 3D game environment style. Very dark restrained teal-black stone, subtle jade and coral highlights. Main central 65% calm and low-detail for readable website UI; recognizable environmental details around the upper outer edges. No characters, no text, no letters, no interface, no logos, no watermark, no diagrams or actual match data. Opaque background. Scene: ancient Radiant base at blue-hour dawn, monumental pale carved stones and a gently glowing cyan ancient crystal beyond broad worn steps, lush forest silhouettes. Quiet atmosphere, wide establishing view."
+    },
+    {
+      "page": "pre-game",
+      "path": "public/images/pre-game-shop.webp",
+      "prompt": "Use case: stylized-concept. Asset type: wide decorative website background, landscape 16:9. Dota 2 inspired dark fantasy environment, painterly 3D game environment style. Very dark restrained teal-black stone, subtle jade and coral highlights. Main central 65% calm and low-detail for readable website UI; recognizable environmental details around the upper outer edges. No characters, no text, no letters, no interface, no logos, no watermark, no diagrams or actual match data. Opaque background. Scene: preparation at a Dota-style forest secret shop, wooden canopy and faint warm lantern at the right outer edge, a few closed supply crates and carved stone waystones, mossy path leading into shadow. View from the lane, no close-up inventory or recognizable item icons."
+    },
+    {
+      "page": "winrates",
+      "path": "public/images/winrates-river.webp",
+      "prompt": "Use case: stylized-concept. Asset type: wide decorative website background, landscape 16:9. Dota 2 inspired dark fantasy environment, painterly 3D game environment style. Very dark restrained teal-black stone, subtle jade and coral highlights. Main central 65% calm and low-detail for readable website UI; recognizable environmental details around the upper outer edges. No characters, no text, no letters, no interface, no logos, no watermark, no diagrams or actual match data. Opaque background. Scene: broad river crossing separating a lush Radiant forest on the left and bare Dire cliffs on the right, distant stone ramps, a subtle turquoise rune shimmer on the water near the outer edge, dim coral embers on the far right. No battle, no factions' emblems."
+    }
+  ]
+}
