@@ -13,19 +13,20 @@
 .metric:first-child { border-color: var(--color-focus); }
 .metric h3 { font-size: var(--font-size-lg); }
 .number { font-size: var(--font-size-score); font-family: var(--font-heading); }
-.sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); align-items: start; }
-.side { min-width: 0; display: grid; gap: var(--space-4); }
+.sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.side { min-width: 0; display: grid; gap: var(--space-2); }
 .sideHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
 .comparisonNote { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 .portrait { width: var(--space-12); aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: var(--radius-control); overflow: hidden; background: var(--color-surface-raised); color: var(--color-text-secondary); }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
 .roster { display: grid; gap: var(--space-2); }
 .participant { border-top: var(--border-width) solid var(--color-border); }
-.participant summary { display: grid; grid-template-columns: var(--space-12) minmax(0, 180px) auto; justify-content: start; align-items: center; gap: var(--space-2) var(--space-3); cursor: pointer; padding: var(--space-3) 0; min-height: var(--control-size); }
+.participant summary { display: grid; grid-template-columns: var(--space-12) minmax(0, 1fr) minmax(170px, 1fr); justify-content: start; align-items: center; gap: var(--space-2) var(--space-3); cursor: pointer; padding: var(--space-2) 0; min-height: var(--control-size); }
 .participant summary::marker { content: ''; }
 .participant summary::-webkit-details-marker { display: none; }
-.identity::after { content: 'Подробнее +'; color: var(--color-focus); font-size: var(--font-size-sm); }
-.participant[open] .identity::after { content: 'Свернуть −'; }
+.participant summary { position: relative; padding-right: var(--space-4); }
+.participant summary::after { content: '+'; color: var(--color-focus); position: absolute; right: 0; top: var(--space-2); }
+.participant[open] summary::after { content: '−'; }
 .identity { display: grid; flex: 1; min-width: 0; overflow-wrap: anywhere; gap: var(--space-1); }
 .miniStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); font-variant-numeric: tabular-nums; }
 .miniStats > span { display: grid; gap: var(--space-1); font-size: var(--font-size-sm); }
@@ -50,7 +51,9 @@
   .metric { padding-left: var(--space-2); }
   .participant summary { gap: var(--space-3); }
   .participant summary { grid-template-columns: var(--space-12) minmax(0, 1fr); }
-  .miniStats { grid-column: 2; }
+  .miniStats { grid-column: 1 / -1; }
+  .miniStats > span { grid-template-columns: auto 1fr; gap: var(--space-1); }
+  .miniStats > span > :last-child { grid-column: 1 / -1; }
   .participantStatus { grid-column: 1 / -1; }
   .participantBody { padding-left: 0; }
   .people th, .people td { padding: var(--space-3) var(--space-1); }
@@ -59,3 +62,13 @@
 }
 
 .people summary { min-height: var(--control-size); cursor: pointer; font-weight: 400; font-size: var(--font-size-sm); padding-block: var(--space-2); }
+
+.selectedPlayer { border-left: var(--border-width-emphasis) solid var(--color-focus); padding-left: var(--space-2); }
+.matchPicker { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: var(--space-2); }
+.matchPicker button { text-align: left; justify-content: start; }
+.matchPicker button > span { display: grid; gap: var(--space-1); font-weight: 400; font-size: var(--font-size-sm); }
+.matchPicker button[aria-pressed='true'] { border-color: var(--color-focus); background: var(--color-surface-raised); }
+
+.reportControls { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.loadStatus { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+@media (max-width: 700px) { .reportControls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reportControls > :first-child:nth-last-child(3) { grid-column: 1 / -1; } }

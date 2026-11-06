@@ -75,8 +75,8 @@ export function encounters(plan: Plan, selectedSlot?: number): Encounter[] {
     if (!match) return [];
     const slot = plan.query.mode === 'match' ? selectedSlot : match.selectedSlot;
     if (slot === undefined || !SLOTS.includes(slot)) return [];
-    return match.players.filter((player) => player.slot !== slot).map((player) => ({
-      key: `${match.matchId}:${player.slot}`, matchId: match.matchId, startTime: match.startTime, player,
+    return match.players.map((player) => ({
+      key: `${match.matchId}:${player.slot}`, matchId: match.matchId, startTime: match.startTime, player, isSelected: player.slot === slot,
       side: (player.slot < 128) === (slot < 128) ? 'with' as const : 'against' as const
     }));
   });
@@ -90,7 +90,7 @@ export function groupMean(rows: Encounter[], results: Results, days: WindowDays,
     const value = resultFor(row, results)?.samples[days];
     return value?.rate !== null && value?.rate !== undefined ? [value] : [];
   });
-  return { mean: values.length ? values.reduce((sum, value) => sum + value.rate!, 0) / values.length : null, available: values.length, expected: side === 'with' ? 4 : 5, complete: values.filter((value) => value.complete).length };
+  return { mean: values.length ? values.reduce((sum, value) => sum + value.rate!, 0) / values.length : null, available: values.length, expected: 5, complete: values.filter((value) => value.complete).length };
 }
 
 export function seriesMean(rows: Encounter[], results: Results, days: WindowDays) {
@@ -106,7 +106,7 @@ export function uniquePlayers(rows: Encounter[]) {
   const people = new Map<number, { accountId: number; name?: string; with: number[]; against: number[] }>();
   for (const row of rows) {
     const id = row.player.accountId;
-    if (!id) continue;
+    if (!id || row.isSelected) continue;
     const person = people.get(id) ?? { accountId: id, name: row.player.name, with: [], against: [] };
     if (!person[row.side].includes(row.matchId)) person[row.side].push(row.matchId);
     people.set(id, person);

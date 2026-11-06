@@ -30,7 +30,7 @@ export type Plan = {
   series?: { found: number; shown: number; remainingIds: number[]; history: Omit<History, 'rows'>; status: ParticipantResult['status'] };
 };
 export type Side = 'with' | 'against';
-export type Encounter = { key: string; matchId: number; startTime: number; player: RosterPlayer; side: Side };
+export type Encounter = { key: string; matchId: number; startTime: number; player: RosterPlayer; side: Side; isSelected: boolean };
 // Client state keeps refresh failures separate from the retained source observations.
 export type ParticipantState = ParticipantResult & { refreshError?: Failure };
 export type Results = Record<string, ParticipantState>;

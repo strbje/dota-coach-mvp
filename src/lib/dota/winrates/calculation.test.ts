@@ -31,16 +31,16 @@ test('timestamp windows include lower bound, exclude unfinished/later/target gam
   assert.equal(sample({ ...history, rows: [] }, 7, asOf, 8).rate, null);
 });
 
-test('4 allies / 5 opponents for both selected sides, with anonymous places retained', () => {
+test('5 players including self / 5 opponents for both selected sides, with anonymous places retained', () => {
   const plan = fixturePlan();
   for (const slot of [0, 128]) {
     const rows = encounters(plan, slot);
-    assert.equal(rows.length, 9); assert.equal(rows.filter((row) => row.side === 'with').length, 4);
-    assert.equal(rows.filter((row) => row.side === 'against').length, 5); assert.ok(!rows.some((row) => row.player.slot === slot));
+    assert.equal(rows.length, 10); assert.equal(rows.filter((row) => row.side === 'with').length, 5);
+    assert.equal(rows.filter((row) => row.side === 'against').length, 5); assert.equal(rows.filter((row) => row.isSelected).length, 1); assert.equal(rows.find((row) => row.isSelected)?.player.slot, slot);
   }
   const raw = fixtureMatch(); raw.players[1].account_id = 4294967295; raw.players.pop();
   plan.matches[0].match = normalizeRoster(raw, raw.match_id);
-  assert.equal(encounters(plan, 0).length, 9);
+  assert.equal(encounters(plan, 0).length, 10);
   assert.equal(plan.matches[0].match.players[1].missing, 'anonymous');
   assert.equal(plan.matches[0].match.players[9].missing, 'roster_missing');
   assert.equal(accountId(0), false); assert.equal(accountId(4294967295), false);
@@ -57,7 +57,7 @@ test('equal participant percentages yield 75%, not pooled 51/101; missing values
   const plan = fixturePlan(); const rows = encounters(plan, 0);
   const results: Results = { '9000067:1001': fixtureResult(1001, 9000067, FIXTURE_TIME - DAY, 1, 1), '9000067:1002': fixtureResult(1002, 9000067, FIXTURE_TIME - DAY, 50, 100) };
   const average = groupMean(rows, results, 7, 'with');
-  assert.equal(average.mean, 75); assert.equal(average.available, 2); assert.equal(average.expected, 4);
+  assert.equal(average.mean, 75); assert.equal(average.available, 2); assert.equal(average.expected, 5);
   assert.equal(groupMean(rows, results, 7, 'against').mean, null);
 });
 
@@ -87,7 +87,7 @@ test('CSV matches sorted visible results, includes samples/final encounter count
   for (const unsafe of ['=1+1', '+cmd', '-cmd', '@SUM(A1)', ' \t=1', '\tplain']) assert.ok(csvCell(unsafe).startsWith('"\''));
   assert.equal(csvCell('hello;"world"'), '"hello;""world"""');
   assert.equal(csvCell(-12.5), '"-12,5"');
-  assert.equal(rows.length, 18); assert.equal(rows.at(-1)?.player.accountId !== undefined, true);
+  assert.equal(rows.length, 20); assert.equal(rows.at(-1)?.player.accountId !== undefined, true);
 });
 
 
@@ -123,4 +123,19 @@ test('name sorting uses the displayed profile name and stays ordered within each
     const names = sorted.filter((row) => row.side === side).map((row) => results[resultKey(row.matchId, row.player.accountId!)].name!);
     assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b, 'ru')));
   }
+});
+
+test('selected player contributes once to either side and stays out of repeat encounter counters', () => {
+  const plan = fixturePlan();
+  const results = fixtureResults(plan);
+  results['9000067:1000'] = fixtureResult(1000, 9000067, FIXTURE_TIME - DAY, 5, 5);
+  const radiant = encounters(plan, 0);
+  const mean = groupMean(radiant, results, 7, 'with');
+  assert.equal(mean.available, 5);
+  const rates = radiant.filter((row) => row.side === 'with').map((row) => results[resultKey(row.matchId, row.player.accountId!)].samples[7].rate!);
+  assert.equal(mean.mean, rates.reduce((a, b) => a + b, 0) / 5);
+  assert.ok(!uniquePlayers(radiant).some((person) => person.accountId === 1000));
+  const dire = encounters(plan, 128);
+  assert.equal(groupMean(dire, results, 7, 'against').mean, mean.mean);
+  assert.equal(groupMean(dire, results, 7, 'with').available, 5);
 });

@@ -52,3 +52,11 @@ export function formatPercentileRange(lowerPercentile?: number, upperPercentile?
   if (upperPercentile !== undefined) return `ниже ${upperPercentile}-го перцентиля`;
   return null;
 }
+
+/** Plain-language position within the provider's hero sample; no rank/role norm. */
+export function formatBenchmarkPosition(lower?: number, upper?: number): string | null {
+  if (lower !== undefined && upper !== undefined) return `выше примерно ${lower}–${upper}% результатов на этом герое`;
+  if (lower !== undefined) return `не ниже примерно ${lower}% результатов на этом герое`;
+  if (upper !== undefined) return `среди нижних ${upper}% результатов на этом герое`;
+  return null;
+}

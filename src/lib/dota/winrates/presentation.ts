@@ -29,13 +29,13 @@ export function exportCsv(plan: Plan, rows: Encounter[], results: Results, days:
     ['Загрузка (МСК)', dateMsk(plan.capturedAt), 'Момент', plan.query.basis === 'match' ? 'На момент матча' : 'Сейчас', 'Окно средних (дни)', days],
     ['Только рейтинговые', plan.query.rankedOnly ? 'Да' : 'Нет', 'Без Turbo', plan.query.excludeTurbo ? 'Да' : 'Нет', 'Период серии', plan.query.days],
     ['Средние — равный вес участников; сводка — равный вес парных матчей. Это не вероятность победы.'],
-    ['Матч', 'Союзники, %', 'Данные из 4', 'Соперники, %', 'Данные из 5', 'Разница, п.п.', 'Состояние']
+    ['Матч', 'Твоя сторона, %', 'Данные из 5', 'Соперники, %', 'Данные из 5', 'Разница, п.п.', 'Состояние']
   ];
   for (const entry of plan.matches) {
     const matchRows = rows.filter((row) => row.matchId === entry.matchId);
     const a = groupMean(matchRows, results, days, 'with');
     const b = groupMean(matchRows, results, days, 'against');
-    table.push([entry.matchId, a.mean, a.available, b.mean, b.available, a.mean !== null && b.mean !== null ? a.mean - b.mean : null, entry.error ? statusText[entry.error] : `${a.complete + b.complete} полных историй из 9`]);
+    table.push([entry.matchId, a.mean, a.available, b.mean, b.available, a.mean !== null && b.mean !== null ? a.mean - b.mean : null, entry.error ? statusText[entry.error] : `${a.complete + b.complete} полных историй из 10`]);
   }
   if (plan.query.mode === 'series') {
     const average = seriesMean(rows, results, days);
@@ -54,7 +54,7 @@ export function exportCsv(plan: Plan, rows: Encounter[], results: Results, days:
       const value = result?.samples[window];
       return value ? [value.rate, value.wins, value.games, dateMsk(value.from), dateMsk(value.first), dateMsk(value.last), coverageText(value)] : Array(7).fill('');
     };
-    table.push([row.matchId, dateMsk(row.startTime), row.side === 'with' ? 'Союзник' : 'Соперник', row.player.accountId, result?.name ?? row.player.name, row.player.heroName, rowStatus(row, results), dateMsk(result?.asOf), dateMsk(result?.fetchedAt), dateMsk(result?.expiresAt),
+    table.push([row.matchId, dateMsk(row.startTime), row.isSelected ? 'Выбранный игрок' : row.side === 'with' ? 'Союзник' : 'Соперник', row.player.accountId, result?.name ?? row.player.name, row.player.heroName, rowStatus(row, results), dateMsk(result?.asOf), dateMsk(result?.fetchedAt), dateMsk(result?.expiresAt),
       ...windowCells(7), ...windowCells(30), person?.with.length, person?.against.length, person?.with.join(', '), person?.against.join(', '), result?.history.scanned, dateMsk(result?.history.oldest), result?.refreshError ? statusText[result.refreshError] : '']);
   }
   return '\uFEFF' + table.map((cells) => cells.map(csvCell).join(';')).join('\r\n') + '\r\n';

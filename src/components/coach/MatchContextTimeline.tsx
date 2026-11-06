@@ -71,7 +71,7 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
       <div className={styles.eventFilters} role="group" aria-label="События на шкале">
         {(Object.keys(eventLabels) as Array<keyof EventFilters>).map((kind) => <label key={kind}><input type="checkbox" checked={filters[kind]} onChange={(event) => setFilters({ ...filters, [kind]: event.target.checked })} />{eventLabels[kind]}</label>)}
       </div>
-      {points.length ? <div className={styles.chartLabels}><span>+{Math.round(extent).toLocaleString('ru-RU')} · ваша команда впереди</span><span>Разница {availableMetric === 'gold' ? 'золота' : 'опыта'}</span></div> : <p className="muted">В этом разборе нет подтверждённой временной шкалы ресурсов команд. Известные события доступны на оси и в списке.</p>}
+      {points.length ? <div className={styles.chartLabels}><span>+{Math.round(extent).toLocaleString('ru-RU')} · ваша команда впереди</span><span>Разница {availableMetric === 'gold' ? 'золота' : 'опыта'}</span></div> : <p className="muted">Динамика золота и опыта недоступна. Ниже — известные события матча.</p>}
       <div className={styles.plotInset}>
         <div ref={plot} className={styles.plot}>
           {points.length ? <svg viewBox="0 0 800 200" preserveAspectRatio="none" role="img" aria-labelledby={titleId} className={styles.chart}>
@@ -97,7 +97,6 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
         </div>
         <div className={styles.chartLabels}><span>{formatGameTime(domain.from)}</span><span>{formatGameTime((domain.from + domain.to) / 2)}</span><span>{formatGameTime(domain.to)}</span></div>
       </div>
-      <p className={styles.note}>Нажми на отметку или группу событий. Разрыв линии — нет минутных данных; ниже нуля — соперник впереди. Соседство событий не устанавливает причину.</p>
       <section id={listId} tabIndex={-1} className={styles.selectedEvents} aria-label="Выбранный отрезок">
         <h3>{range ? `${formatGameTime(range.from)}${range.to !== range.from ? `–${formatGameTime(range.to)}` : ''} · события ${selected.length}` : 'События'}</h3>
         {selected.length ? <ol className={styles.timeline}>{selected.map((event) => {
@@ -110,7 +109,7 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
         <ul className={styles.eventIndex}>{visibleEvents.map((event) => <li key={event.id}><Button type="button" variant="ghost" onClick={() => choose(event.timeSeconds, event.endSeconds ?? event.timeSeconds, event.id)}>{formatGameTime(event.timeSeconds)} · {event.label}</Button></li>)}</ul>
       </details> : null}
       {review.advantage.length ? <details className={styles.more}>
-        <summary>Точные значения по времени</summary>
+        <summary>Точные значения по времени</summary><p className={styles.note}>Разрыв линии означает отсутствие данных; ниже нуля — соперник впереди. Соседство событий не доказывает причину изменения.</p>
         <div className={styles.tableWrap}><table className={styles.table}><caption className={styles.note}>Разница ресурсов твоей команды и соперника. Пропуск — нет данных.</caption><thead><tr><th scope="col">Время</th><th scope="col">Золото</th><th scope="col">Опыт</th></tr></thead><tbody>{review.advantage.map((point) => <tr key={point.timeSeconds}><th scope="row">{formatGameTime(point.timeSeconds)}</th><td>{point.gold?.toLocaleString('ru-RU') ?? '—'}</td><td>{point.xp?.toLocaleString('ru-RU') ?? '—'}</td></tr>)}</tbody></table></div>
       </details> : null}
     </Panel>

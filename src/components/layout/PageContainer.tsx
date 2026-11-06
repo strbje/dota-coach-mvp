@@ -4,11 +4,14 @@ import styles from './layout.module.css';
 export function PageContainer({
   children,
   width = 'standard',
+  atmosphere = false,
   className = ''
 }: {
   children: ReactNode;
-  width?: 'standard' | 'workspace';
+  width?: 'standard' | 'workspace' | 'report';
+  atmosphere?: boolean;
   className?: string;
 }) {
-  return <main className={`${styles.container} ${width === 'workspace' ? styles.workspace : ''} ${className}`}>{children}</main>;
+  const content = <main className={`${styles.container} ${width === 'standard' ? '' : styles[width]} ${className}`}>{children}</main>;
+  return atmosphere ? <div className={styles.atmosphere}>{content}</div> : content;
 }

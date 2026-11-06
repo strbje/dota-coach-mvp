@@ -12,4 +12,18 @@ export function getItemKeyById(itemId:number):string|null{ if(!Number.isFinite(i
 export function humanizeItemKey(key:string):string{ if(!key) return 'Unknown Item'; return key.split('_').map((part)=>(part?part[0].toUpperCase()+part.slice(1):part)).join(' '); }
 export function getItemNameByKey(key:string):string{ const normalizedKey=key?.trim(); if(!normalizedKey) return 'Unknown Item'; return itemByKey[normalizedKey]?.dname ?? VALVE_RU_DISPLAY_SNAPSHOT[normalizedKey] ?? humanizeItemKey(normalizedKey); }
 export function getItemNameById(itemId:number):string|null{ const key=getItemKeyById(itemId); return key?getItemNameByKey(key):null; }
-export function getItemIconUrlByKey(itemKey:string):string|null{ const normalizedKey=itemKey?.trim(); if(!normalizedKey) return null; const path=itemByKey[normalizedKey]?.img ?? itemByKey[normalizedKey]?.icon; if(path) return `https://cdn.cloudflare.steamstatic.com${path}`; return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/${normalizedKey}.png`; }
+export function getItemIconUrlByKey(itemKey: string): string | null {
+  const key = itemKey?.trim();
+  if (!/^[a-z][a-z0-9_]*$/.test(key)) return null;
+  const path = itemByKey[key]?.img ?? itemByKey[key]?.icon;
+  if (path?.startsWith('/apps/dota2/images/')) return `https://cdn.cloudflare.steamstatic.com${path}`;
+  if (path && /^https:\/\/cdn\.(cloudflare\.|akamai\.)?steamstatic\.com\/apps\/dota2\/images\//.test(path)) return path;
+  return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/${key}.png`;
+}
+
+export function getItemIconCandidates(key: string, provided?: string): string[] {
+  if (!/^[a-z][a-z0-9_]*$/.test(key)) return [];
+  const canonical = `/apps/dota2/images/dota_react/items/${key}.png`;
+  const safeProvided = provided && /^https:\/\/cdn\.(cloudflare\.|akamai\.)?steamstatic\.com\/apps\/dota2\/images\//.test(provided) ? provided : undefined;
+  return [...new Set([safeProvided, `https://cdn.cloudflare.steamstatic.com${canonical}`, `https://cdn.steamstatic.com${canonical}`].filter((url): url is string => Boolean(url)))];
+}

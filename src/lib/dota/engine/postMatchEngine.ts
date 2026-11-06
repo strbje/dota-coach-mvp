@@ -2,8 +2,8 @@ import { normalizeOpenDotaMatch } from '@/lib/dota/adapters/normalizeOpenDotaMat
 import { tryNormalizeStratzMatch } from '@/lib/dota/adapters/normalizeStratzMatch';
 import { fetchOpenDotaMatch } from '@/lib/dota/clients/opendota';
 import { runStratzQuery, STRATZ_EVENTS_QUERY } from '@/lib/dota/clients/stratz';
-import { canApplyCarryRulesForSelector, detectRole } from '@/lib/dota/role/detectRole';
-import { UnsupportedPostMatchRoleError } from '@/lib/dota/errors/postMatchError';
+import { detectRole } from '@/lib/dota/role/detectRole';
+import { assertPostMatchRole, type RoleVerificationErrorCode } from '@/lib/dota/errors/postMatchError';
 import { lifestealerCarryOverride } from '@/lib/dota/rules/heroOverrides/lifestealer';
 import { runCarryPostMatchRules } from '@/lib/dota/rules/roleRules/carryRules';
 import { getHeroBenchmarks } from '@/lib/dota/data/benchmarks';
@@ -39,9 +39,11 @@ type StratzFetchDebug = {
   error?: string;
 };
 
-async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Promise<{ data?: StratzPostMatchData; debug: StratzFetchDebug }> {
+type StratzFetchResult = { data?: StratzPostMatchData; debug: StratzFetchDebug; roleFailure?: RoleVerificationErrorCode };
+
+async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Promise<StratzFetchResult> {
   const token = process.env.STRATZ_API_TOKEN;
-  if (!token) return { debug: { attempted: false } };
+  if (!token) return { debug: { attempted: false }, roleFailure: 'STRATZ_NOT_CONFIGURED' };
 
   const queryResult = await runStratzQuery({
     query: STRATZ_EVENTS_QUERY,
@@ -60,11 +62,34 @@ async function fetchStratzDeaths(matchId: number, selector: PlayerSelector): Pro
     error: queryResult.error
   };
 
+  if (!queryResult.ok) return {
+    debug,
+    roleFailure: queryResult.status === 401 || queryResult.status === 403 ? 'STRATZ_AUTH_FAILED'
+      : queryResult.status === 408 || queryResult.status === 504 ? 'STRATZ_TIMEOUT'
+      : queryResult.status !== undefined && queryResult.status >= 200 && queryResult.status < 300 ? 'STRATZ_INVALID_RESPONSE'
+      : 'STRATZ_UNAVAILABLE'
+  };
+
   const payload = queryResult.json;
-  if (!payload || typeof payload !== 'object') return { debug };
+  if (!payload || typeof payload !== 'object') return { debug, roleFailure: 'STRATZ_INVALID_RESPONSE' };
+
+  const envelope = payload as { data?: { match?: unknown }; match?: unknown };
+  const match = envelope.match ?? envelope.data?.match;
+  if (!match || typeof match !== 'object') return {
+    debug,
+    roleFailure: match === null && !queryResult.graphQLErrors?.length ? 'POST_MATCH_ROLE_UNCONFIRMED' : 'STRATZ_INVALID_RESPONSE'
+  };
+  const players = (match as { players?: unknown }).players;
+  if (!Array.isArray(players) || players.length === 0) return {
+    debug,
+    roleFailure: (players === null || Array.isArray(players)) && !queryResult.graphQLErrors?.length ? 'POST_MATCH_ROLE_UNCONFIRMED' : 'STRATZ_INVALID_RESPONSE'
+  };
 
   const selection = tryNormalizeStratzMatch(payload, selector);
-  if (!selection.normalized) return { debug: { ...debug, error: `STRATZ player mismatch: ${selection.selectionError}` } };
+  if (!selection.normalized) return {
+    debug: { ...debug, error: `STRATZ player mismatch: ${selection.selectionError}` },
+    roleFailure: queryResult.graphQLErrors?.length ? 'STRATZ_INVALID_RESPONSE' : 'STRATZ_PLAYER_MISMATCH'
+  };
   const normalized = selection.normalized;
   return {
     data: {
@@ -107,7 +132,7 @@ export async function analyzePostMatch(matchId: number, selector: PlayerSelector
     throw new Error(`Post-match normalize stage failed: ${parsed.message}`, { cause: parsed });
   }
 
-  const safeStratzDeaths = async () => {
+  const safeStratzDeaths = async (): Promise<StratzFetchResult> => {
     try {
       const providerSelector = {
         accountId: normalized.selectedPlayer.accountId,
@@ -118,6 +143,7 @@ export async function analyzePostMatch(matchId: number, selector: PlayerSelector
     } catch (error) {
       return {
         data: undefined,
+        roleFailure: error instanceof Error && error.message === 'STRATZ events timed out' ? 'STRATZ_TIMEOUT' : 'STRATZ_UNAVAILABLE',
         debug: {
           attempted: Boolean(process.env.STRATZ_API_TOKEN),
           error: error instanceof Error ? error.message : String(error)
@@ -163,11 +189,7 @@ export async function analyzePostMatch(matchId: number, selector: PlayerSelector
     openDotaLaneRole: normalized.player?.laneReview?.laneRole,
     openDotaLane: normalized.player?.laneReview?.lane
   });
-  // Carry is the first role rule set. Preserve the previous result when role
-  // telemetry is absent; known or ambiguous roles must not be mislabeled as carry.
-  if (!canApplyCarryRulesForSelector(roleDetection, selector)) {
-    throw new UnsupportedPostMatchRoleError(roleDetection.role);
-  }
+  assertPostMatchRole(roleDetection, selector, stratzResult.roleFailure);
   normalized.selectedPlayer.role = roleDetection.role;
   const heroOverride = normalized.selectedPlayer.heroId === lifestealerCarryOverride.heroId
     ? lifestealerCarryOverride

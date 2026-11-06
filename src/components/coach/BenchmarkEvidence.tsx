@@ -1,6 +1,6 @@
 import { Panel } from '@/components/ui';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
-import { formatPercentileRange } from '@/lib/dota/analyze/compareToBenchmarks';
+import { formatBenchmarkPosition } from '@/lib/dota/analyze/compareToBenchmarks';
 
 const METRIC_LABELS: Record<string, { name: string; suffix: string; digits?: number }> = {
   gpm: { name: 'золота в минуту', suffix: '' },
@@ -24,13 +24,14 @@ export function BenchmarkEvidence({
   if (!metrics.length) return null;
 
   return <Panel>
-    <h3>Ориентиры по герою</h3>
+    <h3>Сравнение с матчами на {hero}</h3>
+    <p className="muted">Сравниваем с выборкой OpenDota на том же герое. Она не подобрана под твой рейтинг, роль, длительность или патч. Это сравнение результатов, а не обязательная норма.</p>
     {metrics.length ? <ul>{metrics.map(([key, metric]) => {
       if (!metric) return null;
       const copy = METRIC_LABELS[key] ?? { name: key, suffix: '' };
-      const percentileCopy = formatPercentileRange(metric.lowerPercentile, metric.upperPercentile);
+      const percentileCopy = formatBenchmarkPosition(metric.lowerPercentile, metric.upperPercentile);
       if (!percentileCopy) return null;
-      return <li key={key}><strong>{formatValue(metric.actual, copy.digits)} {copy.name}</strong> — {percentileCopy} для {hero}. {metric.label}.</li>;
+      return <li key={key}><strong>{formatValue(metric.actual, copy.digits)} {copy.name}</strong> — {percentileCopy}.</li>;
     })}</ul> : null}
   </Panel>;
 }
