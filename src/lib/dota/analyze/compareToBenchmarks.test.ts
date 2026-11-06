@@ -42,3 +42,11 @@ test('empty benchmark data has no numeric boundaries', () => {
   assert.equal(result.lowerPercentile, undefined);
   assert.equal(result.upperPercentile, undefined);
 });
+
+test('plain benchmark wording preserves ranges and never invents a rank norm', async () => {
+  const { formatBenchmarkPosition } = await import('./compareToBenchmarks');
+  assert.equal(formatBenchmarkPosition(40, 50), 'выше примерно 40–50% результатов на этом герое');
+  assert.equal(formatBenchmarkPosition(99), 'не ниже примерно 99% результатов на этом герое');
+  assert.equal(formatBenchmarkPosition(undefined, 10), 'среди нижних 10% результатов на этом герое');
+  assert.equal(formatBenchmarkPosition(), null);
+});

@@ -27,34 +27,18 @@ export function getGradeLevel(score: number): GradeLevel {
 }
 
 export function GradesGrid({ grades, categories = ['lane', 'items', 'fights', 'map'] }: { grades: PostMatchAnalysis['grades']; categories?: Array<keyof PostMatchAnalysis['grades']> }) {
-  return (
-    <Panel>
-      <h3>Оценки</h3>
-      <div className={`grid grid-2 ${styles.grades}`}>
-        {Object.entries(grades).filter(([key]) => categories.includes(key as keyof typeof grades)).map(([key, grade]) => {
-          const level = grade.score === undefined ? null : getGradeLevel(grade.score);
-
-          if (!level) return <details key={key} className={styles.more}><summary>{GRADE_LABELS[key]} · наблюдения</summary><p className="muted">{grade.summary}</p><ul>{grade.findings.map((finding) => <li key={finding.text}>{finding.text}</li>)}</ul></details>;
-          return (
-            <Panel as="article" key={key} className={`grade-card ${level?.className ?? ''}`}>
-              <div className="grade-head">
-                <h4>{GRADE_LABELS[key] ?? key}</h4>
-                {level ? <Badge tone={level.tone}>{level.label}</Badge> : <Badge tone="unknown">Без оценки</Badge>}
-              </div>
-              {level ? <><div className={`grade-score ${level.className}`}>{grade.score}</div>
-              <div className={`grade-bar ${level.className}`} aria-label={`Оценка: ${grade.score} из 100`}>
-                <span style={{ width: `${grade.score}%` }} />
-              </div></> : null}
-              <p className="muted grade-summary">{grade.summary ?? level?.description ?? 'Недостаточно данных для оценки.'}</p>
-              <ul>
-                {grade.findings.slice(0, 3).map((finding) => (
-                  <li key={`${finding.text}-${finding.severity}`}>{finding.text}</li>
-                ))}
-              </ul>
-            </Panel>
-          );
-        })}
-      </div>
-    </Panel>
-  );
+  const visible = Object.entries(grades).filter(([key, grade]) => categories.includes(key as keyof typeof grades) && grade.score !== undefined);
+  if (!visible.length) return null;
+  return <section aria-label="Оценки" className={`grid grid-2 ${styles.grades}`}>
+    {visible.map(([key, grade]) => {
+      const level = getGradeLevel(grade.score!);
+      return <Panel as="article" key={key} className={styles.gradeCompact}>
+        <h3>{GRADE_LABELS[key]}</h3>
+        <div className={styles.gradeValue}><strong><span>{grade.score}</span><span className={styles.gradeOutOf}> / 100</span></strong><Badge tone={level.tone}>{level.label}</Badge></div>
+        <div className={`grade-bar ${level.className}`} aria-label={`Оценка: ${grade.score} из 100`}><span style={{ width: `${grade.score}%` }} /></div>
+        <p className={styles.note}>{grade.summary}</p>
+        <details><summary>Из чего складывается оценка</summary><ul>{grade.findings.slice(0, 3).map((finding) => <li key={finding.text}>{finding.text}</li>)}</ul><p className={styles.note}>Сравнение показателей на том же герое. Оценка не определяет качество отдельных решений.</p></details>
+      </Panel>;
+    })}
+  </section>;
 }

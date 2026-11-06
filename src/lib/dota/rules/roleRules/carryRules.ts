@@ -1,7 +1,7 @@
 import { compareItemTiming } from '../postMatch/itemBenchmarks';
 import { getMatchPhase, type MatchPhase } from '../postMatch/phases';
 import type { AnalysisFinding, NormalizedOpenDotaMatch, PostMatchAnalysis, PostMatchBenchmarkContext, StratzPostMatchData } from '../../types/domain';
-import { formatPercentileRange, getPercentileForValue } from '../../analyze/compareToBenchmarks';
+import { formatBenchmarkPosition, getPercentileForValue } from '../../analyze/compareToBenchmarks';
 import { findNearestUsableItemTimingBucket } from '../../analyze/itemTimingBenchmarks';
 import { buildMatchReview } from '../postMatch/matchReview';
 import { makeTrainingGoal } from '../../analyze/trainingChallenge';
@@ -152,17 +152,17 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const deathRiskKind = deaths === 0 ? 'deathless' : deaths === undefined ? 'unavailable' : 'events-only';
   const heroDamagePercentile = benchmarkScore(hdBench);
   const fightsSummary = heroDamagePercentile !== undefined && heroDamagePercentile >= 70
-    ? 'Сильный вклад в драках'
+    ? 'Урон по героям выше большинства результатов'
     : heroDamagePercentile !== undefined && heroDamagePercentile < 50
-      ? 'Вклад в драках ниже ориентира'
+      ? 'Урон по героям ниже середины выборки'
       : heroDamagePercentile !== undefined
-        ? 'Рабочий вклад в драках'
+        ? 'Урон по героям в середине выборки'
         : 'Данные о драках без надёжной оценки';
   const economyPercentile = benchmarkScore(gpmBench);
   const mapSummary = economyPercentile !== undefined && economyPercentile >= 70
-    ? 'Экономика выше ориентира'
-    : economyPercentile !== undefined && economyPercentile >= 50 ? 'Экономика на среднем уровне'
-      : economyPercentile !== undefined ? 'Темп экономики ниже ориентира' : 'Темп экономики по данным матча';
+    ? 'Доход выше большинства результатов'
+    : economyPercentile !== undefined && economyPercentile >= 50 ? 'Доход в середине выборки'
+      : economyPercentile !== undefined ? 'Доход ниже середины выборки' : 'Темп экономики по данным матча';
   
   const laneFindings: AnalysisFinding[] = [];
   if (lanePct !== undefined) laneFindings.push({ text: `${Math.round(lanePct)}% эффективности линии.`, evidence: ['по данным линии OpenDota'], severity: 'info' });
@@ -182,8 +182,8 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const damageFinding: AnalysisFinding = heroDamagePerMin === undefined ? {
     text: 'Данные об уроне по героям недоступны.', evidence: ['damage data unavailable'], severity: 'info'
   } : {
-    text: formatPercentileRange(hdBench.lowerPercentile, hdBench.upperPercentile)
-      ? `${fmt(heroDamagePerMin)} урона по героям в минуту — ${formatPercentileRange(hdBench.lowerPercentile, hdBench.upperPercentile)} для ${heroOverride.heroName}.`
+    text: formatBenchmarkPosition(hdBench.lowerPercentile, hdBench.upperPercentile)
+      ? `${fmt(heroDamagePerMin)} урона по героям в минуту — ${formatBenchmarkPosition(hdBench.lowerPercentile, hdBench.upperPercentile)}.`
       : `${fmt(heroDamagePerMin)} урона по героям в минуту.`,
     evidence: heroDamage !== undefined && durationMinutes !== undefined ? [`${Math.round(heroDamage).toLocaleString('ru-RU')} урона за ${fmt(durationMinutes)} мин`] : [],
     severity: benchmarkSeverity(hdBench)
@@ -198,9 +198,9 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
 
 
   const mapFindings: AnalysisFinding[] = [
-    ...(gpm !== undefined && formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile) ? [{ text: `${Math.round(gpm)} золота в минуту — ${formatPercentileRange(gpmBench.lowerPercentile, gpmBench.upperPercentile)} по ориентиру OpenDota для ${heroOverride.heroName}.`, evidence: ['общая экономика матча'], severity: benchmarkSeverity(gpmBench) }] : []),
-    ...(xpm !== undefined && formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} опыта в минуту — ${formatPercentileRange(xpmBench.lowerPercentile, xpmBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
-    ...(lastHitsPerMin !== undefined && formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добитых крипов в минуту — ${formatPercentileRange(lhBench.lowerPercentile, lhBench.upperPercentile)} по ориентиру OpenDota.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
+    ...(gpm !== undefined && formatBenchmarkPosition(gpmBench.lowerPercentile, gpmBench.upperPercentile) ? [{ text: `${Math.round(gpm)} золота в минуту — ${formatBenchmarkPosition(gpmBench.lowerPercentile, gpmBench.upperPercentile)}.`, evidence: ['общая экономика матча'], severity: benchmarkSeverity(gpmBench) }] : []),
+    ...(xpm !== undefined && formatBenchmarkPosition(xpmBench.lowerPercentile, xpmBench.upperPercentile) ? [{ text: `${Math.round(xpm)} опыта в минуту — ${formatBenchmarkPosition(xpmBench.lowerPercentile, xpmBench.upperPercentile)}.`, evidence: [], severity: benchmarkSeverity(xpmBench) }] : []),
+    ...(lastHitsPerMin !== undefined && formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile) ? [{ text: `${fmt(lastHitsPerMin)} добитых крипов в минуту — ${formatBenchmarkPosition(lhBench.lowerPercentile, lhBench.upperPercentile)}.`, evidence: ['темп фарма за матч'], severity: benchmarkSeverity(lhBench) }] : [])
   ];
   if (p?.economyByPhaseSource !== 'unavailable' && p?.economyByPhase) {
     const phaseLabels: Record<MatchPhase, string> = { laning: '0–10 мин', earlyMid: '10–20 мин', midGame: '20–35 мин', lateGame: 'после 35 мин' };
@@ -235,7 +235,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     : earlyItem && timingItem && !earlyItemHasExternalContext && !timingItemHasExternalContext && isPositiveTiming(earlyItemStatus) && isPositiveTiming(timingItemStatus)
       ? 73
       : undefined;
-  if (towerDamage !== undefined && towerDamage > 0 && formatPercentileRange(tdBench.lowerPercentile, tdBench.upperPercentile)) mapFindings.push({ text: `${Math.round(towerDamage).toLocaleString('ru-RU')} урона по строениям — ${formatPercentileRange(tdBench.lowerPercentile, tdBench.upperPercentile)} по ориентиру OpenDota.`, evidence: [], severity: benchmarkSeverity(tdBench) });
+  if (towerDamage !== undefined && towerDamage > 0 && formatBenchmarkPosition(tdBench.lowerPercentile, tdBench.upperPercentile)) mapFindings.push({ text: `${Math.round(towerDamage).toLocaleString('ru-RU')} урона по строениям — ${formatBenchmarkPosition(tdBench.lowerPercentile, tdBench.upperPercentile)}.`, evidence: [], severity: benchmarkSeverity(tdBench) });
 
   const benchmarkMetric = (actual: number | undefined, comparison: ReturnType<typeof getPercentileForValue>) =>
     actual !== undefined && (comparison.lowerPercentile !== undefined || comparison.upperPercentile !== undefined)
@@ -245,6 +245,9 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const trainingGoal = makeTrainingGoal(actualLhAt10);
   const hasPhaseEconomy = p?.economyByPhaseSource !== 'unavailable'
     && Object.values(p?.economyByPhase ?? {}).some((phase) => phase?.goldPerMinuteInPhase !== undefined || phase?.lhPerMinuteInPhase !== undefined);
+  const farmIntervals = buildFarmIntervals(match.durationSeconds, p?.lastHitsByMinute, farmEvents);
+  const farmDrop = farmIntervals.highlightIndex === undefined ? undefined : farmIntervals.intervals[farmIntervals.highlightIndex];
+  const farmRange = farmDrop ? `${farmDrop.from / 60}:00–${farmDrop.to / 60}:00` : undefined;
   const priorities: PostMatchAnalysis['priorities'] = [];
 
   if (lanePct !== undefined && lanePct < 60) priorities.push({
@@ -263,15 +266,15 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
     dataState: actualLhAt10 === undefined ? 'partial' : 'available', severity: 'info'
   });
   if (economyPercentile !== undefined && economyPercentile < 50 && priorities.length < 2) priorities.push({
-    id: 'economy', title: 'Проверить темп экономики',
-    fact: `В этой игре: ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'значение золота в минуту недоступно'}; показатель ниже доступного ориентира OpenDota.`,
-    meaning: hasPhaseEconomy
+    id: 'economy', title: farmRange ? `Разбери фарм ${farmRange}` : 'Проверь паузы между источниками фарма',
+    fact: `В этой игре: ${gpm !== undefined ? `${Math.round(gpm)} золота в минуту` : 'значение золота в минуту недоступно'}; доход ниже середины выборки матчей на ${heroOverride.heroName}.`,
+    meaning: farmRange ? `Темп здесь снизился относительно предыдущих пяти минут. Проверь, на что ушло время.` : hasPhaseEconomy
       ? 'Посмотри, на что уходило время между источниками фарма на доступных отрезках.'
       : 'Данных по фазам недостаточно, чтобы выбрать отрезок автоматически.',
-    action: hasPhaseEconomy
+    action: farmRange ? `Пересмотри ${farmRange}: фарм, драка или переход? Если найдёшь лишний переход, в следующей игре выбирай следующую точку фарма заранее.` : hasPhaseEconomy
       ? 'Сравни отрезки фарма по фазам и найди в записи один лишний переход. В следующем матче выбирай следующий доступный источник фарма до завершения текущего.'
       : 'Посмотри запись матча и найди один лишний переход между источниками фарма. В следующем матче заранее выбирай следующую точку фарма.',
-    dataState: gpm === undefined || !hasPhaseEconomy ? 'partial' : 'available', severity: 'warning'
+    dataState: gpm === undefined || (!hasPhaseEconomy && !farmDrop) ? 'partial' : 'available', severity: 'warning'
   });
 
   const topMistakes = priorities.filter((priority) => priority.severity === 'warning').map((priority) => priority.fact);
@@ -287,7 +290,7 @@ export function runCarryPostMatchRules(match: NormalizedOpenDotaMatch, stratz: S
   const review = buildMatchReview(match, deathTimings, [...laneFindings, ...itemsFindings, ...fightsFindings, ...mapFindings]);
 
   return { matchId: match.matchId, hero: heroOverride.heroName, role: 'carry', result, durationSeconds: match.durationSeconds, review,
-    farmIntervals: buildFarmIntervals(match.durationSeconds, p?.lastHitsByMinute, farmEvents),
+    farmIntervals,
     laneFacts: { deathsAt10: laneDeaths, efficiencyPct: lanePct },
     training: { observation: { matchId: match.matchId, accountId: match.selectedPlayer.accountId, heroId: match.selectedPlayer.heroId, role: match.selectedPlayer.role ?? 'unknown', startTime: match.startTime, gameMode: match.gameMode, lobbyType: match.lobbyType, durationSeconds: match.durationSeconds, lastHitsAt10: actualLhAt10 }, goal: trainingGoal },
     buildPlayed: p?.buildPlayed ?? [], timings: trackedTimings.reduce<Record<string, string>>((acc, t) => ((acc[t.item] = t.time), acc), {}), itemTimings: trackedTimings, itemAnalysis: itemStatuses, benchmarkSummary: benchmarkContext.heroBenchmarks?.available ? { source: 'opendota', heroId: heroOverride.heroId, metrics: { gpm: benchmarkMetric(gpm, gpmBench), xpm: benchmarkMetric(xpm, xpmBench), lhPerMin: benchmarkMetric(lastHitsPerMin, lhBench), heroDamagePerMin: benchmarkMetric(heroDamagePerMin, hdBench), towerDamage: benchmarkMetric(towerDamage, tdBench), killsPerMin: benchmarkMetric(killsPerMin, kpmBench) } } : undefined, heroAverageComparison: benchmarkContext.heroAverage ? { source: 'stratz', methodologyStatus: 'research', selectedPosition: benchmarkContext.heroAverage.selectedPosition, checkpoints: [10, 20, 35].map((minute) => { const actualCs = actualAtMinute(minute)?.cs ?? (minute === 10 ? p?.laneReview?.lhAt10 : undefined); const averageCs = benchmarkContext.heroAverage?.samples.find((sample) => sample.time === minute && (!sample.position || sample.position === heroOverride.position))?.cs; return { minute, actualCs, averageCs, deltaCs: actualCs !== undefined && averageCs !== undefined ? actualCs - averageCs : undefined }; }) } : undefined, economyByPhase: p?.economyByPhase, deathsByPhase, farmProfile: p?.farmProfile, goldReasons: p?.goldReasons, stratz: productStratz,

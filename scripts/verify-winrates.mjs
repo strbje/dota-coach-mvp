@@ -70,6 +70,7 @@ await page.route('**/api/winrates/**', async (route) => {
   const thisDelay = kind === 'participant' ? delay : 0;
   seen.push({ kind, request });
   if (thisDelay) await new Promise((resolve) => setTimeout(resolve, thisDelay));
+  if (thisScenario === 'budget' && kind === 'participant' && request.matchId === 9000069) return;
   if (thisScenario === 'error') return route.fulfill({ status: 503, json: { error: 'provider_error' } });
   if (kind === 'plan') return route.fulfill({ json: planFor(request) });
   if (kind === 'batch') return route.fulfill({ json: request.matchIds.map((matchId, index) => {
@@ -111,7 +112,7 @@ await page.route('**/api/winrates/**', async (route) => {
 async function shot(name) {
   await page.evaluate(() => {
     if (document.getElementById('synthetic-note')) return;
-    const note = document.createElement('div'); note.id = 'synthetic-note'; note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса #70 · не результаты реальных игроков';
+    const note = document.createElement('div'); note.id = 'synthetic-note'; note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса · не результаты реальных игроков';
     note.style.cssText = 'padding:8px 16px;background:#e0b568;color:#101416;font:12px system-ui;'; document.body.prepend(note);
   });
   await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
@@ -129,7 +130,7 @@ async function editInputs() {
   const edit = page.getByRole('button', { name: 'Изменить параметры / обновить', exact: true });
   if (await edit.isVisible()) await edit.click();
 }
-async function complete(count = 9) { await page.getByText(new RegExp(`Обработано ${count} из ${count} участников`)).waitFor(); }
+async function complete(count = 10) { await page.getByText(new RegExp(`Обработано ${count} из ${count} участников`)).waitFor(); }
 const report = { synthetic: true, widths: [], checks: [] };
 try {
   await page.goto(`${base}/winrates`);
@@ -144,7 +145,7 @@ try {
     await page.setViewportSize({ width, height: 1050 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow ${width}`);
     if (width >= 1440) {
-      const allies = await page.getByRole('region', { name: 'Союзники', exact: true }).boundingBox();
+      const allies = await page.getByRole('region', { name: 'Твоя сторона', exact: true }).boundingBox();
       const opponents = await page.getByRole('region', { name: 'Соперники', exact: true }).boundingBox();
       assert.equal(Math.round(allies.y), Math.round(opponents.y)); assert.ok(opponents.x > allies.x);
     }
@@ -160,10 +161,9 @@ try {
   await page.getByRole('button', { name: 'Скачать CSV для Excel' }).click();
   const download = await downloadPromise; const csv = readFileSync(await download.path(), 'utf8');
   assert.ok(csv.startsWith('\uFEFF')); assert.match(csv, /Победы 7/); assert.match(csv, /Игры 30/);
-  await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
   for (const sort of ['rate_desc', 'rate_asc', 'name']) {
     await page.getByLabel('Сортировка участников', { exact: true }).selectOption(sort);
-    for (const side of ['Союзники', 'Соперники']) {
+    for (const side of ['Твоя сторона', 'Соперники']) {
       const group = page.getByRole('region', { name: side, exact: true });
       const values = sort === 'name' ? await group.locator('[class*=identity] strong').allTextContents() : (await group.locator('[class*=miniStats] > span:first-child strong').allTextContents()).map((value) => parseFloat(value));
       const expected = [...values].sort(sort === 'name' ? (a, b) => a.localeCompare(b, 'ru') : sort === 'rate_desc' ? (a, b) => b - a : (a, b) => a - b);
@@ -171,18 +171,17 @@ try {
     }
   }
   await page.getByLabel('Сортировка участников', { exact: true }).selectOption('side');
-  await page.getByText('Окно 7 дней · сортировка', { exact: true }).click();
   report.checks.push('rate ascending/descending and name sorting remain stable within each side');
-  report.checks.push('explicit selection; adjacent 4/5 rosters with side averages; responsive layout; expandable sample details; UTF-8 CSV download');
+  report.checks.push('explicit selection; adjacent 5/5 rosters including selected player with side averages; responsive layout; expandable sample details; UTF-8 CSV download');
 
   await page.getByLabel('Выбранный игрок', { exact: true }).selectOption('128');
   await complete();
   const summaries = await page.locator('details summary').allTextContents();
-  assert.ok(summaries.some((value) => value.includes('Участник 1000'))); assert.ok(!summaries.some((value) => value.includes('Участник 1005')));
+  assert.ok(summaries.some((value) => value.includes('Участник 1000'))); assert.ok(summaries.some((value) => value.includes('Участник 1005') && value.includes('выбранный игрок')));
   const focusTarget = page.getByRole('button', { name: 'Скачать CSV для Excel' });
   await focusTarget.focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
   assert.notEqual(await focusTarget.evaluate((element) => getComputedStyle(element).outlineStyle), 'none');
-  report.checks.push('Dire selection excludes selected player; keyboard submit and visible focus');
+  report.checks.push('Dire selection includes selected player; keyboard submit and visible focus');
 
   await page.setViewportSize({ width: 1440, height: 1050 });
   delay = 1800; await load('stale', '9000068');
@@ -210,12 +209,10 @@ try {
   assert.equal(await zeroWins.getByText('0 / 5', { exact: true }).count(), 2);
   const cappedSummary = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Участник 1005' }) }).locator('summary');
   for (const days of ['7', '30', '7']) {
-    await page.getByText(/^Окно (7|30) дней · сортировка$/).click();
     await page.getByLabel('Окно для средних', { exact: true }).selectOption(days);
-    await page.getByText(`Окно ${days} дней · сортировка`, { exact: true }).click();
-    assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Полное окно/);
-    assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /Неполное окно/);
-    assert.equal(await cappedSummary.getByText('Неполная выборка', { exact: true }).count(), 1);
+    assert.match(await cappedSummary.getByText('7 дней', { exact: true }).locator('..').innerText(), /Полное/);
+    assert.match(await cappedSummary.getByText('30 дней', { exact: true }).locator('..').innerText(), /Неполное/);
+    assert.equal(await cappedSummary.getByText('Неполное', { exact: true }).count(), 1);
     assert.equal(await cappedSummary.getByText('Данные получены', { exact: true }).count(), 0);
   }
   await page.getByText('История ограничена OpenDota', { exact: true }).waitFor();
@@ -234,7 +231,7 @@ try {
   await retained.locator('summary').click();
   assert.equal(await retained.getByText(/Победы \/ игры: 30 \/ 100/).count(), 2);
   const freshness = await retained.getByText(/^Самые ранние данные получены/).innerText();
-  const allyCard = page.locator('[class*="metric"]').filter({ has: page.getByRole('heading', { name: 'Союзники', exact: true }) });
+  const allyCard = page.locator('[class*="metric"]').filter({ has: page.getByRole('heading', { name: 'Твоя сторона', exact: true }) });
   const previousMean = await allyCard.innerText();
   for (const failed of ['retry-failure', 'retry-http']) {
     scenario = failed;
@@ -259,20 +256,21 @@ try {
   await retained.getByText(/Победы \/ игры: 40 \/ 100/).first().waitFor();
   assert.equal(await retained.getByText('Ошибка обновления', { exact: true }).count(), 0);
   assert.notEqual(await retained.getByText(/^Самые ранние данные получены/).innerText(), freshness);
-  assert.notEqual(await allyCard.innerText(), previousMean); assert.match(await allyCard.innerText(), /35%/);
+  assert.notEqual(await allyCard.innerText(), previousMean); assert.match(await allyCard.innerText(), /28%/);
   report.checks.push('empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error');
 
   await editInputs(); await page.getByLabel('Представление', { exact: true }).selectOption('series');
   await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
   scenario = 'ready'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
-  await complete(27);
-  await page.getByRole('heading', { name: 'Уникальные участники · 9', exact: true }).waitFor();
+  await complete(30);
+  await page.getByText('Повторные встречи · 9 игроков', { exact: true }).waitFor();
+  await page.getByText('Повторные встречи · 9 игроков', { exact: true }).click();
   assert.equal(await page.locator('table img').count(), 0, 'unique series people never get an arbitrary hero');
   assert.equal(await page.getByText('Аккаунт и матчи', { exact: true }).count(), 9);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.setViewportSize({ width: 1440, height: 1050 }); await shot('series-desktop');
   await page.getByRole('button', { name: 'Следующие 3 матча · осталось 2', exact: true }).click();
-  await complete(45);
+  await complete(50);
   const batches = seen.filter((item) => item.kind === 'batch');
   assert.equal(batches.length, 1); assert.deepEqual(batches[0].request.matchIds, [9000070, 9000071]);
   const times = new Set(seen.filter((item) => item.kind === 'participant').map((item) => item.request.capturedAt)); assert.equal(times.size, 1);
@@ -302,8 +300,35 @@ try {
   await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click(); await complete();
   await page.getByRole('heading', { name: 'Сейчас · единый момент расчёта', exact: true }).waitFor();
   const currentRequests = seen.filter((item) => item.kind === 'participant' && item.request.basis === 'now');
-  assert.equal(currentRequests.length, 9); assert.equal(new Set(currentRequests.map((item) => item.request.capturedAt)).size, 1);
+  assert.equal(currentRequests.length, 10); assert.equal(new Set(currentRequests.map((item) => item.request.capturedAt)).size, 1);
   report.checks.push('current mode is separately labelled and all participants share one capture time');
+
+  await page.unroute('**/apps/dota2/images/**');
+  await page.clock.install();
+  await page.goto(`${base}/winrates`);
+  await page.getByLabel('Представление', { exact: true }).selectOption('series');
+  await page.getByLabel('Account ID · Steam32', { exact: true }).fill('1000');
+  scenario = 'budget'; await page.getByRole('button', { name: 'Загрузить сравнение', exact: true }).click();
+  await page.getByText(/Обработано 20 из 30 участников/).waitFor();
+  const captureBefore = seen.filter((item) => item.kind === 'participant').at(-1).request.capturedAt;
+  await page.clock.fastForward(45001);
+  await page.getByText(/Пауза после 45 секунд/).waitFor();
+  assert.equal(await page.getByRole('progressbar').count(), 0, 'no endless progress after the budget');
+  const thirdMatch = page.getByRole('group', { name: 'Матчи серии' }).getByRole('button', { name: /Матч 9000069/ });
+  assert.match(await thirdMatch.innerText(), /0\/10 обработано.*не загружено полностью/);
+  await thirdMatch.click();
+  assert.equal(await page.getByText('Не загружено', { exact: true }).count(), 10);
+  for (const width of [390, 1440]) { await page.setViewportSize({ width, height: 1000 }); await shot(`series-paused-${width}`); }
+  const requestStart = seen.length;
+  scenario = 'ready'; await page.getByRole('button', { name: 'Продолжить / повторить · 10', exact: true }).click();
+  await complete(30);
+  const resumed = seen.slice(requestStart).filter((item) => item.kind === 'participant');
+  assert.equal(resumed.length, 10);
+  assert.ok(resumed.every((item) => item.request.matchId === 9000069 && item.request.capturedAt === captureBefore));
+  assert.equal(await page.getByRole('button', { name: /^Продолжить \/ повторить/ }).count(), 0);
+  for (const width of [390, 1440]) { await page.setViewportSize({ width, height: 1000 }); await shot(`series-completed-${width}`); }
+  report.checks.push('45-second budget explicitly pauses the third match; no stuck progress; resume fetches only missing players and keeps capture time and first two matches');
+
   assert.deepEqual(errors, []);
   writeFileSync(join(output, 'verification.json'), JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
@@ -326,7 +351,8 @@ try {
     writeFileSync(join(output, 'live.json'), JSON.stringify(live, null, 2) + '\n'); console.log(JSON.stringify(live));
   }
 } catch (error) {
-  await shot('failure');
+  console.error(error);
+  await shot('failure').catch(() => undefined);
   throw error;
 } finally {
   await browser.close(); server?.kill(); rmSync(temp, { recursive: true, force: true });

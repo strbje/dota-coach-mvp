@@ -34,5 +34,5 @@ export function fixtureResult(id: number, matchId = 9000067, asOf = FIXTURE_TIME
   return { accountId: id, matchId, basis: 'match', asOf, capturedAt: FIXTURE_TIME, status: games ? 'ready' : 'empty', samples: { 7: sample(history, 7, asOf, matchId), 30: sample(history, 30, asOf, matchId) }, history: summary, fetchedAt: FIXTURE_TIME, expiresAt: FIXTURE_TIME + 300 };
 }
 export function fixtureResults(plan: Plan): Results {
-  return Object.fromEntries(plan.matches.flatMap(({ match }) => match?.players.filter((player) => player.accountId !== 1000).map((player, index) => [`${match.matchId}:${player.accountId}`, fixtureResult(player.accountId!, match.matchId, match.startTime, index % 4, 5)]) ?? []));
+  return Object.fromEntries(plan.matches.flatMap(({ match }) => match?.players.map((player, index) => [`${match.matchId}:${player.accountId}`, fixtureResult(player.accountId!, match.matchId, match.startTime, index % 4, 5)]) ?? []));
 }

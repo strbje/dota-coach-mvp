@@ -42,7 +42,14 @@ const postMatchErrors = {
     OPENDOTA_NOT_FOUND: 'Матч не найден или ещё не обработан OpenDota.',
     OPENDOTA_RATE_LIMIT: 'OpenDota временно ограничил число запросов. Попробуйте немного позже.',
     OPENDOTA_UNAVAILABLE: 'OpenDota временно недоступен. Попробуйте позже.',
-    UNSUPPORTED_POST_MATCH_ROLE: 'Пока разбор доступен только для игроков, у которых подтверждена роль керри.',
+    STRATZ_NOT_CONFIGURED: 'Определение роли недоступно: подключение к STRATZ не настроено. Пока разбор этого игрока недоступен.',
+    STRATZ_AUTH_FAILED: 'Не удалось подключиться к STRATZ: сервис отклонил авторизацию. Пока нельзя подтвердить роль игрока.',
+    STRATZ_TIMEOUT: 'STRATZ не успел ответить. Роль игрока пока не подтверждена. Попробуй разобрать матч ещё раз.',
+    STRATZ_UNAVAILABLE: 'STRATZ временно недоступен. Роль игрока пока не подтверждена. Попробуй позже.',
+    STRATZ_INVALID_RESPONSE: 'STRATZ вернул неполный или некорректный ответ. Не удалось проверить роль игрока. Попробуй позже.',
+    STRATZ_PLAYER_MISMATCH: 'Не удалось сопоставить выбранного игрока с данными STRATZ. Разбор остановлен, чтобы не использовать чужие данные.',
+    POST_MATCH_ROLE_UNCONFIRMED: 'В полученных данных не удалось подтвердить роль игрока. Это не означает, что ты играл не на керри. Попробуй проверить матч позже.',
+    UNSUPPORTED_POST_MATCH_ROLE: 'Для выбранного игрока определена другая роль. Сейчас разбор доступен только для керри.',
     POST_MATCH_FAILED: 'Не удалось разобрать матч. Попробуйте ещё раз.'
   },
   en: {
@@ -53,7 +60,14 @@ const postMatchErrors = {
     OPENDOTA_NOT_FOUND: 'The match was not found or has not been processed by OpenDota yet.',
     OPENDOTA_RATE_LIMIT: 'OpenDota has temporarily limited requests. Please try again later.',
     OPENDOTA_UNAVAILABLE: 'OpenDota is temporarily unavailable. Please try again later.',
-    UNSUPPORTED_POST_MATCH_ROLE: 'Match review currently supports only players reliably identified as carry.',
+    STRATZ_NOT_CONFIGURED: 'Role verification is unavailable: the STRATZ connection has not been configured. This player cannot be reviewed yet.',
+    STRATZ_AUTH_FAILED: 'STRATZ rejected authentication. We cannot verify the player’s role yet.',
+    STRATZ_TIMEOUT: 'STRATZ did not respond in time. The player’s role is not verified yet. Please try reviewing the match again.',
+    STRATZ_UNAVAILABLE: 'STRATZ is temporarily unavailable. The player’s role is not verified yet. Please try later.',
+    STRATZ_INVALID_RESPONSE: 'STRATZ returned an incomplete or invalid response. We could not verify the player’s role. Please try later.',
+    STRATZ_PLAYER_MISMATCH: 'We could not match the selected player to STRATZ data. The review was stopped to avoid using another player’s data.',
+    POST_MATCH_ROLE_UNCONFIRMED: 'The available data does not confirm the player’s role. This does not mean you were not playing carry. Please check the match later.',
+    UNSUPPORTED_POST_MATCH_ROLE: 'A different role was identified for this player. Match review currently supports carry only.',
     POST_MATCH_FAILED: 'Could not review the match. Please try again.'
   }
 } as const;

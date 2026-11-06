@@ -5,7 +5,7 @@ import { setHeroConstants } from '../../data/heroConstants';
 import { normalizeFarmEvents } from '../../normalize/farmEvents';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
+export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
   setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
@@ -49,6 +49,18 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
   const farmEvents = options.farm && options.farm !== 'gap'
     ? normalizeFarmEvents(options.farm === 'complete' ? syntheticEvents : syntheticEvents.slice(0, -2), syntheticEvents.length, 2314)
     : undefined;
+  if (options.product) {
+    delete normalized.player!.economyCheckpoints;
+    delete normalized.player!.economyByPhase;
+    delete normalized.player!.lastHitsByMinute;
+    normalized.player!.laneReview = { source: 'opendota', deathsBefore10: 0 };
+    normalized.player!.itemTimings = [];
+  }
+  const benchmarks = options.product ? { heroBenchmarks: { available: true, metrics: {
+    gold_per_min: [{ percentile: 40, value: 500 }, { percentile: 50, value: 600 }],
+    last_hits_per_min: [{ percentile: 95, value: 7 }, { percentile: 99, value: 12 }],
+    hero_damage_per_min: [{ percentile: 30, value: 800 }, { percentile: 40, value: 1000 }]
+  } } } : {};
   const override: CarryHeroOverride = { key: 'synthetic-carry', heroId: 42, heroName: 'Wraith King', position: 'POSITION_1', earlyItemKey: '', timingItemKey: '', getFallbackItemTarget: () => undefined, coreItems: [], suspiciousItems: [], timingItemLateFinding: () => '', timingItemOnTimeFinding: () => '', suspiciousItemFinding: () => '' };
-  return { analysis: runCarryPostMatchRules(normalized, farmEvents ? { farmEvents } : undefined, {}, override), debug: { synthetic: true } };
+  return { analysis: runCarryPostMatchRules(normalized, farmEvents ? { farmEvents } : undefined, benchmarks, override), debug: { synthetic: true } };
 }

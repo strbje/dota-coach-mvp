@@ -58,15 +58,16 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
   const lanePriorities = analysis.priorities.filter((priority) => priority.id === 'lane-farm' || priority.id === 'lane-events');
   const deaths = analysis.laneFacts?.deathsAt10;
   const efficiency = analysis.laneFacts?.efficiencyPct;
+  if (!goal && !lanePriorities.length && observation.lastHitsAt10 === undefined && deaths === undefined && !error) return null;
   return <Panel className={styles.challenge}>
-    <span className="eyebrow">Линия · факты и следующий шаг</span>
+    <span className="eyebrow">Линия и тренировка</span>
     <h3>К 10:00</h3>
     <dl className={styles.laneFacts}>
       <div><dt>Добито крипов</dt><dd>{observation.lastHitsAt10 ?? 'Нет данных'}</dd></div>
       <div><dt>Смерти</dt><dd>{deaths ?? 'Нет данных'}</dd></div>
       {goal ? <div><dt>Цель · 3 матча</dt><dd className={styles.targetGoal}>{goal.target}</dd></div> : null}
     </dl>
-    {goal ? <p className={styles.note}>Добивания включают нейтралов. Цель — +5 к {challenge ? 'исходному' : 'этому'} результату; это тренировка, а не норма.</p> : <p className={styles.note}>Для измеримой цели нужен результат к 10:00 и матч от 10 минут.</p>}
+    {goal ? <p className={styles.note}>Добивания включают нейтралов. Цель — +5 к {challenge ? 'исходному' : 'этому'} результату; это тренировка, а не норма.</p> : <p className={styles.note}>Добивания к 10:00 недоступны — автоматическую цель пока не предлагаем.</p>}
     {lanePriorities.map((priority, index) => <article className={styles.priority} key={priority.id}>
       <Badge tone={index === 0 ? 'brand' : 'unknown'}>{analysis.priorities[0].id === priority.id ? 'Основной фокус' : 'Дополнительно'}</Badge>
       <h4>{priority.title}</h4><p className="muted">{priority.meaning}</p><p className={styles.action}>{priority.action}</p>
@@ -97,16 +98,18 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
       </div> : null}
     </div>
     {error ? <Alert tone="warning">{error}</Alert> : null}
-    {!storageKey || !observation.startTime ? <p className={styles.note}>Не удалось подтвердить игрока, роль, режим или время матча. Цель можно попробовать вручную; автоматическое продолжение недоступно.</p> : null}
+    {goal && (!storageKey || !observation.startTime) ? <p className={styles.note}>Не удалось подтвердить игрока, роль, режим или время матча. Цель можно попробовать вручную; автоматическое продолжение недоступно.</p> : null}
     {!challenge && goal ? <Button type="button" disabled={!ready || !canAccept} onClick={start}>Принять челлендж</Button> : null}
     {challenge ? <>
       {progress?.complete && canAccept ? <Button type="button" onClick={start}>Начать новый челлендж</Button> : null}
       <Button type="button" variant="ghost" onClick={clear}>Снять челлендж</Button>
     </> : null}
+    {goal ? <>
     <p className={styles.note}>Прогресс хранится только в этом браузере.</p>
     <details className={styles.more}><summary>Как проверяем цель</summary>
       <p>Выполни цель в каждом из трёх следующих подходящих матчей. Открой их разборы — сравним реальные значения автоматически.</p>
       <p className={styles.note}>Область: тот же игрок, {analysis.hero}, керри, тот же режим и тип лобби. Считаются матчи, сыгранные после принятия цели. Нет данных к 10:00 — нет зачёта и нет неудачи. Это тренировка, а не норма героя или ранга; она не гарантирует победу.</p>
     </details>
+    </> : null}
   </Panel>;
 }

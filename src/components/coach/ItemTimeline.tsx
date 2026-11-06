@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getItemIconCandidates } from '@/lib/dota/data/itemConstants';
 import { Badge, Panel } from '@/components/ui';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { getGradeLevel } from './GradesGrid';
@@ -16,10 +17,11 @@ type ItemTiming = {
 };
 
 export function ItemIcon({ item }: { item: ItemTiming }) {
-  const [failed, setFailed] = useState(false);
-  return item.iconUrl && !failed ? (
+  const [attempt, setAttempt] = useState(0);
+  const candidates = getItemIconCandidates(item.key, item.iconUrl);
+  return candidates[attempt] ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={item.iconUrl} alt="" className="item-icon" loading="lazy" onError={() => setFailed(true)} />
+    <img src={candidates[attempt]} alt="" className="item-icon" loading="lazy" onError={() => setAttempt((current) => current + 1)} />
   ) : <div className="item-fallback" aria-hidden="true">{item.item[0]}</div>;
 }
 

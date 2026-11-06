@@ -31,6 +31,7 @@ const tests = [
   'lib/dota/research/coordinateReview.test.js',
   'lib/dota/analyze/timelinePresentation.test.js',
   'lib/dota/analyze/farmIntervals.test.js',
+  'lib/dota/analyze/farmChart.test.js',
   'lib/dota/normalize/farmEvents.test.js',
   'lib/dota/rules/postMatch/matchReview.test.js',
   'lib/dota/normalize/economyByPhase.test.js',
@@ -48,6 +49,7 @@ const tests = [
   'lib/i18n/preGameCopy.test.js',
   'lib/i18n/uiCopy.test.js',
   'lib/dota/errors/postMatchError.test.js',
+  'lib/dota/engine/postMatchEngine.test.js',
   'lib/dota/role/detectRole.test.js',
   'lib/dota/rules/roleRules/carryRules.test.js'
 ].map((path) => join(temp, path));

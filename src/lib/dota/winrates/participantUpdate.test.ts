@@ -26,7 +26,7 @@ test('a retry without observations retains 30/100, real zero wins, freshness and
     assert.equal(canRetry(updated), true);
     const plan = fixturePlan(); const rows = encounters(plan, 0);
     const results = { '9000067:1001': updated };
-    assert.deepEqual(groupMean(rows, results, 30, 'with'), { mean: wins, available: 1, expected: 4, complete: 1 });
+    assert.deepEqual(groupMean(rows, results, 30, 'with'), { mean: wins, available: 1, expected: 5, complete: 1 });
     const csv = exportCsv(plan, rows, results, 30);
     assert.match(csv, /Ошибка обновления/); assert.match(csv, /"100"/);
   }

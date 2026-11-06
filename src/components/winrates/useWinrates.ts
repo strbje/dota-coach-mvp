@@ -32,11 +32,12 @@ export function useWinrates() {
   const [selectedSlot, setSelectedSlot] = useState<number>();
   const [results, setResults] = useState<Results>({});
   const [busy, setBusy] = useState<'plan' | 'participants' | null>(null);
+  const [paused, setPaused] = useState<'budget' | 'user' | null>(null);
   const [error, setError] = useState<string>();
   const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
-  const stop = () => { generation.current++; controller.current?.abort(); setBusy(null); };
-  const clear = () => { stop(); setPlan(null); setSelectedSlot(undefined); setResults({}); setError(undefined); };
+  const stop = () => { generation.current++; controller.current?.abort(); setBusy(null); setPaused('user'); };
+  const clear = () => { stop(); setPlan(null); setSelectedSlot(undefined); setResults({}); setError(undefined); setPaused(null); };
   useEffect(() => () => { generation.current++; controller.current?.abort(); }, []);
 
   async function loadParticipants(nextPlan: Plan, slot: number | undefined, existing: Results) {
@@ -44,7 +45,11 @@ export function useWinrates() {
     const version = generation.current;
     const request = new AbortController();
     controller.current = request;
-    const timer = setTimeout(() => request.abort(), 45000);
+    const timer = setTimeout(() => {
+      if (generation.current === version) { setPaused('budget'); setBusy(null); }
+      request.abort();
+    }, 45000);
+    setPaused(null);
     setBusy('participants');
     setError(undefined);
     const seen = new Set<string>();
@@ -118,5 +123,5 @@ export function useWinrates() {
       if (generation.current === version && !request.signal.aborted) { setBusy(null); setError(failure instanceof Error ? failure.message : 'provider_error'); }
     }
   }
-  return { plan, selectedSlot, results, busy, error, stop, clear, loadPlan, selectPlayer, extendSeries, resume: () => { if (plan) void loadParticipants(plan, selectedSlot, results); } };
+  return { plan, selectedSlot, results, busy, error, paused, stop, clear, loadPlan, selectPlayer, extendSeries, resume: () => { if (plan) void loadParticipants(plan, selectedSlot, results); } };
 }

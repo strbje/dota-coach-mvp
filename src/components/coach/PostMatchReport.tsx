@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Badge, Button, Panel } from '@/components/ui';
 import type { EvidenceRequest } from '@/lib/dota/analyze/timelinePresentation';
 import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
@@ -11,6 +11,7 @@ import { ItemTimeline } from './ItemTimeline';
 import { PhaseBreakdown } from './PhaseBreakdown';
 import { MatchContextTimeline } from './MatchContextTimeline';
 import { TrainingChallengeCard } from './TrainingChallengeCard';
+import { formatGameTime } from '@/lib/dota/utils/time';
 import { FarmIntervals } from './FarmIntervals';
 import styles from './postMatch.module.css';
 
@@ -19,17 +20,13 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
   const [evidence, setEvidence] = useState<EvidenceRequest>();
   const factors = review.factors.filter((factor) => factor.id !== 'personal-start');
   const otherPriorities = analysis.priorities.filter((priority) => priority.id !== 'lane-farm' && priority.id !== 'lane-events');
+  const farmDrop = analysis.farmIntervals?.highlightIndex === undefined ? undefined : analysis.farmIntervals.intervals[analysis.farmIntervals.highlightIndex];
+  const firstDeath = review.timeline.find((event) => event.kind === 'death');
+  const fallbackEpisode = farmDrop ?? (firstDeath ? { from: Math.max(0, firstDeath.timeSeconds - 20), to: firstDeath.timeSeconds } : undefined);
   function showEvidence(id: string, from: number, to = from, endExclusive = false) {
     setEvidence((previous) => ({ id, from, to, ...(endExclusive ? { endExclusive } : {}), sequence: (previous?.sequence ?? 0) + 1 }));
   }
-  const [factorsOpen, setFactorsOpen] = useState(true);
-  useEffect(() => {
-    const compact = window.matchMedia('(max-width: 1050px)');
-    const update = () => setFactorsOpen(!compact.matches);
-    update();
-    compact.addEventListener('change', update);
-    return () => compact.removeEventListener('change', update);
-  }, []);
+  const [factorsOpen, setFactorsOpen] = useState(false);
   return <div className={styles.board}>
     <Panel className={styles.outcome}>
       <span className="eyebrow">Результат и ключевые факты</span>
@@ -45,6 +42,7 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
         <p className="muted">{factor.meaning}</p>
         <Button type="button" variant="ghost" className={styles.factorLink} onClick={() => showEvidence(factor.evidenceId, factor.timeSeconds, factor.endSeconds)}>Посмотреть отрезок ↗</Button>
       </article>)}</div></details> : null}
+      {review.timeline.some((event) => event.kind === 'death') ? <div className={styles.deathTimes} role="group" aria-label="Смерти по времени"><h3>Твои смерти</h3>{review.timeline.filter((event) => event.kind === 'death').map((event) => <Button key={event.id} type="button" variant="secondary" onClick={() => showEvidence(event.id, event.timeSeconds)}>{formatGameTime(event.timeSeconds)}</Button>)}</div> : null}
       {review.coverageNote ? <p className={styles.note}>{review.coverageNote}</p> : null}
     </Panel>
     <aside className={`${styles.plan} ${otherPriorities.length ? '' : styles.planSingle}`} aria-label="План на следующие игры">
@@ -56,25 +54,28 @@ export function PostMatchReport({ analysis }: { analysis: PostMatchAnalysis }) {
           <p><strong>{priority.fact}</strong></p>
           <p className="muted">{priority.meaning}</p>
           <p className={styles.action}>{priority.action}</p>
+          {priority.id === 'economy' && farmDrop ? <Button type="button" variant="secondary" onClick={() => showEvidence(`farm-${farmDrop.from}`, farmDrop.from, farmDrop.to, true)}>Открыть отрезок фарма</Button> : null}
           {priority.target && priority.target.source !== 'training' ? <p>{priority.target.text} <span className={styles.note}>{priority.target.source === 'personal' ? 'Твой личный результат' : 'Внешний ориентир'}</span></p> : null}
         </article>)}
       </Panel> : null}
+      {!analysis.priorities.length && !analysis.training.goal && fallbackEpisode ? <Panel className={styles.priority}><h3>Разбери один эпизод</h3><p>Посмотри {formatGameTime(fallbackEpisode.from)}–{formatGameTime(fallbackEpisode.to)}. Выбери одно решение, которое стоит повторить или изменить в следующей игре.</p><Button type="button" onClick={() => showEvidence('next-episode', fallbackEpisode.from, fallbackEpisode.to)}>Открыть эпизод</Button></Panel> : null}
+      {!analysis.priorities.length && !analysis.training.goal && !fallbackEpisode ? <p className={styles.note}>Данных для личного шага пока недостаточно. Попробуй другой матч.</p> : null}
       <TrainingChallengeCard key={`${analysis.matchId}:${analysis.training.observation.accountId ?? 'anonymous'}:${analysis.training.observation.heroId}`} analysis={analysis} onEvidence={() => showEvidence('lane-at-ten', 600)} />
     </aside>
     <div className={styles.main}>
+      <GradesGrid grades={analysis.grades} categories={['fights', 'map']} />
       {review.strengths.length ? <section className={styles.strengths} aria-label="Что сохранить в своей игре"><h3>Что стоит повторить</h3>{review.strengths.map((text) => <p key={text}>{text}</p>)}</section> : null}
-      <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" />
       <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
+      {analysis.itemTimings.length ? <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" /> : <p className={styles.note}>Время ключевых покупок недоступно.</p>}
       <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence} />
       <details className="details">
-        <summary>Оценки, фазы и источники данных</summary>
+        <summary>Подробности и источники</summary>
         <div className="details-content">
-          <GradesGrid grades={analysis.grades} categories={['fights', 'map']} />
           <BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
-          <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={analysis.deathsByPhase} itemTimings={analysis.itemTimings} />
-          {analysis.goldReasons ? <GoldSources reasons={analysis.goldReasons} /> : null}
-          {analysis.farmProfile ? <Panel><h3>Добивания и убийства</h3><ul><li>Лейн-крипы: {analysis.farmProfile.laneKills ?? '—'}</li><li>Нейтралы: {analysis.farmProfile.neutralKills ?? '—'}</li><li>Древние: {analysis.farmProfile.ancientKills ?? '—'}</li><li>Убийства героев: {analysis.farmProfile.heroKills ?? '—'}</li></ul></Panel> : null}
-          <p className="muted">Источник: OpenDota{analysis.stratz?.deathTimings ? ', события смертей — STRATZ' : ''}. Средние STRATZ и координаты в выводах не используются. Разница золота описывает ресурсы команд; сама по себе она не устанавливает причинность.</p>
+          {Object.values(analysis.economyByPhase ?? {}).some((phase) => phase && (phase.lhPerMinuteInPhase !== undefined || phase.goldPerMinuteInPhase !== undefined || phase.xpPerMinuteInPhase !== undefined)) ? <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={analysis.deathsByPhase} itemTimings={analysis.itemTimings} /> : null}
+          {analysis.goldReasons?.grouped.length ? <GoldSources reasons={analysis.goldReasons} /> : null}
+          {analysis.farmProfile && Object.values(analysis.farmProfile).some((value) => value !== undefined) ? <Panel><h3>Добивания и убийства</h3><ul>{([['laneKills', 'Линейные крипы'], ['neutralKills', 'Нейтралы'], ['ancientKills', 'Древние'], ['heroKills', 'Герои'], ['roshanKills', 'Рошан'], ['towerKills', 'Башни']] as const).map(([key, label]) => analysis.farmProfile![key] === undefined ? null : <li key={key}>{label}: {analysis.farmProfile![key]}</li>)}</ul></Panel> : null}
+          <p className="muted">Источник: OpenDota{analysis.stratz?.deathTimings ? ', события смертей — STRATZ' : ''}.</p>
         </div>
       </details>
     </div>

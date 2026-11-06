@@ -146,8 +146,8 @@ export default function PostMatchPage() {
 
   const selectedPlayer = players.find((player) => String(player.playerSlot) === selectedSlot);
   return (
-    <PageContainer width="workspace" className={styles.workspace}>
-      <header className={styles.matchHeader}>
+    <PageContainer width="report" atmosphere className={styles.workspace}>
+      <header className={`${styles.matchHeader} ${analysis ? '' : styles.entry}`}>
         <div className={styles.identity}>
           <span className="eyebrow">{analysis ? 'Разбор матча' : copy.eyebrow}</span>
           <h1 id="report-title" tabIndex={-1}>{analysis ? analysis.hero : copy.title}</h1>
@@ -160,7 +160,7 @@ export default function PostMatchPage() {
         </div>
         {analysis ? <Button type="button" variant="secondary" aria-expanded={showSelection} aria-controls="match-selection" onClick={() => setShowSelection((value) => !value)}>{showSelection ? 'Скрыть выбор' : 'Матч и состав · изменить'}</Button> : null}
       </header>
-      <div id="match-selection" hidden={!showSelection}>
+      <div id="match-selection" className={styles.entry} hidden={!showSelection}>
         <Panel className={styles.formGrid}>
           <form className="stack" onSubmit={loadPlayers} aria-busy={loadingPlayers}>
             <MatchIdForm matchId={matchId} label={copy.matchIdLabel} hint={copy.matchIdHint} onChange={changeMatchId} />

@@ -1,6 +1,9 @@
 .header { border-bottom: var(--border-width) solid var(--color-border); background: var(--color-surface); }
 .headerInner, .container { width: min(100% - calc(var(--space-4) * 2), var(--layout-standard)); margin-inline: auto; }
 .workspace { width: min(100% - calc(var(--layout-gutter) * 2), var(--layout-workspace)); }
+.report { width: min(100% - calc(var(--layout-gutter) * 2), var(--layout-report)); }
+.atmosphere { position: relative; isolation: isolate; min-height: 100svh; }
+.atmosphere::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(to bottom, color-mix(in srgb, var(--color-background) 15%, transparent), var(--color-background) 1000px), url('/images/post-match-battlefield.webp'); background-position: center top; background-size: 100% 100%, max(100%, 1600px) auto; background-repeat: no-repeat; }
 .headerInner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
 .brand { font-family: var(--font-heading); font-weight: 800; text-decoration: none; }
 .nav { display: flex; gap: var(--space-1); }

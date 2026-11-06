@@ -388,7 +388,7 @@ test('low benchmarked economy becomes a priority and the shared final focus', ()
   const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { gold_per_min: [{ percentile: 40, value: 400 }] } } };
   const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
   assert.equal(analysis.priorities[0].id, 'economy');
-  assert.match(analysis.priorities[0].fact, /400 золота в минуту.*ниже доступного ориентира/);
+  assert.match(analysis.priorities[0].fact, /400 золота в минуту.*ниже середины выборки.*Lifestealer/);
   assert.equal(analysis.priorities[0].dataState, 'partial');
   assert.match(analysis.priorities[0].meaning, /данных по фазам недостаточно/i);
   assert.match(analysis.priorities[0].action, /Посмотри запись матча/);
@@ -402,7 +402,7 @@ test('benchmarked fight scores from 50 through 69 have an available assessment',
     const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { hero_damage_per_min: [{ percentile, value: 500 }] } } };
     const analysis = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
     assert.equal(analysis.grades.fights.score, percentile);
-    assert.equal(analysis.grades.fights.summary, 'Рабочий вклад в драках');
+    assert.equal(analysis.grades.fights.summary, 'Урон по героям в середине выборки');
   }
 });
 
@@ -520,4 +520,19 @@ test('lane facts preserve source efficiency and distinguish unknown deaths from 
   assert.doesNotMatch(allCopy(analysis), /Сильный показатель|Рабочий показатель|70\/100/);
   input.player!.deaths = 0;
   assert.equal(runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride).laneFacts!.deathsAt10, 0);
+});
+
+test('an existing economy priority opens the measured farm drop even without minute checkpoints', () => {
+  const input = match(); input.durationSeconds = 600; input.player!.gpm = 400;
+  const context: PostMatchBenchmarkContext = { heroBenchmarks: { available: true, metrics: { gold_per_min: [{ percentile: 40, value: 400 }, { percentile: 50, value: 500 }] } } };
+  const events = [40, 20].flatMap((count, i) => Array.from({ length: count }, (_, j) => ({ time: i * 300 + j + 1 })));
+  const base = runCarryPostMatchRules(input, undefined, context, lifestealerCarryOverride);
+  const analysis = runCarryPostMatchRules(input, { farmEvents: normalizeFarmEvents(events, 60, 600) }, context, lifestealerCarryOverride);
+  assert.equal(analysis.training.goal, undefined);
+  assert.match(analysis.priorities[0].title, /5:00–10:00/);
+  assert.match(analysis.priorities[0].action, /Если найдёшь лишний переход/);
+  assert.equal(analysis.priorities[0].dataState, 'available');
+  assert.doesNotMatch(analysis.priorities[0].meaning, /недостаточно|ниже.*OpenDota/);
+  assert.deepEqual(analysis.grades, base.grades);
+  assert.deepEqual(analysis.review, base.review);
 });
