@@ -1,10 +1,35 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { acceptChallenge, challengeProgress, challengeStorageKey, checkChallenge, makeTrainingGoal, readChallenge } from './trainingChallenge';
+import { acceptChallenge, challengeProgress, challengeStorageKey, checkChallenge, makeTrainingGoal, readChallenge, resolveLastHitsAt10 } from './trainingChallenge';
+import { normalizeFarmEvents } from '../normalize/farmEvents';
 import type { TrainingObservation } from '../types/domain';
 
 const base: TrainingObservation = { matchId: 100, accountId: 101, heroId: 42, role: 'carry', gameMode: 22, lobbyType: 7, startTime: 1000, durationSeconds: 2400, lastHitsAt10: 51 };
 const accepted = () => acceptChallenge(base, makeTrainingGoal(51)!, 4000)!;
+
+test('complete farm events supply the missing checkpoint, with the same half-open boundary and no deduplication', () => {
+  const farm = normalizeFarmEvents([{ time: 0 }, { time: 299 }, { time: 599 }, { time: 599 }, { time: 600 }, { time: 601 }], 6, 1200)!;
+  assert.deepEqual(resolveLastHitsAt10(1200, undefined, farm), { value: 4, source: 'stratz' });
+  assert.deepEqual(resolveLastHitsAt10(1200, 0, farm), { value: 0, source: 'opendota' });
+  assert.deepEqual(resolveLastHitsAt10(1200, 7, farm), { value: 7, source: 'opendota' });
+  assert.deepEqual(resolveLastHitsAt10(1200, undefined, normalizeFarmEvents([], 0, 1200)), { value: 0, source: 'stratz' });
+  for (const bad of [{ ...farm, coverage: 'partial' as const }, { ...farm, durationSeconds: 1199 }, { ...farm, rejectedEvents: 1 }, { ...farm, reportedLastHits: 7 }]) {
+    assert.equal(resolveLastHitsAt10(1200, undefined, bad), undefined);
+  }
+  assert.equal(resolveLastHitsAt10(599, 10, normalizeFarmEvents([{ time: 30 }], 1, 599)), undefined);
+});
+
+test('confirmed STRATZ checkpoints can accept, fill pending and update the existing challenge once per match', () => {
+  const farm = normalizeFarmEvents(Array.from({ length: 56 }, (_, i) => ({ time: i * 10 })), 56, 1200);
+  const checkpoint = resolveLastHitsAt10(1200, undefined, farm)!;
+  const observation = { ...base, matchId: 101, startTime: 5000, lastHitsAt10: checkpoint.value, lastHitsAt10Source: checkpoint.source };
+  let challenge = checkChallenge(accepted(), { ...observation, lastHitsAt10: undefined });
+  challenge = checkChallenge(challenge, observation);
+  challenge = checkChallenge(challenge, observation);
+  assert.equal(challengeProgress(challenge).successes, 1);
+  assert.equal(challenge.checks.length, 1);
+  assert.equal(acceptChallenge({ ...base, ...checkpoint, lastHitsAt10: checkpoint.value }, makeTrainingGoal(checkpoint.value)!, 4000)?.goal.target, 61);
+});
 
 test('training target is explicit +5, not a hero norm; anonymous or unscoped identities cannot persist', () => {
   assert.equal(accepted().goal.target, 56);

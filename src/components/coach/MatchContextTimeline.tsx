@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button, Panel } from '@/components/ui';
 import type { MatchReview, PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { formatGameTime } from '@/lib/dota/constants/items';
@@ -11,7 +11,7 @@ import styles from './postMatch.module.css';
 const eventLabels: Record<keyof EventFilters, string> = { item: 'Покупки', death: 'Мои смерти', objective: 'Объекты', lane: 'Линия к 10:00' };
 const eventSymbols = { item: '◆', death: '×', objective: '⚑', lane: '10′' };
 
-export function MatchContextTimeline({ review, items, durationSeconds, evidence }: { review: MatchReview; items: PostMatchAnalysis['itemTimings']; durationSeconds: number; evidence?: EvidenceRequest }) {
+export function MatchContextTimeline({ review, items, durationSeconds, evidence, dataAction }: { review: MatchReview; items: PostMatchAnalysis['itemTimings']; durationSeconds: number; evidence?: EvidenceRequest; dataAction?: ReactNode }) {
   const [metric, setMetric] = useState<'gold' | 'xp'>('gold');
   const [filters, setFilters] = useState<EventFilters>(allEventFilters);
   const [selection, setSelection] = useState<TimelineSelection>();
@@ -44,6 +44,8 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
 
   const domain = timelineDomain(review, durationSeconds);
   const availableMetric = review.advantage.some((p) => p[metric] !== undefined) ? metric : metric === 'gold' ? 'xp' : 'gold';
+  const availableMetrics = (['gold', 'xp'] as const).filter((value) => review.advantage.some((point) => point[value] !== undefined));
+  const availableKinds = (Object.keys(eventLabels) as Array<keyof EventFilters>).filter((kind) => review.timeline.some((event) => event.kind === kind));
   const segments = resourceSegments(review.advantage, availableMetric);
   const points = segments.flat();
   const extent = Math.max(1, ...points.map((point) => Math.abs(point[availableMetric]!)));
@@ -63,15 +65,16 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence 
   return <div id="team-advantage" tabIndex={-1}>
     <Panel className={styles.chartPanel}>
       <div className={styles.chartHeader}>
-        <h2 id={titleId}>Как менялась игра</h2>
-        <div className={styles.chartSwitch} role="group" aria-label="Показатель команды">
-          {(['gold', 'xp'] as const).map((value) => <Button key={value} type="button" variant="secondary" aria-pressed={availableMetric === value && points.length > 0} disabled={!review.advantage.some((p) => p[value] !== undefined)} onClick={() => setMetric(value)}>{value === 'gold' ? 'Золото' : 'Опыт'}</Button>)}
-        </div>
+        <h2 id={titleId}>{availableMetrics.length ? 'Как менялась игра' : 'События матча'}</h2>
+        {availableMetrics.length > 1 ? <div className={styles.chartSwitch} role="group" aria-label="Показатель команды">
+          {availableMetrics.map((value) => <Button key={value} type="button" variant="secondary" aria-pressed={availableMetric === value} onClick={() => setMetric(value)}>{value === 'gold' ? 'Золото' : 'Опыт'}</Button>)}
+        </div> : null}
       </div>
-      <div className={styles.eventFilters} role="group" aria-label="События на шкале">
-        {(Object.keys(eventLabels) as Array<keyof EventFilters>).map((kind) => <label key={kind}><input type="checkbox" checked={filters[kind]} onChange={(event) => setFilters({ ...filters, [kind]: event.target.checked })} />{eventLabels[kind]}</label>)}
-      </div>
+      {availableKinds.length ? <div className={styles.eventFilters} role="group" aria-label="События на шкале">
+        {availableKinds.map((kind) => <label key={kind}><input type="checkbox" checked={filters[kind]} onChange={(event) => setFilters({ ...filters, [kind]: event.target.checked })} />{eventLabels[kind]}</label>)}
+      </div> : null}
       {points.length ? <div className={styles.chartLabels}><span>+{Math.round(extent).toLocaleString('ru-RU')} · ваша команда впереди</span><span>Разница {availableMetric === 'gold' ? 'золота' : 'опыта'}</span></div> : <p className="muted">Динамика золота и опыта недоступна. Ниже — известные события матча.</p>}
+      {dataAction}
       <div className={styles.plotInset}>
         <div ref={plot} className={styles.plot}>
           {points.length ? <svg viewBox="0 0 800 200" preserveAspectRatio="none" role="img" aria-labelledby={titleId} className={styles.chart}>

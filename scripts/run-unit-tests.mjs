@@ -16,6 +16,8 @@ function collectTypeScript(directory) {
 const sourceFiles = [
   ...collectTypeScript(join(root, 'src/lib/dota')),
   ...collectTypeScript(join(root, 'src/lib/i18n')),
+  join(root, 'src/app/api/post-match/parse/route.ts'),
+  join(root, 'src/app/api/post-match/parse/route.test.ts'),
   join(root, 'src/app/api/pre-game/analyze/handler.ts'),
   join(root, 'src/app/api/pre-game/analyze/handler.test.ts')
 ];
@@ -41,6 +43,7 @@ const tests = [
   'lib/dota/async/withTimeout.test.js',
   'lib/dota/validation/postMatchResponse.test.js',
   'app/api/pre-game/analyze/handler.test.js',
+  'app/api/post-match/parse/route.test.js',
   'lib/dota/clients/opendota.test.js',
   'lib/dota/providers/opendotaProvider.test.js',
   'lib/dota/adapters/normalizeBenchmarks.test.js',

@@ -107,6 +107,7 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
     {goal ? <>
     <p className={styles.note}>Прогресс хранится только в этом браузере.</p>
     <details className={styles.more}><summary>Как проверяем цель</summary>
+      {observation.lastHitsAt10Source === 'stratz' ? <p className={styles.note}>Текущий результат посчитан по полному ряду добиваний STRATZ до 10:00, включая нейтралов и подконтрольных существ.</p> : null}
       <p>Выполни цель в каждом из трёх следующих подходящих матчей. Открой их разборы — сравним реальные значения автоматически.</p>
       <p className={styles.note}>Область: тот же игрок, {analysis.hero}, керри, тот же режим и тип лобби. Считаются матчи, сыгранные после принятия цели. Нет данных к 10:00 — нет зачёта и нет неудачи. Это тренировка, а не норма героя или ранга; она не гарантирует победу.</p>
     </details>

@@ -1,4 +1,5 @@
 import type { TrainingGoal, TrainingObservation } from '../types/domain';
+import type { FarmEvents } from '../normalize/farmEvents';
 
 type Scope = { accountId: number; heroId: number; role: 'carry'; gameMode: number; lobbyType: number };
 export type ChallengeCheck = { matchId: number; startTime: number; actual?: number };
@@ -13,6 +14,16 @@ export type TrainingChallenge = {
 };
 
 const integer = (value: unknown, min = 0): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= min;
+
+/** Prefer the existing snapshot; otherwise count the same complete stream used by the farm chart.
+ * The checkpoint is [0, 600), not a sum of rounded rates or an extrapolated partial stream. */
+export function resolveLastHitsAt10(duration: number, snapshot: number | undefined, farm?: FarmEvents) {
+  if (!Number.isFinite(duration) || duration < 600) return undefined;
+  if (integer(snapshot)) return { value: snapshot, source: 'opendota' as const };
+  if (farm?.coverage !== 'complete' || farm.durationSeconds !== duration || farm.rejectedEvents !== 0
+    || !integer(farm.reportedLastHits) || farm.events.length !== farm.reportedLastHits) return undefined;
+  return { value: farm.events.filter((event) => event.timeSeconds < 600).length, source: 'stratz' as const };
+}
 export function challengeScope(observation: TrainingObservation): Scope | null {
   // OpenDota uses 4294967295 for anonymous players. Slots and hero IDs are not player identity.
   if (!integer(observation.accountId, 1) || observation.accountId >= 4294967295 || !integer(observation.heroId, 1)

@@ -5,7 +5,7 @@ import { setHeroConstants } from '../../data/heroConstants';
 import { normalizeFarmEvents } from '../../normalize/farmEvents';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
+export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; resources?: 'gold' | 'xp'; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
   setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
@@ -20,6 +20,7 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
   };
   const payload: OpenDotaMatchResponse = {
     match_id: options.matchId ?? 9000066, duration: 2314, radiant_win: options.won ?? false, start_time: options.startTime ?? 1792666800, game_mode: 22, lobby_type: 7,
+    od_data: { has_parsed: !options.product },
     players: [selected],
     radiant_gold_adv: times.map((_, i) => i < 15 ? i * 170 : i < 20 ? 2550 - (i - 15) * 400 : 550 - (i - 20) * 600),
     radiant_xp_adv: times.map((_, i) => i < 15 ? i * 120 : 1800 - (i - 15) * 470),
@@ -37,6 +38,8 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
     delete payload.objectives;
   }
   if (options.empty) payload.players = [{ player_slot: 0, hero_id: 42, isRadiant: true }];
+  if (options.resources === 'gold') delete payload.radiant_xp_adv;
+  if (options.resources === 'xp') delete payload.radiant_gold_adv;
   if (options.farm === 'gap') selected.lh_t[23] = NaN;
   // Constants must be stubbed by the offline test/capture harness; never call live providers for fixtures.
   const normalized = await normalizeOpenDotaMatch(payload, { playerSlot: 0 });

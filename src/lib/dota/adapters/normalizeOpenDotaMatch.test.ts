@@ -44,6 +44,20 @@ function economyPayload(player: Record<string, unknown>): OpenDotaMatchResponse 
   return { match_id: 123, radiant_win: true, duration: 40 * 60, players: [{ player_slot: 0, hero_id: 54, isRadiant: true, ...player }] };
 }
 
+test('parse availability comes only from an explicit provider flag', async () => {
+  const oldFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({});
+  try {
+    for (const [od_data, expected] of [
+      [{ has_parsed: false }, false], [{ has_parsed: true }, true],
+      [undefined, undefined], [null, undefined], [{}, undefined], [{ has_parsed: 'false' }, undefined]
+    ] as const) {
+      const match = await normalizeOpenDotaMatch({ ...economyPayload({}), od_data }, { playerSlot: 0 });
+      assert.equal(match.openDotaParsed, expected);
+    }
+  } finally { globalThis.fetch = oldFetch; }
+});
+
 test('adapter derives full, partial and unavailable economy states from usable phase intervals', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response('{}', { status: 200 });

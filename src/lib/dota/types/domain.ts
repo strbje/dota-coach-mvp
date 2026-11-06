@@ -75,6 +75,7 @@ export type TrainingObservation = {
   lobbyType?: number;
   durationSeconds: number;
   lastHitsAt10?: number;
+  lastHitsAt10Source?: 'opendota' | 'stratz';
 };
 export type TrainingGoal = {
   metric: 'lastHitsAt10';
@@ -135,6 +136,7 @@ export type PreGameAnalysis = {
 };
 
 export type NormalizedOpenDotaMatch = {
+  openDotaParsed?: boolean;
   matchId: number;
   didRadiantWin: boolean;
   durationSeconds: number;
@@ -359,7 +361,7 @@ export type PostMatchAnalysis = {
     biggestRisk: string;
     nextMatchFocus: string;
   };
-  meta: { source: string[]; confidence: number };
+  meta: { source: string[]; confidence: number; openDotaParsed?: boolean };
 };
 
 export type StratzCombatEvent = {
