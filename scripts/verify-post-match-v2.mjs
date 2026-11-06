@@ -97,7 +97,7 @@ const roleErrors = {
   STRATZ_PLAYER_MISMATCH: /Не удалось сопоставить выбранного игрока/,
   POST_MATCH_ROLE_UNCONFIRMED: /Это не означает, что ты играл не на керри/
 };
-const players = Array.from({ length: 10 }, (_, index) => ({ playerSlot: index < 5 ? index : 123 + index, heroId: index === 0 ? 42 : 1 + index, heroName: index === 0 ? 'Wraith King' : `Герой ${index + 1}`, playerName: index === 0 ? 'Игрок · пример' : `Игрок ${index + 1}`, accountId: index === 0 ? 1000066 : 1000066 + index, isRadiant: index < 5, kills: 8, deaths: 5, assists: 11 }));
+const players = Array.from({ length: 10 }, (_, index) => ({ playerSlot: index < 5 ? index : 123 + index, heroId: index === 0 ? 42 : 1 + index, heroName: index === 0 ? 'Wraith King' : `Герой ${index + 1}`, heroKey: ['skeleton_king','axe','bane','bloodseeker','crystal_maiden','drow_ranger','earthshaker','juggernaut','mirana','morphling'][index], playerName: index === 0 ? 'Игрок · пример' : `Игрок ${index + 1}`, accountId: index === 0 ? 1000066 : 1000066 + index, isRadiant: index < 5, kills: 8, deaths: 5, assists: 11 }));
 await page.route('**/api/post-match/**', async (route) => {
   const selectedScenario = scenario;
   const path = new URL(route.request().url()).pathname;
@@ -114,11 +114,11 @@ await page.route('**/api/post-match/**', async (route) => {
 
 async function load(name, matchId = 9000066) {
   scenario = name;
-  const change = page.getByRole('button', { name: 'Матч и состав · изменить' });
+  const change = page.getByRole('button', { name: 'Другой матч или игрок' });
   if (await change.isVisible()) await change.click();
-  await page.getByLabel('Match ID', { exact: true }).fill(String(matchId));
-  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
-  await page.getByLabel('Игрок', { exact: true }).selectOption('0');
+  await page.getByLabel('ID матча', { exact: true }).fill(String(matchId));
+  await page.getByRole('button', { name: 'Найти матч', exact: true }).click();
+  await page.locator('input[name="match-player"][value="0"]').check();
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
 }
 async function reportReady() { await page.getByRole('heading', { name: 'Личный план', exact: true }).waitFor(); }
@@ -145,7 +145,8 @@ async function snapshot(name) {
 const results = { synthetic: true, widths: [], checks: [] };
 try {
   await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/post-match`);
-  await page.getByRole('button', { name: 'RU', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: /^(RU|EN)$/ }).count(), 0);
+  assert.equal(await page.getByLabel('ID матча', { exact: true }).inputValue(), '');
   await snapshot('initial');
   for (const width of [320, 390, 768, 1440, 1920, 2560]) {
     await page.setViewportSize({ width, height: width < 1000 ? 900 : 1080 });
@@ -166,7 +167,7 @@ try {
   for (const [code, message] of Object.entries(roleErrors)) {
     await load(code);
     await page.getByRole('alert').filter({ hasText: message }).waitFor();
-    assert.equal(await page.getByLabel('Игрок', { exact: true }).inputValue(), '0');
+    assert.equal(await page.locator('input[name="match-player"]:checked').inputValue(), '0');
     assert.equal(await page.getByRole('heading', { name: 'Личный план', exact: true }).count(), 0);
   }
   await load('STRATZ_TIMEOUT');
@@ -176,17 +177,16 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `error overflow at ${width}`);
     await snapshot(`role-timeout-${width}`);
   }
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
-  await page.getByRole('alert').filter({ hasText: /STRATZ did not respond in time/ }).waitFor();
-  await page.getByRole('button', { name: 'RU', exact: true }).click();
+  assert.equal(await page.getByLabel('ID матча', { exact: true }).isVisible(), true);
+  assert.equal(await page.getByRole('button', { name: /^(RU|EN)$/ }).count(), 0);
   scenario = 'ready';
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).focus();
   await page.keyboard.press('Enter');
   await reportReady();
   assert.equal(await page.locator('#match-selection').getByRole('alert').count(), 0);
-  results.checks.push('role failure messages RU/EN; selection preserved and successful keyboard retry; entry <=1120 and report <=1440; six viewport widths; local decorative background loads without intercepting input');
+  results.checks.push('Russian role failure messages; selection preserved and successful keyboard retry; entry <=1120 and report <=1440; six viewport widths; local decorative background loads without intercepting input');
   await load('ready'); await reportReady();
-  assert.equal(await page.getByRole('link', { name: 'Доля побед участников', exact: true }).getAttribute('href'), '/winrates?matchId=9000066&accountId=1000066');
+  assert.equal(await page.getByRole('main').getByRole('link', { name: 'Винрейт игроков', exact: true }).getAttribute('href'), '/winrates?matchId=9000066&accountId=1000066');
   assert.equal(await page.getByRole('heading', { name: 'Wraith King', exact: true }).count(), 1);
   await page.getByRole('button', { name: 'Принять челлендж', exact: true }).waitFor();
   for (const width of [320, 390, 768, 1440, 1920, 2560]) {
@@ -245,6 +245,16 @@ try {
     await page.setViewportSize({ width, height: 1000 });
     await snapshot(`farm-${width}`);
   }
+  const inspectBar = farmPanel.getByRole('list', { name: 'Темп фарма по отрезкам' }).getByRole('button').first();
+  await inspectBar.scrollIntoViewIfNeeded();
+  const scrollBefore = await page.evaluate(() => scrollY);
+  await inspectBar.click();
+  assert.equal(await inspectBar.getAttribute('aria-pressed'), 'true');
+  assert.match(await farmPanel.getByRole('region', { name: 'Числа выбранного отрезка' }).innerText(), /0:00–5:00/);
+  assert.ok(Math.abs(await page.evaluate(() => scrollY) - scrollBefore) < 2, 'inspecting farm does not jump to events');
+  assert.equal(await farmPanel.getByText('Проверь', { exact: true }).count(), 1, 'recommendation remains distinct from selection');
+  await inspectBar.focus(); await page.keyboard.press('Enter');
+  results.checks.push('farm numbers inspect in place by click/keyboard; category counts visible; selection distinct from recommendation; no automatic page jump');
   await farmPanel.getByText('Точные значения и источники · 8', { exact: true }).focus(); await page.keyboard.press('Enter');
   assert.equal(await farmRows.count(), 8);
   assert.match(await farmPanel.innerText(), /темп снизился с 9 до 3/);
@@ -254,6 +264,18 @@ try {
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `farm overflow at ${width}`);
+    assert.ok(await farmPanel.getByRole('list', { name: 'Темп фарма по отрезкам' }).evaluate((list) =>
+      [...list.querySelectorAll('[class*="barLabel"]')].every((label) => {
+        const column = label.closest('li').getBoundingClientRect();
+        const nodes = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
+        while (nodes.nextNode()) {
+          if (!nodes.currentNode.textContent.trim()) continue;
+          const range = document.createRange(); range.selectNodeContents(nodes.currentNode);
+          const text = range.getBoundingClientRect();
+          if (text.left < column.left || text.right > column.right) return false;
+        }
+        return true;
+      })), `farm time/recommendation labels stay inside their column at ${width}`);
     if (width === 390 || width === 1440) await snapshot(`farm-expanded-${width}`);
   }
   for (const label of ['Покупки', 'Мои смерти', 'Объекты', 'Линия к 10:00']) await page.getByLabel(label, { exact: true }).uncheck();
@@ -272,7 +294,7 @@ try {
   assert.match(await selectedFarmEvents.innerText(), /25:00–30:00/);
   for (const name of ['farmPartial', 'farmPartialOnly', 'farmGap']) {
     await load(name); await reportReady();
-    const windows = farmPanel.locator('details').first();
+    const windows = farmPanel.getByText(/^Точные значения и источники/).locator('..');
     if (!await windows.evaluate((element) => element.open)) await windows.locator(':scope > summary').click();
     assert.equal(await farmPanel.getByRole('button', { name: 'Посмотреть события отрезка', exact: true }).count(), 0);
     const copy = await farmPanel.innerText();
@@ -294,6 +316,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.getByLabel('Линия к 10:00', { exact: true }).uncheck();
   if (!await page.getByText('Ключевые факты · 1', { exact: true }).locator('..').evaluate((element) => element.open)) await page.getByText('Ключевые факты · 1', { exact: true }).click();
+  await page.getByText('Как проверяем цель', { exact: true }).click();
   await page.getByRole('button', { name: 'Посмотреть отрезок ↗' }).nth(1).click();
   await page.waitForFunction(() => document.activeElement?.id === 'lane-at-ten');
   assert.equal(await page.getByLabel('Линия к 10:00', { exact: true }).isChecked(), true);
@@ -310,11 +333,18 @@ try {
   assert.doesNotMatch(fixtures.temporal.analysis.review.summary, /38:00/);
   assert.match(fixtures.temporal.analysis.review.coverageNote, /конец матча не покрыт/);
   assert.equal(await chart.locator('polyline').count(), 1, 'the isolated point and separate segment must not connect across a missing gold minute');
-  assert.equal(await chart.locator('circle').count(), 1);
+  assert.equal(await chart.locator('circle:not([data-selected-sample])').count(), 1);
+  const gapSlider = chart.getByRole('slider', { name: 'Время замера ресурсов' });
+  const gapIndex = fixtures.temporal.analysis.review.advantage.findIndex((point) => point.gold === undefined);
+  assert.ok(gapIndex >= 0);
+  await gapSlider.focus(); await page.keyboard.press('Home');
+  for (let i = 0; i < gapIndex; i++) await page.keyboard.press('ArrowRight');
+  assert.match(await gapSlider.getAttribute('aria-valuetext'), /нет данных/);
+
   assert.match(await chart.innerText(), /-0:30/);
   await chart.getByRole('button', { name: 'Опыт', exact: true }).click();
   assert.equal(await chart.locator('polyline').count(), 1);
-  assert.equal(await chart.locator('circle').count(), 0);
+  assert.equal(await chart.locator('circle:not([data-selected-sample])').count(), 0);
   await chart.getByText(/^Все события по фильтрам/).click();
   const late = chart.getByRole('button', { name: /37:05 · Твоя смерть/ });
   await late.focus(); await page.keyboard.press('Enter');
@@ -345,8 +375,11 @@ try {
   await load('noDeaths'); await reportReady();
   assert.match(await page.getByText('Смерти', { exact: true }).locator('..').innerText(), /Нет данных/);
   await load('rescored'); await reportReady();
-  assert.equal(await page.getByText('77', { exact: true }).isVisible(), true);
-  assert.equal(await page.getByText('65', { exact: true }).isVisible(), true);
+  const comparisons = page.getByRole('region', { name: 'Оценки', exact: true });
+  for (const summary of await comparisons.locator('summary').all()) await summary.click();
+  assert.match(await comparisons.innerText(), /Расчётный индекс: 77\/100/);
+  assert.match(await comparisons.innerText(), /Расчётный индекс: 65\/100/);
+  assert.equal(await comparisons.getByRole('heading', { name: 'Урон по героям', exact: true }).count(), 1);
   assert.equal(await page.getByText('Без оценки', { exact: true }).count(), 0);
   assert.equal(await page.getByText('Сильный показатель эффективности линии', { exact: true }).count(), 0);
 
@@ -377,7 +410,7 @@ try {
     if (width === 390 || width === 1440) await snapshot(`product-${width}`);
   }
   await page.getByRole('button', { name: 'Принять челлендж', exact: true }).click();
-  await page.getByText('Челлендж принят · 0/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 0/3').waitFor();
   await page.getByRole('button', { name: 'Снять челлендж', exact: true }).click();
   parseFails = true;
   await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).click();
@@ -401,6 +434,14 @@ try {
   await chart.getByRole('heading', { name: 'Как менялась игра', exact: true }).waitFor();
   assert.equal(await chart.locator('svg').count(), 1);
   assert.equal(await page.getByText(/Запрос отправлен/).count(), 0);
+  const sampleSlider = chart.getByRole('slider', { name: 'Время замера ресурсов' });
+  await sampleSlider.focus(); await page.keyboard.press('Home'); await page.keyboard.press('ArrowRight');
+  const resourceSample = fixtures.ready.analysis.review.advantage[1];
+  assert.match(await sampleSlider.getAttribute('aria-valuetext'), new RegExp(String(resourceSample.gold)));
+  await chart.getByRole('button', { name: 'Опыт', exact: true }).click();
+  assert.match(await sampleSlider.getAttribute('aria-valuetext'), new RegExp(String(resourceSample.xp)));
+  await chart.getByRole('button', { name: 'Золото', exact: true }).click();
+  results.checks.push('keyboard resource slider exposes exact timestamps and independent gold/XP values');
   const goldPoints = await chart.locator('polyline').first().getAttribute('points');
   await chart.getByRole('button', { name: 'Опыт', exact: true }).click();
   assert.notEqual(await chart.locator('polyline').first().getAttribute('points'), goldPoints);
@@ -443,25 +484,35 @@ try {
   const outline = await page.getByRole('button', { name: 'Принять челлендж', exact: true }).evaluate((element) => getComputedStyle(element).outlineStyle);
   assert.notEqual(outline, 'none');
   await page.keyboard.press('Enter');
-  await page.getByText('Челлендж принят · 0/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 0/3').waitFor();
+  await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/`);
+  await page.getByRole('heading', { name: 'Продолжить тренировку', exact: true }).waitFor();
+  await page.getByText('Проверено 0 из 3 матчей · цель достигнута в 0.', { exact: true }).waitFor();
+  for (const width of [390, 1440]) { await page.setViewportSize({ width, height: 1000 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); await snapshot(`home-progress-${width}`); }
+  await page.getByRole('link', { name: 'Wraith King · матч 9000066', exact: true }).click();
+  const restoredPlayer = page.locator('input[name="match-player"][value="0"]');
+  await restoredPlayer.waitFor();
+  assert.equal(await restoredPlayer.isChecked(), true, 'history restores the known player but still requires analysis/role validation');
+  await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click(); await reportReady();
+  results.checks.push('home restores recent match/player and active goal; mobile/desktop; no automatic role bypass or background match discovery');
   await load('next', 9000067); await reportReady();
-  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 1/3').waitFor();
   await page.reload(); await load('next', 9000067); await reportReady();
-  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 1/3').waitFor();
   await load('missing', 9000068); await reportReady();
-  await page.getByText('Челлендж принят · 1/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 1/3').waitFor();
   await page.getByText(/Он не засчитан ни как успех/).waitFor();
   await load('third', 9000069); await reportReady();
-  await page.getByText('Челлендж принят · 2/3').waitFor();
+  await page.getByText('Челлендж принят · проверено 2/3').waitFor();
   await load('fourth', 9000070); await reportReady();
-  await page.getByText('Цикл завершён · 3/3').waitFor();
+  await page.getByText('Цикл завершён · проверено 3/3').waitFor();
   await page.getByText(/Цель достигнута в 2 из 3 матчей/).waitFor();
   await snapshot('challenge-progress');
   await load('fourthMissing', 9000070); await reportReady();
-  await page.getByText('Цикл завершён · 3/3').waitFor();
+  await page.getByText('Цикл завершён · проверено 3/3').waitFor();
   results.checks.push('PR #68: reloading a completed challenge match without new last-hit data preserves 3/3');
   await load('other', 9000071); await reportReady();
-  assert.equal(await page.getByText('Цикл завершён · 3/3').count(), 0);
+  assert.equal(await page.getByText('Цикл завершён · проверено 3/3').count(), 0);
   results.checks.push('accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation');
 
   await page.route('**/apps/dota2/images/**', (route) => route.abort());
@@ -477,32 +528,32 @@ try {
   await load('empty'); await reportReady(); await snapshot('empty-data');
   assert.equal(await page.getByRole('button', { name: 'Принять челлендж', exact: true }).count(), 0);
 
-  await page.getByRole('button', { name: 'Матч и состав · изменить' }).click();
-  await page.getByLabel('Игрок', { exact: true }).selectOption('1');
+  await page.getByRole('button', { name: 'Другой матч или игрок' }).click();
+  await page.locator('input[name="match-player"][value="1"]').check();
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
   await page.getByText(/Для выбранного игрока определена другая роль/).waitFor(); await snapshot('unsupported-role');
   await page.setViewportSize({ width: 1440, height: 1100 });
   scenario = 'network-error';
-  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
-  await page.getByText('OpenDota временно недоступен. Попробуйте позже.').waitFor(); await snapshot('error');
+  await page.getByRole('button', { name: 'Найти матч', exact: true }).click();
+  await page.getByText('OpenDota временно недоступен. Попробуй позже.').waitFor(); await snapshot('error');
   scenario = 'empty-roster';
-  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByRole('button', { name: 'Найти матч', exact: true }).click();
   await page.getByText(/В матче не найдены игроки/).waitFor();
-  await load('malformed'); await page.getByText('Не удалось разобрать матч. Попробуйте ещё раз.').waitFor();
+  await load('malformed'); await page.getByText('Не удалось разобрать матч. Попробуй ещё раз.').waitFor();
   results.checks.push('initial/error/empty/partial/unsupported role; malformed success controlled');
 
   scenario = 'ready'; delay = 600;
-  await page.getByRole('button', { name: 'Загрузить игроков', exact: true }).click();
+  await page.getByRole('button', { name: 'Найти матч', exact: true }).click();
   await page.getByText('Загружаем состав матча…').waitFor(); await snapshot('loading');
-  await page.getByLabel('Match ID', { exact: true }).fill('9999999');
+  await page.getByLabel('ID матча', { exact: true }).fill('9999999');
   await page.waitForTimeout(800);
-  assert.equal(await page.getByLabel('Игрок', { exact: true }).count(), 0);
+  assert.equal(await page.locator('input[name="match-player"]').count(), 0);
   delay = 0;
   await load('ready'); await reportReady();
-  await page.getByRole('button', { name: 'Матч и состав · изменить' }).click();
+  await page.getByRole('button', { name: 'Другой матч или игрок' }).click();
   delay = 600;
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
-  await page.getByLabel('Игрок', { exact: true }).selectOption('1');
+  await page.locator('input[name="match-player"][value="1"]').check();
   await page.waitForTimeout(800);
   assert.equal(await page.getByRole('heading', { name: 'Личный план', exact: true }).count(), 0);
   delay = 0;
@@ -512,7 +563,7 @@ try {
   await load('ready'); await reportReady();
   await page.getByRole('button', { name: 'Принять челлендж', exact: true }).click();
   await page.getByText(/Челлендж не принят/).waitFor();
-  assert.equal(await page.getByText('Челлендж принят · 0/3').count(), 0);
+  assert.equal(await page.getByText('Челлендж принят · проверено 0/3').count(), 0);
   results.checks.push('blocked storage never reports accepted progress; focus and evidence navigation');
   assert.deepEqual(errors, []);
   results.consoleErrors = errors;

@@ -82,7 +82,7 @@ test('CSV matches sorted visible results, includes samples/final encounter count
   const rows = sortEncounters(encounters(plan), results, 7, 'rate_desc');
   const csv = exportCsv(plan, rows, results, 7);
   assert.ok(csv.startsWith('\uFEFF')); assert.ok(csv.includes('\r\n'));
-  assert.match(csv, /Победы 7/); assert.match(csv, /Игры 30/); assert.match(csv, /Покрытие 30/); assert.match(csv, /Вместе, всего/);
+  assert.match(csv, /Победы 7/); assert.match(csv, /Игры 30/); assert.match(csv, /Полнота истории 30/); assert.match(csv, /Вместе, всего/);
   assert.ok(csv.includes(`"'` + '=HYPERLINK(""x"");\nTest"'));
   for (const unsafe of ['=1+1', '+cmd', '-cmd', '@SUM(A1)', ' \t=1', '\tplain']) assert.ok(csvCell(unsafe).startsWith('"\''));
   assert.equal(csvCell('hello;"world"'), '"hello;""world"""');

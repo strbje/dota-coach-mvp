@@ -1,9 +1,12 @@
 'use client';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, Suspense, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PlayerRoster } from '@/components/coach/PlayerRoster';
+import { rememberMatch } from '@/lib/dota/localProgress';
 import { MatchIdForm } from '@/components/coach/MatchIdForm';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useLocale } from '@/components/layout/LocaleProvider';
-import { ActionLink, Alert, Badge, Button, Field, Panel, Select } from '@/components/ui';
+import { ActionLink, Alert, Badge, Button, Panel } from '@/components/ui';
 import type { MatchPlayerOption } from '@/lib/dota/selection/matchPlayers';
 import { getPostMatchErrorCopy, getUiCopy } from '@/lib/i18n/uiCopy';
 import { isPostMatchSuccessPayload, type PostMatchSuccessPayload as Payload } from '@/lib/dota/validation/postMatchResponse';
@@ -13,8 +16,17 @@ import styles from '@/components/coach/postMatch.module.css';
 import { accountId as isAccountId } from '@/lib/dota/winrates/calculation';
 
 export default function PostMatchPage() {
+  return <Suspense fallback={<PageContainer atmosphere><p role="status">Открываем разбор…</p></PageContainer>}><PostMatchRoute /></Suspense>;
+}
+function PostMatchRoute() {
+  const params = useSearchParams();
+  const id = params.get('matchId') ?? '';
+  const slot = params.get('playerSlot') ?? '';
+  return <PostMatchContent key={params.toString()} initialId={/^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) > 0 ? id : ''} initialSlot={slot} />;
+}
+function PostMatchContent({ initialId, initialSlot }: { initialId: string; initialSlot: string }) {
   const { locale } = useLocale();
-  const [matchId, setMatchId] = useState('8781054570');
+  const [matchId, setMatchId] = useState(initialId);
   const [showSelection, setShowSelection] = useState(true);
   const [data, setData] = useState<Payload | null>(null);
   const [players, setPlayers] = useState<MatchPlayerOption[]>([]);
@@ -35,8 +47,8 @@ export default function PostMatchPage() {
   useEffect(() => () => { playersAbortController.current?.abort(); analysisAbortController.current?.abort(); }, []);
   useEffect(() => { if (data) document.getElementById('report-title')?.focus(); }, [data]);
 
-  async function loadPlayers(event: FormEvent) {
-    event.preventDefault();
+  async function loadPlayers(event?: FormEvent) {
+    event?.preventDefault();
     setData(null);
     setPlayers([]);
     setPlayersLoaded(false);
@@ -61,6 +73,7 @@ export default function PostMatchPage() {
         return;
       }
       setPlayers(payload.players);
+      if (matchId === initialId && payload.players.some((player) => String(player.playerSlot) === initialSlot)) setSelectedSlot(initialSlot);
       setPlayersLoaded(true);
     } catch {
       if (controller.signal.aborted || requestSequence !== playersRequestSequence.current) return;
@@ -108,6 +121,8 @@ export default function PostMatchPage() {
         return false;
       }
       setData(payload);
+      const player = players.find((item) => String(item.playerSlot) === selectedSlot);
+      try { rememberMatch(localStorage, { matchId: payload.analysis.matchId, playerSlot: Number(selectedSlot), hero: payload.analysis.hero, heroId: payload.analysis.training.observation.heroId, accountId: payload.analysis.training.observation.accountId, heroKey: player?.heroKey, openedAt: Date.now() }); } catch { /* Reading a match must work without browser storage. */ }
       setShowSelection(false);
       return true;
     } catch {
@@ -142,14 +157,11 @@ export default function PostMatchPage() {
     setAnalysisErrorCode(null);
     setLoading(false);
   };
-  const playerOptionLabel = (player: MatchPlayerOption) => {
-    const identity = player.playerName ? ` · ${player.playerName}` : '';
-    const kda = player.kills !== undefined && player.deaths !== undefined && player.assists !== undefined
-      ? ` · ${player.kills}/${player.deaths}/${player.assists}`
-      : '';
-    return `${player.isRadiant ? 'Radiant' : 'Dire'} · ${player.heroName}${identity}${kda}`;
-  };
-
+  useEffect(() => {
+    if (initialId) void loadPlayers();
+    // A query change remounts this component. Sequence guards discard abandoned requests.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const selectedPlayer = players.find((player) => String(player.playerSlot) === selectedSlot);
   return (
     <PageContainer width="report" atmosphere className={styles.workspace}>
@@ -161,16 +173,17 @@ export default function PostMatchPage() {
             <Badge tone={analysis.result === 'win' ? 'success' : 'danger'}>{analysis.result === 'win' ? 'Победа' : 'Поражение'}</Badge>
             <span>{selectedPlayer?.playerName ?? 'Выбранный игрок'}</span>
             <span>Керри</span><span>{formatGameTime(analysis.durationSeconds)}</span><span>Матч {analysis.matchId}</span>
-            {isAccountId(analysis.training.observation.accountId) ? <ActionLink variant="ghost" href={`/winrates?matchId=${analysis.matchId}&accountId=${analysis.training.observation.accountId}`}>Доля побед участников</ActionLink> : null}
+            {isAccountId(analysis.training.observation.accountId) ? <ActionLink variant="ghost" href={`/winrates?matchId=${analysis.matchId}&accountId=${analysis.training.observation.accountId}`}>Винрейт игроков</ActionLink> : null}
           </div> : <p className="muted">Разбери ключевые отрезки и выбери одну цель на следующую игру.</p>}
         </div>
-        {analysis ? <Button type="button" variant="secondary" aria-expanded={showSelection} aria-controls="match-selection" onClick={() => setShowSelection((value) => !value)}>{showSelection ? 'Скрыть выбор' : 'Матч и состав · изменить'}</Button> : null}
+        {analysis ? <Button type="button" variant="secondary" aria-expanded={showSelection} aria-controls="match-selection" onClick={() => setShowSelection((value) => !value)}>{showSelection ? 'Скрыть выбор' : 'Другой матч или игрок'}</Button> : null}
       </header>
       <div id="match-selection" className={styles.entry} hidden={!showSelection}>
-        <Panel className={styles.formGrid}>
+        <Panel className={`${styles.formGrid} ${players.length ? styles.loadedForm : ''}`}>
           <form className="stack" onSubmit={loadPlayers} aria-busy={loadingPlayers}>
             <MatchIdForm matchId={matchId} label={copy.matchIdLabel} hint={copy.matchIdHint} onChange={changeMatchId} />
-            <Button type="submit" loading={loadingPlayers} loadingLabel="Загружаем игроков…">Загрузить игроков</Button>
+            <Button type="submit" loading={loadingPlayers} loadingLabel="Загружаем игроков…">Найти матч</Button>
+            <details className={styles.more}><summary>Где найти ID матча</summary><p className={styles.note}>В Dota 2 открой профиль → историю матчей → нужную игру. Скопируй номер матча из её подробностей.</p><Button type="button" variant="ghost" onClick={() => changeMatchId('8781054570')}>Подставить пример ID</Button><p className={styles.note}>Пример — чужой реальный матч; его данные могут быть недоступны.</p></details>
             {loadingPlayers ? <Alert tone="info">Загружаем состав матча…</Alert> : null}
             {playersErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, playersErrorCode)}</Alert> : null}
           </form>
@@ -178,12 +191,7 @@ export default function PostMatchPage() {
             {playersLoaded && players.length === 0 ? <Alert tone="unknown">В матче не найдены игроки, доступные для выбора.</Alert> : null}
             {players.length > 0 && players.length < 10 ? <Alert tone="unknown">Доступна часть состава: {players.length} из 10 игроков.</Alert> : null}
             {players.length > 0 ? <form className="stack" onSubmit={submit} aria-busy={loading}>
-              <Field id="match-player" label="Игрок" hint="Выбери героя и сторону. Сейчас полный разбор доступен для керри.">
-                <Select value={selectedSlot} onChange={(event) => changeSelectedSlot(event.target.value)}>
-                  <option value="">Выбери игрока</option>
-                  {players.map((player) => <option key={player.playerSlot} value={player.playerSlot}>{playerOptionLabel(player)}</option>)}
-                </Select>
-              </Field>
+              <PlayerRoster players={players} selected={selectedSlot} onChange={changeSelectedSlot} />
               <Button type="submit" disabled={selectedSlot === ''} loading={loading} loadingLabel={copy.loading}>{copy.submit}</Button>
               {loading ? <Alert tone="info">{copy.loadingStatus}</Alert> : null}
               {analysisErrorCode ? <Alert tone="danger">{getPostMatchErrorCopy(locale, analysisErrorCode)}</Alert> : null}

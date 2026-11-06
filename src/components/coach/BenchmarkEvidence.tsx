@@ -5,7 +5,7 @@ import { formatBenchmarkPosition } from '@/lib/dota/analyze/compareToBenchmarks'
 const METRIC_LABELS: Record<string, { name: string; suffix: string; digits?: number }> = {
   gpm: { name: 'золота в минуту', suffix: '' },
   xpm: { name: 'опыта в минуту', suffix: '' },
-  lhPerMin: { name: 'добито крипов в минуту', suffix: '', digits: 2 },
+  lhPerMin: { name: 'добиваний в минуту', suffix: '', digits: 2 },
   heroDamagePerMin: { name: 'Урон по героям/мин', suffix: '', digits: 1 },
   towerDamage: { name: 'Урон по строениям', suffix: '' },
   killsPerMin: { name: 'Убийства/мин', suffix: '', digits: 2 }

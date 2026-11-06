@@ -52,9 +52,8 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
         {otherPriorities.map((priority) => <article className={styles.priority} key={priority.id}>
           <Badge tone={analysis.priorities[0].id === priority.id ? 'brand' : 'unknown'}>{analysis.priorities[0].id === priority.id ? 'Основной фокус' : 'Дополнительно'}</Badge>
           <h3>{priority.title}</h3>
-          <p><strong>{priority.fact}</strong></p>
-          <p className="muted">{priority.meaning}</p>
           <p className={styles.action}>{priority.action}</p>
+          <details><summary>Почему этот шаг</summary><p><strong>{priority.fact}</strong></p><p className="muted">{priority.meaning}</p></details>
           {priority.id === 'economy' && farmDrop ? <Button type="button" variant="secondary" onClick={() => showEvidence(`farm-${farmDrop.from}`, farmDrop.from, farmDrop.to, true)}>Открыть отрезок фарма</Button> : null}
           {priority.target && priority.target.source !== 'training' ? <p>{priority.target.text} <span className={styles.note}>{priority.target.source === 'personal' ? 'Твой личный результат' : 'Внешний ориентир'}</span></p> : null}
         </article>)}
@@ -64,8 +63,7 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
       <TrainingChallengeCard key={`${analysis.matchId}:${analysis.training.observation.accountId ?? 'anonymous'}:${analysis.training.observation.heroId}`} analysis={analysis} onEvidence={() => showEvidence('lane-at-ten', 600)} />
     </aside>
     <div className={styles.main}>
-      <GradesGrid grades={analysis.grades} categories={['fights', 'map']} />
-      {review.strengths.length ? <section className={styles.strengths} aria-label="Что сохранить в своей игре"><h3>Что стоит повторить</h3>{review.strengths.map((text) => <p key={text}>{text}</p>)}</section> : null}
+      <GradesGrid benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} grades={analysis.grades} categories={['fights', 'map']} />
       <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
       {analysis.itemTimings.length ? <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" /> : <p className={styles.note}>Время ключевых покупок недоступно.</p>}
       <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence}
@@ -73,10 +71,11 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
       <details className="details">
         <summary>Подробности и источники</summary>
         <div className="details-content">
+          {review.strengths.length ? <section className={styles.strengths} aria-label="Что сохранить в своей игре"><h3>Что стоит повторить</h3>{review.strengths.map((text) => <p key={text}>{text}</p>)}</section> : null}
           <BenchmarkEvidence benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} />
           {Object.values(analysis.economyByPhase ?? {}).some((phase) => phase && (phase.lhPerMinuteInPhase !== undefined || phase.goldPerMinuteInPhase !== undefined || phase.xpPerMinuteInPhase !== undefined)) ? <PhaseBreakdown economyByPhase={analysis.economyByPhase} deathsByPhase={analysis.deathsByPhase} itemTimings={analysis.itemTimings} /> : null}
           {analysis.goldReasons?.grouped.length ? <GoldSources reasons={analysis.goldReasons} /> : null}
-          {analysis.farmProfile && Object.values(analysis.farmProfile).some((value) => value !== undefined) ? <Panel><h3>Добивания и убийства</h3><ul>{([['laneKills', 'Линейные крипы'], ['neutralKills', 'Нейтралы'], ['ancientKills', 'Древние'], ['heroKills', 'Герои'], ['roshanKills', 'Рошан'], ['towerKills', 'Башни']] as const).map(([key, label]) => analysis.farmProfile![key] === undefined ? null : <li key={key}>{label}: {analysis.farmProfile![key]}</li>)}</ul></Panel> : null}
+          {analysis.farmProfile && Object.values(analysis.farmProfile).some((value) => value !== undefined) ? <Panel><h3>Добивания и убийства</h3><ul>{([['laneKills', 'Крипы на линии'], ['neutralKills', 'Нейтралы'], ['ancientKills', 'Эншенты'], ['heroKills', 'Герои'], ['roshanKills', 'Рошан'], ['towerKills', 'Башни']] as const).map(([key, label]) => analysis.farmProfile![key] === undefined ? null : <li key={key}>{label}: {analysis.farmProfile![key]}</li>)}</ul></Panel> : null}
           <p className="muted">Источник: OpenDota{analysis.stratz?.deathTimings ? ', события смертей — STRATZ' : ''}.</p>
         </div>
       </details>

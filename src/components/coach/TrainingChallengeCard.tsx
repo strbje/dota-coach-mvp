@@ -63,21 +63,20 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
     <span className="eyebrow">Линия и тренировка</span>
     <h3>К 10:00</h3>
     <dl className={styles.laneFacts}>
-      <div><dt>Добито крипов</dt><dd>{observation.lastHitsAt10 ?? 'Нет данных'}</dd></div>
+      <div><dt>Добивания</dt><dd>{observation.lastHitsAt10 ?? 'Нет данных'}</dd></div>
       <div><dt>Смерти</dt><dd>{deaths ?? 'Нет данных'}</dd></div>
       {goal ? <div><dt>Цель · 3 матча</dt><dd className={styles.targetGoal}>{goal.target}</dd></div> : null}
     </dl>
-    {goal ? <p className={styles.note}>Добивания включают нейтралов. Цель — +5 к {challenge ? 'исходному' : 'этому'} результату; это тренировка, а не норма.</p> : <p className={styles.note}>Добивания к 10:00 недоступны — автоматическую цель пока не предлагаем.</p>}
+    {goal ? <p className={styles.note}>Цель — +5 к {challenge ? 'исходному' : 'этому'} результату. Тренируем добивания, включая нейтралов.</p> : <p className={styles.note}>Добивания к 10:00 недоступны — автоматическую цель пока не предлагаем.</p>}
     {lanePriorities.map((priority, index) => <article className={styles.priority} key={priority.id}>
       <Badge tone={index === 0 ? 'brand' : 'unknown'}>{analysis.priorities[0].id === priority.id ? 'Основной фокус' : 'Дополнительно'}</Badge>
-      <h4>{priority.title}</h4><p className="muted">{priority.meaning}</p><p className={styles.action}>{priority.action}</p>
+      <h4>{priority.title}</h4><p className={styles.action}>{priority.action}</p><details><summary>Почему этот шаг</summary><p className="muted">{priority.meaning}</p></details>
     </article>)}
-    {goal && !lanePriorities.some((priority) => priority.id === 'lane-farm') ? <p className={styles.action}>{goal.action}</p> : null}
-    {analysis.review.timeline.some((event) => event.id === 'lane-at-ten') ? <Button type="button" variant="ghost" className={styles.factorLink} onClick={onEvidence}>Посмотреть отрезок ↗</Button> : null}
-    {efficiency !== undefined ? <details className={styles.more}><summary>Эффективность линии · {Math.round(efficiency)}%</summary><p className={styles.note}>Исходный показатель OpenDota. Это не оценка из 100 и не положение среди игроков; сопоставимого ориентира для оценки линии нет.</p></details> : null}
+    {!goal && analysis.review.timeline.some((event) => event.id === 'lane-at-ten') ? <Button type="button" variant="ghost" onClick={onEvidence}>Посмотреть отрезок ↗</Button> : null}
     <div aria-live="polite" aria-atomic="true">
       {challenge && progress ? <div className="stack">
-        <Badge tone={progress.complete ? 'success' : 'info'}>{progress.complete ? 'Цикл завершён' : 'Челлендж принят'} · {progress.counted.length}/3</Badge>
+        <Badge tone={progress.complete ? 'success' : 'info'}>{progress.complete ? 'Цикл завершён' : 'Челлендж принят'} · проверено {progress.counted.length}/3</Badge>
+        {!progress.complete ? <p className={styles.note}>Цель достигнута в {progress.successes} матчах.</p> : null}
         <div className={styles.progress}>
           {[0, 1, 2].map((index) => {
             const entry = progress.counted[index];
@@ -105,9 +104,13 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
       <Button type="button" variant="ghost" onClick={clear}>Снять челлендж</Button>
     </> : null}
     {goal ? <>
-    <p className={styles.note}>Прогресс хранится только в этом браузере.</p>
+    {challenge || canAccept ? <p className={styles.note}>После принятия цели открывай разборы следующих подходящих матчей — прогресс обновится автоматически. Он хранится только в этом браузере.</p> : null}
     <details className={styles.more}><summary>Как проверяем цель</summary>
-      {observation.lastHitsAt10Source === 'stratz' ? <p className={styles.note}>Текущий результат посчитан по полному ряду добиваний STRATZ до 10:00, включая нейтралов и подконтрольных существ.</p> : null}
+    {goal && !lanePriorities.some((priority) => priority.id === 'lane-farm') ? <p className={styles.action}>{goal.action}</p> : null}
+    {analysis.review.timeline.some((event) => event.id === 'lane-at-ten') ? <Button type="button" variant="ghost" className={styles.factorLink} onClick={onEvidence}>Посмотреть отрезок ↗</Button> : null}
+    {efficiency !== undefined ? <details className={styles.more}><summary>Эффективность линии · {Math.round(efficiency)}%</summary><p className={styles.note}>Исходный показатель OpenDota. Это не оценка из 100 и не положение среди игроков; сопоставимого ориентира для оценки линии нет.</p></details> : null}
+
+      {observation.lastHitsAt10Source === 'stratz' ? <p className={styles.note}>Текущий результат посчитан по полному ряду добиваний STRATZ до 10:00, включая нейтралов и добивания подконтрольными существами.</p> : null}
       <p>Выполни цель в каждом из трёх следующих подходящих матчей. Открой их разборы — сравним реальные значения автоматически.</p>
       <p className={styles.note}>Область: тот же игрок, {analysis.hero}, керри, тот же режим и тип лобби. Считаются матчи, сыгранные после принятия цели. Нет данных к 10:00 — нет зачёта и нет неудачи. Это тренировка, а не норма героя или ранга; она не гарантирует победу.</p>
     </details>

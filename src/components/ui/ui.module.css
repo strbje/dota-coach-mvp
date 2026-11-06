@@ -19,3 +19,5 @@
 .control { width: 100%; min-height: var(--control-size); padding: var(--space-2) var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-control); background: var(--color-background); color: var(--color-text); font: inherit; }
 .control[aria-invalid='true'] { border-color: var(--color-danger); }
 .alert { padding: var(--space-3) var(--space-4); border: var(--border-width) solid currentColor; border-radius: var(--radius-control); }
+.heroPortrait { width: var(--space-12); aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: var(--radius-control); overflow: hidden; background: var(--color-surface-raised); color: var(--color-text-secondary); flex-shrink: 0; }
+.heroPortrait img { width: 100%; height: 100%; object-fit: cover; }

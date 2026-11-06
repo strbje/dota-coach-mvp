@@ -323,7 +323,7 @@ test('low lane efficiency without lane deaths produces farm-only adjustment', ()
   input.player!.laneReview = { source: 'opendota', deathsBefore10: 0, laneEfficiencyPct: 55, lhAt10: 48 };
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   assert.equal(analysis.priorities[0].id, 'lane-farm');
-  assert.match(analysis.priorities[0].fact, /48 добитых крипов.*55%.*смертей до 10:00 — 0/);
+  assert.match(analysis.priorities[0].fact, /48 добиваний.*55%.*смертей до 10:00 — 0/);
   assert.equal(analysis.finalVerdict.nextMatchFocus, analysis.priorities[0].target?.text);
   assert.match(analysis.priorities[0].action, /Пересмотри первые 10 минут/);
   assert.doesNotMatch(analysis.nextGameAdjustments.join(' '), /смерт/);
@@ -377,7 +377,7 @@ test('confirmed zero deaths with low lane efficiency produces only a farm recomm
   input.player!.laneReview = { source: 'opendota', lhAt10: 30, deathsBefore10: 0, laneEfficiencyPct: 50 };
   const analysis = runCarryPostMatchRules(input, undefined, {}, lifestealerCarryOverride);
   assert.equal(analysis.priorities[0].id, 'lane-farm');
-  assert.match(analysis.priorities[0].fact, /30 добитых крипов.*50%.*смертей до 10:00 — 0/);
+  assert.match(analysis.priorities[0].fact, /30 добиваний.*50%.*смертей до 10:00 — 0/);
   assert.doesNotMatch(`${analysis.priorities[0].meaning} ${analysis.priorities[0].action}`, /разобрать смерти|перед каждой смертью|Несколько ранних смертей/i);
 });
 
@@ -537,5 +537,5 @@ test('an existing economy priority opens the measured farm drop even without min
   assert.doesNotMatch(analysis.priorities[0].meaning, /недостаточно|ниже.*OpenDota/);
   assert.deepEqual(analysis.grades, base.grades);
   assert.deepEqual(analysis.review.advantage, base.review.advantage);
-  assert.equal(analysis.review.timeline.find((event) => event.id === 'lane-at-ten')?.label, '60 добитых крипов');
+  assert.equal(analysis.review.timeline.find((event) => event.id === 'lane-at-ten')?.label, '60 добиваний');
 });

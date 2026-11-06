@@ -1,0 +1,388 @@
+{
+  "captureSha256": "2e8b153a247b862d8f713c41e069891fe0c25627b4be06226c0eed2ba79501b0",
+  "capturedAt": "2026-11-03T20:41:05.432Z",
+  "replayEvidenceSha256": "81525695edf7b209db45127ba76ca23a88b69caa06b69992d9b5202491ac9078",
+  "synthetic": false,
+  "verification": "Original saved response checked offline; target identities taken from the previously decoded real replays. No new live API call, replay decode, visual replay viewing or coordinate validation.",
+  "productReady": false,
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "slot": 129,
+      "total": 302,
+      "counts": {
+        "lane": 117,
+        "neutral": 140,
+        "unclassified": 44,
+        "ancient": 1
+      },
+      "unknownReasons": {
+        "all_false": 44
+      },
+      "targets": {
+        "npc_dota_neutral_grown_frog": 15,
+        "npc_dota_neutral_froglet": 11,
+        "npc_dota_neutral_grown_frog_mage": 8,
+        "npc_dota_neutral_froglet_mage": 5,
+        "npc_dota_roshan": 1,
+        "npc_dota_neutral_ancient_frog": 2,
+        "npc_dota_neutral_ancient_frog_mage": 1,
+        "npc_dota_goodguys_tower2_bot": 1
+      },
+      "executors": {
+        "skeleton": 7,
+        "hero": 37
+      },
+      "decodeSha256": "aeb8f2e1edaeb0cba43c659178de21d962e29bc02ec4a93c8a272d9844e31905",
+      "examples": [
+        {
+          "index": 65,
+          "time": 676,
+          "replayTime": 676.26668,
+          "npcId": 897,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_grown_frog",
+          "executor": "skeleton"
+        },
+        {
+          "index": 66,
+          "time": 679,
+          "replayTime": 679.06668,
+          "npcId": 896,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_froglet",
+          "executor": "hero"
+        },
+        {
+          "index": 67,
+          "time": 683,
+          "replayTime": 683.73338,
+          "npcId": 900,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_grown_frog_mage",
+          "executor": "skeleton"
+        },
+        {
+          "index": 129,
+          "time": 1115,
+          "replayTime": 1115.16668,
+          "npcId": 899,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_froglet_mage",
+          "executor": "hero"
+        },
+        {
+          "index": 221,
+          "time": 1688,
+          "replayTime": 1688.63328,
+          "npcId": 133,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_roshan",
+          "executor": "hero"
+        },
+        {
+          "index": 267,
+          "time": 1880,
+          "replayTime": 1880.0669800000003,
+          "npcId": 898,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_ancient_frog",
+          "executor": "hero"
+        },
+        {
+          "index": 270,
+          "time": 1888,
+          "replayTime": 1888.26698,
+          "npcId": 901,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_ancient_frog_mage",
+          "executor": "hero"
+        },
+        {
+          "index": 274,
+          "time": 1913,
+          "replayTime": 1914.00028,
+          "npcId": 21,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_goodguys_tower2_bot",
+          "executor": "hero"
+        }
+      ]
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "slot": 1,
+      "total": 281,
+      "counts": {
+        "lane": 163,
+        "unclassified": 33,
+        "neutral": 76,
+        "ancient": 9
+      },
+      "unknownReasons": {
+        "all_false": 33
+      },
+      "targets": {
+        "npc_dota_sentry_wards": 1,
+        "npc_dota_neutral_grown_frog_mage": 3,
+        "npc_dota_warlock_minor_imp": 4,
+        "npc_dota_neutral_froglet": 6,
+        "npc_dota_neutral_grown_frog": 5,
+        "npc_dota_neutral_froglet_mage": 3,
+        "npc_dota_miniboss": 1,
+        "npc_dota_badguys_tower2_top": 1,
+        "npc_dota_clinkz_skeleton_archer": 4,
+        "npc_dota_badguys_tower3_bot": 1,
+        "npc_dota_badguys_range_rax_bot": 1,
+        "npc_dota_badguys_fillers": 1,
+        "npc_dota_badguys_range_rax_mid": 1,
+        "npc_dota_badguys_melee_rax_mid": 1
+      },
+      "executors": {
+        "hero": 28,
+        "skeleton": 5
+      },
+      "decodeSha256": "ed68d6e16d5e1e4daf5f90d46414c320da93304a036677700785948403df61fa",
+      "examples": [
+        {
+          "index": 5,
+          "time": 121,
+          "replayTime": 121.20000999999999,
+          "npcId": 111,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_sentry_wards",
+          "executor": "hero"
+        },
+        {
+          "index": 80,
+          "time": 713,
+          "replayTime": 713.90001,
+          "npcId": 900,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_grown_frog_mage",
+          "executor": "skeleton"
+        },
+        {
+          "index": 88,
+          "time": 801,
+          "replayTime": 801.2333100000001,
+          "npcId": 863,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_warlock_minor_imp",
+          "executor": "skeleton"
+        },
+        {
+          "index": 102,
+          "time": 874,
+          "replayTime": 874.7666099999999,
+          "npcId": 896,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_froglet",
+          "executor": "hero"
+        },
+        {
+          "index": 103,
+          "time": 879,
+          "replayTime": 879.4334100000001,
+          "npcId": 897,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_grown_frog",
+          "executor": "hero"
+        },
+        {
+          "index": 134,
+          "time": 1000,
+          "replayTime": 1000.4667099999999,
+          "npcId": 899,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_neutral_froglet_mage",
+          "executor": "hero"
+        },
+        {
+          "index": 192,
+          "time": 1240,
+          "replayTime": 1240.20011,
+          "npcId": 861,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_miniboss",
+          "executor": "skeleton"
+        },
+        {
+          "index": 236,
+          "time": 1423,
+          "replayTime": 1423.63351,
+          "npcId": 29,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_tower2_top",
+          "executor": "skeleton"
+        },
+        {
+          "index": 256,
+          "time": 1507,
+          "replayTime": 1507.46671,
+          "npcId": 265,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_clinkz_skeleton_archer",
+          "executor": "hero"
+        },
+        {
+          "index": 268,
+          "time": 1603,
+          "replayTime": 1603.33341,
+          "npcId": 34,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_tower3_bot",
+          "executor": "hero"
+        },
+        {
+          "index": 269,
+          "time": 1614,
+          "replayTime": 1615.03351,
+          "npcId": 49,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_range_rax_bot",
+          "executor": "hero"
+        },
+        {
+          "index": 273,
+          "time": 1630,
+          "replayTime": 1630.83341,
+          "npcId": 37,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_fillers",
+          "executor": "hero"
+        },
+        {
+          "index": 274,
+          "time": 1647,
+          "replayTime": 1647.06681,
+          "npcId": 48,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_range_rax_mid",
+          "executor": "hero"
+        },
+        {
+          "index": 276,
+          "time": 1656,
+          "replayTime": 1656.86671,
+          "npcId": 45,
+          "attacker": 42,
+          "flags": {
+            "isCreep": false,
+            "isNeutral": false,
+            "isAncient": false
+          },
+          "target": "npc_dota_badguys_melee_rax_mid",
+          "executor": "hero"
+        }
+      ]
+    }
+  ]
+}

@@ -118,7 +118,7 @@ export type PreGameAnalysis = {
   hero: HeroName;
   role: RoleName;
   lane: {
-    difficulty: 'easy' | 'medium' | 'hard';
+    difficulty: 'easy' | 'medium' | 'hard' | 'unknown';
     reasons: string[];
   };
   threats: string[];

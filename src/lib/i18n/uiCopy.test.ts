@@ -20,7 +20,7 @@ test('localizes every controlled post-match error code', () => {
 });
 
 test('unknown post-match error codes use locale-specific generic copy', () => {
-  assert.equal(getPostMatchErrorCopy('ru', 'UNKNOWN'), 'Не удалось разобрать матч. Попробуйте ещё раз.');
+  assert.equal(getPostMatchErrorCopy('ru', 'UNKNOWN'), 'Не удалось разобрать матч. Попробуй ещё раз.');
   assert.equal(getPostMatchErrorCopy('en', 'UNKNOWN'), 'Could not review the match. Please try again.');
 });
 
@@ -33,6 +33,6 @@ test('pre-game unsupported input is localized in English', () => {
 });
 
 test('unknown pre-game error codes use the locale-specific failure fallback', () => {
-  assert.equal(getPreGameErrorCopy('ru', 'SOMETHING_NEW'), 'Не удалось составить план. Попробуйте ещё раз.');
+  assert.equal(getPreGameErrorCopy('ru', 'SOMETHING_NEW'), 'Не удалось составить план. Попробуй ещё раз.');
   assert.equal(getPreGameErrorCopy('en', undefined), 'Could not build the plan. Please try again.');
 });

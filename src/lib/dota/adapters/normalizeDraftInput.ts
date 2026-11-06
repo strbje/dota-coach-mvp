@@ -1,7 +1,8 @@
 import type { PreGameDraftInput } from '@/lib/dota/types/domain';
+import { laneHero } from '../validation/preGameDraft';
 
 function clean(name: string): string {
-  return name.trim();
+  return laneHero(name);
 }
 
 export function normalizeDraftInput(input: PreGameDraftInput): PreGameDraftInput {

@@ -1,3 +1,5 @@
+'use client';
+import { useId, useState } from 'react';
 import { Button, Panel } from '@/components/ui';
 import { farmChart, farmTypes } from '@/lib/dota/analyze/farmChart';
 import type { FarmIntervalReport } from '@/lib/dota/analyze/farmIntervals';
@@ -8,6 +10,9 @@ const pace = (value: number) => value.toLocaleString('ru-RU', { maximumFractionD
 const range = (from: number, to: number) => `${formatGameTime(from)}–${formatGameTime(to)}`;
 
 export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalReport; onEvidence: (from: number, to: number, endExclusive: boolean) => void }) {
+  const [selectedIndex, setSelectedIndex] = useState<number>();
+  const [previewIndex, setPreviewIndex] = useState<number>();
+  const detailsId = useId();
   if (!report) return null;
   const { intervals, highlightIndex } = report;
   const current = highlightIndex !== undefined ? intervals[highlightIndex] : undefined;
@@ -15,42 +20,50 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
   const hasData = intervals.some((interval) => interval.lastHits !== undefined || interval.breakdown);
   if (!hasData) return <p className={styles.note}>Фарм по времени недоступен: нет пригодных минутных счётчиков или событий добиваний. Это не означает отсутствие фарма.</p>;
   const chart = farmChart(report);
+  const activeIndex = Math.min(selectedIndex ?? highlightIndex ?? 0, intervals.length - 1);
+  const inspected = chart.bars[previewIndex ?? activeIndex];
   const split = chart.bars.some((bar) => bar.segments);
   const hasPace = chart.bars.some((bar) => bar.perMinute !== undefined);
   const show = (index: number) => onEvidence(intervals[index].from, intervals[index].to, index < intervals.length - 1);
   return <Panel className={styles.chartPanel}>
     <h2>Фарм по времени</h2>
-    <p className={styles.note}>{hasPace ? 'Добито крипов в минуту · нажми на столбец, чтобы открыть события отрезка.' : 'Полный темп недоступен. Частичная разбивка событий — в деталях.'}</p>
+    <p className={styles.note}>{hasPace ? 'Добивания в минуту · выбери столбец, чтобы увидеть числа по типам.' : 'Полный темп недоступен. Частичная разбивка событий — в деталях.'}</p>
     {split ? <ul className={styles.farmLegend} aria-label="Типы добиваний">{farmTypes.map((type) => <li key={type.key}><i className={styles[type.key]} aria-hidden="true" />{type.label}</li>)}</ul> : hasPace ? <p className={styles.note}>Общий темп · полной разбивки по типам нет.</p> : null}
     {hasPace ? <div className={styles.farmChart}>
       <div className={styles.farmAxis} aria-hidden="true"><span>{pace(chart.max)}</span><span>{pace(chart.max / 2)}</span><span>0</span></div>
       <div className={styles.farmPlot}>
         <ol className={styles.farmBars} aria-label="Темп фарма по отрезкам">
           {chart.bars.map((bar, index) => <li key={bar.from}>
-            <Button type="button" variant="ghost" className={styles.farmBar} aria-controls="team-advantage"
-              aria-label={`События ${range(bar.from, bar.to)}: ${bar.perMinute === undefined ? 'темп неизвестен' : `${pace(bar.perMinute)} крипа в минуту`}${bar.partial ? ', неполный отрезок' : ''}${bar.short ? ', короткое окончание' : ''}`}
-              onClick={() => show(index)}>
+            <Button type="button" variant="ghost" className={styles.farmBar} aria-controls={detailsId} aria-pressed={index === activeIndex}
+              aria-label={`Фарм ${range(bar.from, bar.to)}: ${bar.perMinute === undefined ? 'темп неизвестен' : `${pace(bar.perMinute)} добиваний в минуту`}${bar.partial ? ', неполный отрезок' : ''}${bar.short ? ', короткое окончание' : ''}`}
+              onClick={() => { setSelectedIndex(index); setPreviewIndex(undefined); }} onMouseEnter={() => setPreviewIndex(index)} onMouseLeave={() => setPreviewIndex(undefined)} onFocus={() => setPreviewIndex(index)} onBlur={() => setPreviewIndex(undefined)}>
               <span className={styles.barValue}>{bar.perMinute === undefined ? '—' : pace(bar.perMinute)}{bar.partial || bar.short ? '*' : ''}</span>
               <span className={styles.barTrack} aria-hidden="true">
-                {bar.perMinute === undefined ? <span className={styles.barMissing}>Нет данных</span> : <span className={`${styles.barStack} ${index === highlightIndex ? styles.barHighlight : ''}`} style={{ height: `${bar.perMinute / chart.max * 100}%` }}>
+                {bar.perMinute === undefined ? <span className={styles.barMissing}>Нет данных</span> : <span className={`${styles.barStack} ${index === activeIndex ? styles.barHighlight : ''}`} style={{ height: `${bar.perMinute / chart.max * 100}%` }}>
                   {bar.segments ? bar.segments.map((part) => <span key={part.key} className={styles[part.key]} style={{ height: `${bar.perMinute ? part.rate / bar.perMinute * 100 : 0}%` }} />) : <span className={styles.total} />}
                 </span>}
               </span>
-              <span className={styles.barLabel}>{formatGameTime(bar.from)}<br />{formatGameTime(bar.to)}</span>
+              <span className={styles.barLabel}>{formatGameTime(bar.from)}<br />{formatGameTime(bar.to)}<span className={styles.recommended}>{index === highlightIndex ? 'Проверь' : '\u00a0'}</span></span>
             </Button>
           </li>)}
         </ol>
       </div>
     </div> : null}
+    {hasPace && inspected ? <section id={detailsId} className={styles.farmReadout} aria-label="Числа выбранного отрезка">
+      <h3>{range(inspected.from, inspected.to)} · {inspected.lastHits === undefined ? 'число добиваний недоступно' : `${inspected.lastHits} добиваний`}</h3>
+      {inspected.segments && inspected.breakdown ? <dl>{farmTypes.map((type) => <div key={type.key}><dt>{type.label}</dt><dd>{inspected.breakdown![type.key]}</dd></div>)}</dl> : <p className={styles.note}>Полной разбивки по типам для этого отрезка нет.</p>}
+      <Button type="button" variant="secondary" aria-controls="team-advantage" onClick={() => onEvidence(inspected.from, inspected.to, inspected.to !== intervals.at(-1)?.to)}>События {range(inspected.from, inspected.to)}</Button>
+    </section> : null}
+    {split ? <details><summary>Что означают типы добиваний</summary><p className={styles.note}>Эншенты — древние нейтралы. «Тип не определён» уже входит в общий счёт: источник не дал однозначной категории. Это могут быть и другие юниты или объекты.</p></details> : null}
     {chart.bars.some((bar) => bar.short || bar.partial) ? <p className={styles.note}>* Темп за доступную часть отрезка. Короткие и неполные отрезки не участвуют в выборе снижения.</p> : null}
     {current && previous ? <div className={styles.farmObservation}>
-      <h3>{range(current.from, current.to)} · темп снизился с {pace(previous.perMinute!)} до {pace(current.perMinute!)} крипа/мин</h3>
+      <h3>{range(current.from, current.to)} · темп снизился с {pace(previous.perMinute!)} до {pace(current.perMinute!)} добиваний/мин</h3>
       <p className={styles.note}>Самое заметное снижение между полными пятиминутками. Проверь, на что ушло время: снижение само по себе не означает ошибку.</p>
       <Button type="button" variant="secondary" aria-controls="team-advantage" onClick={() => show(highlightIndex!)}>Посмотреть события отрезка</Button>
     </div> : null}
     <details className={styles.more}>
     <summary>Точные значения и источники · {intervals.length}</summary>
-    <p className={styles.note}>{report.source === 'stratz' ? `Источник: STRATZ. Сверено ${report.receivedEvents}/${report.reportedLastHits} добиваний, включая подконтрольных существ.` : report.source === 'opendota' ? 'Источник темпа: минутные срезы OpenDota.' : 'Полного ряда для расчёта темпа нет.'}
+    <p className={styles.note}>{report.source === 'stratz' ? `Источник: STRATZ. Сверено ${report.receivedEvents}/${report.reportedLastHits} добиваний, включая добивания подконтрольными существами.` : report.source === 'opendota' ? 'Источник темпа: минутные срезы OpenDota.' : 'Полного ряда для расчёта темпа нет.'}
       {report.eventCoverage === 'partial' ? ` Разбивка по типам неполная: получено ${report.receivedEvents} событий. Она показана только в деталях.` : ''}
       {report.rejectedEvents ? ` Событий без пригодного времени: ${report.rejectedEvents}.` : ''}
     </p>
@@ -65,9 +78,9 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
         {interval.breakdown ? <details className={styles.farmTypes}>
           <summary>{report.eventCoverage === 'complete' ? 'Типы добиваний' : 'Типы в полученной части событий'} · STRATZ</summary>
           <dl>
-            <div><dt>Линейные крипы</dt><dd>{interval.breakdown.lane}</dd></div>
+            <div><dt>Крипы на линии</dt><dd>{interval.breakdown.lane}</dd></div>
             <div><dt>Обычные нейтралы</dt><dd>{interval.breakdown.neutral}</dd></div>
-            <div><dt>Древние</dt><dd>{interval.breakdown.ancient}</dd></div>
+            <div><dt>Эншенты</dt><dd>{interval.breakdown.ancient}</dd></div>
             <div><dt>Тип не определён</dt><dd>{interval.breakdown.unclassified}</dd></div>
           </dl>
         </details> : null}
