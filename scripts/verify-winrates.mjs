@@ -132,9 +132,19 @@ async function editInputs() {
   if (await edit.isVisible()) await edit.click();
 }
 async function complete(count = 10) { await page.getByText(new RegExp(`Обработано ${count} из ${count} участников`)).waitFor(); }
-const report = { synthetic: true, widths: [], checks: [] };
+async function headerGeometry() {
+  await page.evaluate(() => document.fonts.ready);
+  return page.getByRole('banner').evaluate((header) => {
+    const top = header.getBoundingClientRect().top;
+    return [header.firstElementChild, header.querySelector('a'), header.querySelector('nav'), header.querySelector('[role="group"]')].map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y - top, width: rect.width, height: rect.height };
+    });
+  });
+}
+const report = { synthetic: true, widths: [], checks: [], headerPositions: {} };
 try {
-  for (const [path, asset] of [['/', 'home-ancient'], ['/pre-game', 'pre-game-shop'], ['/winrates', 'winrates-river'], ['/post-match', 'post-match-battlefield']]) {
+  for (const [path, asset] of [['/', 'home-allstars'], ['/pre-game', 'pre-game-shop'], ['/winrates', 'winrates-river'], ['/post-match', 'post-match-battlefield']]) {
     await page.goto(`${base}${path}`);
     await page.locator('main').waitFor();
     const decoration = await page.locator('main').evaluate((main) => {
@@ -145,13 +155,34 @@ try {
     assert.equal(decoration.pointerEvents, 'none');
     const image = await page.request.get(`${base}/images/${asset}.webp`);
     assert.equal(image.status(), 200); assert.match(image.headers()['content-type'], /image\/webp/);
-    for (const width of [320, 390, 768, 1440, 1920]) {
+    for (const width of [320, 390, 768, 900, 901, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 1050 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} fits ${width}`);
-      if (path !== '/winrates' && (width === 390 || width === 1440)) await shot(`${asset}-${width}`);
+      const geometry = await headerGeometry();
+      assert.ok(geometry[1].height < 30, 'brand stays on one line');
+      assert.equal(geometry[2].height, 44, 'navigation labels stay on one line');
+      if (path === '/') report.headerPositions[width] = geometry;
+      else assert.deepEqual(geometry, report.headerPositions[width], `${path}: logo, navigation and language controls must stay in the same position at ${width}px`);
+      if (path !== '/winrates' && [390, 1440, 1920].includes(width)) await shot(`${asset}-${width}`);
     }
   }
-  report.checks.push('four distinct local backgrounds, HTTP 200 WebP, non-interactive decoration; home/pre-game/post-match/winrates fit 320/390/768/1440/1920');
+  report.checks.push('four distinct local backgrounds including Allstars home, HTTP 200 WebP, non-interactive decoration; stable header geometry on every page at 320/390/768/900/901/1440/1920/2560 without wrapped brand/navigation');
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  for (const locale of ['RU', 'EN']) {
+    await page.getByRole('banner').getByRole('button', { name: locale, exact: true }).click();
+    let expected;
+    for (const path of ['/', '/post-match', '/pre-game', '/winrates', '/']) {
+      const link = page.getByRole('navigation').locator(`a[href="${path}"]`);
+      await link.click();
+      await page.waitForURL((url) => url.pathname === path);
+      assert.equal(await link.getAttribute('aria-current'), 'page');
+      const geometry = await headerGeometry();
+      if (!expected) expected = geometry;
+      else assert.deepEqual(geometry, expected, `${locale} header stays fixed on client navigation to ${path}`);
+    }
+  }
+  await page.getByRole('banner').getByRole('button', { name: 'RU', exact: true }).click();
+  report.checks.push('logo/menu/language positions remain unchanged during client navigation in both RU and EN; active link follows route');
   await page.goto(`${base}/winrates`);
   assert.equal(await page.getByLabel('Представление', { exact: true }).count(), 0);
   await page.getByLabel('Account ID · Steam32', { exact: true }).waitFor();

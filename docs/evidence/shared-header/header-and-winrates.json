@@ -1,0 +1,238 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920
+  ],
+  "checks": [
+    "four distinct local backgrounds including Allstars home, HTTP 200 WebP, non-interactive decoration; stable header geometry on every page at 320/390/768/900/901/1440/1920/2560 without wrapped brand/navigation",
+    "logo/menu/language positions remain unchanged during client navigation in both RU and EN; active link follows route",
+    "standalone account history without presentation selector; aligned form at 1440/1920; responsive 320/390/768; default historic cutoff explained; validation",
+    "rate ascending/descending and name sorting remain stable within each side",
+    "explicit selection; adjacent 5/5 rosters including selected player with side averages; responsive layout; expandable sample details; UTF-8 CSV download",
+    "Dire selection includes selected player; keyboard submit and visible focus",
+    "cancel/replace ignores delayed old responses; changing filters clears previous groups",
+    "anonymous roster waits for explicit selection; anonymous, restricted, empty, provider error and capped sample states",
+    "7-day and 30-day coverage is labelled independently while switching the mean window 7/30/7",
+    "anonymous selection does not reuse the deep-linked account when navigating to player history",
+    "empty API and HTTP retry failures preserve 30/100, source freshness, side means and CSV; successful retry replaces data and clears the refresh error",
+    "bounded first series; continuation by stable Match IDs; same capture time; final unique-player table",
+    "hero portraits from canonical roster metadata; anonymous hero retained; real 0% with 0/5; unique series people without arbitrary hero; long names and unavailable images",
+    "empty/error states; post-match deep link preselects account; active navigation",
+    "current mode is separately labelled and all participants share one capture time",
+    "45-second budget explicitly pauses the third match; no stuck progress; resume fetches only missing players and keeps capture time and first two matches"
+  ],
+  "headerPositions": {
+    "320": [
+      {
+        "x": 16,
+        "y": 0,
+        "width": 273,
+        "height": 118.796875
+      },
+      {
+        "x": 16,
+        "y": 12,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 16,
+        "y": 52.796875,
+        "width": 163,
+        "height": 44
+      },
+      {
+        "x": 191,
+        "y": 52.796875,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "390": [
+      {
+        "x": 16,
+        "y": 0,
+        "width": 343,
+        "height": 118.796875
+      },
+      {
+        "x": 16,
+        "y": 12,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 16,
+        "y": 52.796875,
+        "width": 233,
+        "height": 44
+      },
+      {
+        "x": 261,
+        "y": 52.796875,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "768": [
+      {
+        "x": 19.203125,
+        "y": 0,
+        "width": 714.59375,
+        "height": 118.796875
+      },
+      {
+        "x": 19.203125,
+        "y": 12,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 19.203125,
+        "y": 52.796875,
+        "width": 604.59375,
+        "height": 44
+      },
+      {
+        "x": 635.796875,
+        "y": 52.796875,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "900": [
+      {
+        "x": 22.5,
+        "y": 0,
+        "width": 840,
+        "height": 118.796875
+      },
+      {
+        "x": 22.5,
+        "y": 12,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 22.5,
+        "y": 52.796875,
+        "width": 730,
+        "height": 44
+      },
+      {
+        "x": 764.5,
+        "y": 52.796875,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "901": [
+      {
+        "x": 22.53125,
+        "y": 0,
+        "width": 840.9375,
+        "height": 64
+      },
+      {
+        "x": 22.53125,
+        "y": 19.59375,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 211.578125,
+        "y": 10,
+        "width": 541.890625,
+        "height": 44
+      },
+      {
+        "x": 765.46875,
+        "y": 5,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "1440": [
+      {
+        "x": 36,
+        "y": 0,
+        "width": 1353,
+        "height": 64
+      },
+      {
+        "x": 36,
+        "y": 19.59375,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 737.109375,
+        "y": 10,
+        "width": 541.890625,
+        "height": 44
+      },
+      {
+        "x": 1291,
+        "y": 5,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "1920": [
+      {
+        "x": 232.5,
+        "y": 0,
+        "width": 1440,
+        "height": 64
+      },
+      {
+        "x": 232.5,
+        "y": 19.59375,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 1020.609375,
+        "y": 10,
+        "width": 541.890625,
+        "height": 44
+      },
+      {
+        "x": 1574.5,
+        "y": 5,
+        "width": 98,
+        "height": 54
+      }
+    ],
+    "2560": [
+      {
+        "x": 552.5,
+        "y": 0,
+        "width": 1440,
+        "height": 64
+      },
+      {
+        "x": 552.5,
+        "y": 19.59375,
+        "width": 102.703125,
+        "height": 24.796875
+      },
+      {
+        "x": 1340.609375,
+        "y": 10,
+        "width": 541.890625,
+        "height": 44
+      },
+      {
+        "x": 1894.5,
+        "y": 5,
+        "width": 98,
+        "height": 54
+      }
+    ]
+  }
+}
