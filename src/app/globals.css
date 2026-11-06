@@ -1,7 +1,7 @@
 @import '../styles/tokens.css';
 
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
+html { color-scheme: dark; scrollbar-gutter: stable; }
 body { margin: 0; background: var(--color-background); color: var(--color-text); font-family: var(--font-body); line-height: 1.55; }
 a { color: inherit; }
 h1, h2, h3, h4 { margin: 0; font-family: var(--font-heading); line-height: 1.15; }
