@@ -1,7 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button, Panel } from '@/components/ui';
+import { HeroPortrait } from '@/components/ui/HeroPortrait';
 import type { MatchReview, PostMatchAnalysis } from '@/lib/dota/types/domain';
 import { formatGameTime } from '@/lib/dota/constants/items';
 import { allEventFilters, clusterEvents, resourceSegments, revealEvidence, timelineDomain, withinSelection, type EvidenceRequest, type EventFilters, type TimelineSelection } from '@/lib/dota/analyze/timelinePresentation';
@@ -11,7 +12,7 @@ import styles from './postMatch.module.css';
 const eventLabels: Record<keyof EventFilters, string> = { item: 'Покупки', death: 'Мои смерти', objective: 'Объекты', lane: 'Линия к 10:00' };
 const eventSymbols = { item: '◆', death: '×', objective: '⚑', lane: '10′' };
 
-export function MatchContextTimeline({ review, items, durationSeconds, evidence, dataAction }: { review: MatchReview; items: PostMatchAnalysis['itemTimings']; durationSeconds: number; evidence?: EvidenceRequest; dataAction?: ReactNode }) {
+export function MatchContextTimeline({ review, items, durationSeconds, evidence, heroKey }: { review: MatchReview; items: PostMatchAnalysis['itemTimings']; durationSeconds: number; evidence?: EvidenceRequest; heroKey?: string }) {
   const [sampleIndex, setSampleIndex] = useState(0);
   const sampleId = useId();
   const [metric, setMetric] = useState<'gold' | 'xp'>('gold');
@@ -84,7 +85,6 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence,
         {availableKinds.map((kind) => <label key={kind}><input type="checkbox" checked={filters[kind]} onChange={(event) => setFilters({ ...filters, [kind]: event.target.checked })} />{eventLabels[kind]}</label>)}
       </div> : null}
       {points.length ? <div className={styles.chartLabels}><span>+{Math.round(extent).toLocaleString('ru-RU')} · твоя команда впереди</span><span>Разница {availableMetric === 'gold' ? 'золота' : 'опыта'}</span></div> : <p className="muted">Динамика золота и опыта недоступна. Ниже — известные события матча.</p>}
-      {dataAction}
       <div className={styles.plotInset}>
         <div ref={plot} className={styles.plot}>
           {points.length ? <svg viewBox="0 0 800 200" preserveAspectRatio="none" role="img" aria-labelledby={titleId} className={styles.chart} onPointerMove={(event) => inspect(event.clientX, event.currentTarget.getBoundingClientRect())} onPointerDown={(event) => inspect(event.clientX, event.currentTarget.getBoundingClientRect())}>
@@ -105,7 +105,7 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence,
               const active = selected.some((event) => cluster.events.includes(event));
               const label = cluster.events.length === 1 ? `${formatGameTime(first.timeSeconds)} · ${first.label}` : `${formatGameTime(first.timeSeconds)}–${formatGameTime(last.timeSeconds)} · событий: ${cluster.events.length}`;
               return <Button key={first.id} type="button" variant="secondary" className={styles.eventMarker} style={{ left: `${position(cluster.time) * 100}%` }} aria-label={label} aria-pressed={active} aria-controls={listId} onClick={() => choose(first.timeSeconds, last.timeSeconds)}>
-                {cluster.events.length > 1 ? <span>{cluster.events.length}</span> : item ? <ItemIcon key={item.iconUrl ?? item.key} item={item} /> : <span aria-hidden="true">{eventSymbols[first.kind]}</span>}
+                {cluster.events.length > 1 ? <span>{cluster.events.length}</span> : item ? <ItemIcon key={item.iconUrl ?? item.key} item={item} /> : first.kind === 'death' && heroKey ? <span className={styles.deathPortrait}><HeroPortrait heroKey={heroKey} /><span aria-hidden="true">×</span></span> : <span aria-hidden="true">{eventSymbols[first.kind]}</span>}
               </Button>;
             })}
           </div>
@@ -121,7 +121,7 @@ export function MatchContextTimeline({ review, items, durationSeconds, evidence,
         <h3>{range ? `${formatGameTime(range.from)}${range.to !== range.from ? `–${formatGameTime(range.to)}` : ''} · события ${selected.length}` : 'События'}</h3>
         {selected.length ? <ol className={styles.timeline}>{selected.map((event) => {
           const item = itemFor(event.id);
-          return <li id={event.id} tabIndex={-1} key={event.id}><time>{formatGameTime(event.timeSeconds)}</time>{item ? <ItemIcon key={item.iconUrl ?? item.key} item={item} /> : <span className={styles.eventSymbol} aria-hidden="true">{eventSymbols[event.kind]}</span>}<div><strong>{event.label}</strong>{event.detail ? <span className={styles.note}>{event.detail}</span> : null}</div></li>;
+          return <li id={event.id} tabIndex={-1} key={event.id}><time>{formatGameTime(event.timeSeconds)}</time>{item ? <ItemIcon key={item.iconUrl ?? item.key} item={item} /> : event.kind === 'death' && heroKey ? <HeroPortrait heroKey={heroKey} /> : <span className={styles.eventSymbol} aria-hidden="true">{eventSymbols[event.kind]}</span>}<div><strong>{event.label}</strong>{event.detail ? <span className={styles.note}>{event.detail}</span> : null}</div></li>;
         })}</ol> : <p className="muted">{!review.timeline.length ? 'Таймкоды событий недоступны. Это не означает, что смертей или покупок не было.' : !visibleEvents.length ? 'Все события скрыты фильтрами.' : 'В выбранном отрезке нет событий включённых типов. Выбери другую отметку.'}</p>}
       </section>
       {visibleEvents.length ? <details className={styles.more}>

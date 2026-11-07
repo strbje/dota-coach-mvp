@@ -14,6 +14,7 @@ import { TrainingChallengeCard } from './TrainingChallengeCard';
 import { formatGameTime } from '@/lib/dota/utils/time';
 import { FarmIntervals } from './FarmIntervals';
 import { MatchParseControl } from './MatchParseControl';
+import { EarlyHeroDamage } from './EarlyHeroDamage';
 import styles from './postMatch.module.css';
 
 export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { analysis: PostMatchAnalysis; onRefresh?: () => Promise<boolean>; refreshing?: boolean }) {
@@ -45,6 +46,7 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
       </article>)}</div></details> : null}
       {review.timeline.some((event) => event.kind === 'death') ? <div className={styles.deathTimes} role="group" aria-label="Смерти по времени"><h3>Твои смерти</h3>{review.timeline.filter((event) => event.kind === 'death').map((event) => <Button key={event.id} type="button" variant="secondary" onClick={() => showEvidence(event.id, event.timeSeconds)}>{formatGameTime(event.timeSeconds)}</Button>)}</div> : null}
       {review.coverageNote ? <p className={styles.note}>{review.coverageNote}</p> : null}
+      {analysis.meta?.openDotaParsed === false && onRefresh ? <MatchParseControl key={analysis.matchId} matchId={analysis.matchId} onRefresh={onRefresh} refreshing={refreshing} /> : null}
     </Panel>
     <aside className={`${styles.plan} ${otherPriorities.length ? '' : styles.planSingle}`} aria-label="План на следующие игры">
       <div className={styles.planHeading}><span className="eyebrow">Твой следующий шаг</span><h2>Личный план</h2></div>
@@ -64,10 +66,11 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
     </aside>
     <div className={styles.main}>
       <GradesGrid benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} grades={analysis.grades} categories={['fights', 'map']} />
+      <EarlyHeroDamage report={analysis.earlyHeroDamage} onEvidence={() => showEvidence('early-damage', 0, 600)} />
       <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
       {analysis.itemTimings.length ? <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" /> : <p className={styles.note}>Время ключевых покупок недоступно.</p>}
       <MatchContextTimeline key={`${analysis.matchId}:${analysis.training.observation.accountId}:${analysis.training.observation.heroId}`} review={review} items={analysis.itemTimings} durationSeconds={analysis.durationSeconds} evidence={evidence}
-        dataAction={analysis.meta?.openDotaParsed === false && onRefresh ? <MatchParseControl key={analysis.matchId} matchId={analysis.matchId} onRefresh={onRefresh} refreshing={refreshing} /> : undefined} />
+        heroKey={analysis.earlyHeroDamage?.players.find((p) => p.selected)?.heroKey} />
       <details className="details">
         <summary>Подробности и источники</summary>
         <div className="details-content">

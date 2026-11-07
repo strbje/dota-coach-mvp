@@ -5,8 +5,8 @@ import { setHeroConstants } from '../../data/heroConstants';
 import { normalizeFarmEvents } from '../../normalize/farmEvents';
 
 /** Entirely synthetic. 9000066 is a fixture ID, not the owner's screenshot match. */
-export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; resources?: 'gold' | 'xp'; farmTargets?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
-  setHeroConstants({ heroKeyById: { 42: 'skeleton_king' }, heroNameByKey: { skeleton_king: 'Wraith King' } });
+export async function syntheticPostMatch(options: { earlyDamage?: boolean; matchId?: number; lastHitsAt10?: number; accountId?: number; startTime?: number; partial?: boolean; empty?: boolean; lowLane?: boolean; won?: boolean; temporal?: boolean; product?: boolean; resources?: 'gold' | 'xp'; farmTargets?: boolean; farm?: 'complete' | 'partial' | 'partialOnly' | 'gap' } = {}) {
+  setHeroConstants({ heroKeyById: { 42: 'skeleton_king', 5: 'crystal_maiden', 2: 'axe', 3: 'bane' }, heroNameByKey: { skeleton_king: 'Wraith King', crystal_maiden: 'Crystal Maiden', axe: 'Axe', bane: 'Bane' } });
   const times = Array.from({ length: 39 }, (_, minute) => minute * 60);
   const lhAt10 = options.lastHitsAt10 ?? 51;
   const selected = {
@@ -26,6 +26,10 @@ export async function syntheticPostMatch(options: { matchId?: number; lastHitsAt
     radiant_xp_adv: times.map((_, i) => i < 15 ? i * 120 : 1800 - (i - 15) * 470),
     objectives: [{ type: 'building_kill', time: 1120, key: 'npc_dota_badguys_tower1_mid' }, { type: 'building_kill', time: 1440, key: 'npc_dota_goodguys_tower2_mid' }, { type: 'CHAT_MESSAGE_ROSHAN_KILL', time: 1620 }, { type: 'building_kill', time: 2200, key: 'npc_dota_goodguys_melee_rax_mid' }]
   };
+  if (options.earlyDamage) {
+    Object.assign(selected, { lane: 1, hero_damage_t: times.map((_, i) => i * 450) });
+    payload.players!.push(...[{ player_slot: 1, hero_id: 5, rate: 350 }, { player_slot: 128, hero_id: 2, rate: 550 }, { player_slot: 129, hero_id: 3, rate: 0 }].map(({ rate, ...player }) => ({ ...player, lane: 1, times, hero_damage_t: times.map((_, i) => i * rate) })));
+  }
   if (options.temporal) {
     payload.radiant_gold_adv = times.map((_, i) => [0, 100, NaN, 300][i] ?? NaN);
     payload.radiant_xp_adv = times.map((_, i) => [0, 150, 230, 400][i] ?? NaN);

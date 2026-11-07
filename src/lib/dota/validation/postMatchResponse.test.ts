@@ -60,3 +60,17 @@ test('farm payload rejects unsafe coverage, counts and highlight indices before 
     assert.equal(accept({ ...targets, intervals: [{ ...targets.intervals[0], otherTargets }, targets.intervals[1]] }), false);
   }
 });
+
+test('early damage rejects malformed players, wrong identity, missing endpoints and inconsistent split', () => {
+  const analysis = { matchId: 123, hero: 'Test', durationSeconds: 600, grades: {}, finalVerdict: {}, priorities: [], itemTimings: [],
+    review: { headline: '', summary: '', factors: [], strengths: [], timeline: [], advantage: [] },
+    training: { observation: { matchId: 123, heroId: 54, role: 'carry', durationSeconds: 600 } } };
+  const row = { playerSlot: 0, heroId: 54, hero: 'Lifestealer', selected: true, ally: true, damage: 300, firstFive: 100, nextFive: 200 };
+  const accept = (earlyHeroDamage: unknown) => isPostMatchSuccessPayload({ analysis: { ...analysis, earlyHeroDamage } });
+  assert.equal(accept({ source: 'opendota', lane: 1, players: [row] }), true);
+  assert.equal(accept({ source: 'opendota', players: [{ ...row, damage: 0, firstFive: 0, nextFive: 0 }] }), true);
+  for (const patch of [{ damage: undefined }, { damage: -1 }, { firstFive: 20 }, { nextFive: undefined }, { heroId: 1 }, { selected: false }, { heroKey: {} }, { playerSlot: 5 }]) {
+    assert.equal(accept({ source: 'opendota', players: [{ ...row, ...patch }] }), false);
+  }
+  for (const players of [null, [], [null], [row, row]]) assert.equal(accept({ source: 'opendota', players }), false);
+});

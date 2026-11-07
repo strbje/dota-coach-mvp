@@ -1,7 +1,17 @@
 import { NextResponse } from 'next/server';
-import { ParseRequestError, requestMatchParse } from '@/lib/dota/clients/openDotaParse';
+import { getMatchParseState, isParseJobId, ParseRequestError, requestMatchParse } from '@/lib/dota/clients/openDotaParse';
 
 export const runtime = 'nodejs';
+
+export async function GET(request: Request) {
+  const jobId = new URL(request.url).searchParams.get('jobId');
+  if (!isParseJobId(jobId)) return NextResponse.json({ error: 'invalid_job' }, { status: 400 });
+  try { return NextResponse.json(await getMatchParseState(jobId), { headers: { 'Cache-Control': 'no-store' } }); }
+  catch (error) {
+    const code = error instanceof ParseRequestError ? error.code : 'unavailable';
+    return NextResponse.json({ error: code }, { status: code === 'rate_limit' ? 429 : code === 'timeout' ? 504 : 502 });
+  }
+}
 
 export async function POST(request: Request) {
   let matchId: unknown;

@@ -1,6 +1,29 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { POST } from './route';
+import { GET, POST } from './route';
+
+test('parse status validates job identity, distinguishes missing job from parsed data and sanitizes errors', async () => {
+  const oldFetch = globalThis.fetch;
+  let calls = 0;
+  let response = () => Response.json({ jobId: '123', internal: 'must-not-leak' });
+  globalThis.fetch = async (_url, init) => { calls++; assert.equal(init?.cache, 'no-store'); return response(); };
+  const get = (id: string) => GET(new Request(`http://localhost/api/post-match/parse?jobId=${id}`));
+  try {
+    for (const id of ['', '-1', '0', 'x', '1.1', '1%2Fsecret', '9'.repeat(21)]) assert.equal((await get(id)).status, 400);
+    assert.equal(calls, 0);
+    assert.deepEqual(await (await get('123')).json(), { queued: true });
+    response = () => Response.json(null);
+    assert.deepEqual(await (await get('123')).json(), { queued: false });
+    for (const body of [{}, { jobId: '456' }, false]) {
+      response = () => Response.json(body);
+      assert.deepEqual(await (await get('123')).json(), { error: 'invalid_response' });
+    }
+    response = () => Response.json({ secret: 'hidden' }, { status: 429 });
+    assert.equal((await get('123')).status, 429);
+    response = () => { throw new DOMException('secret', 'TimeoutError'); };
+    assert.equal((await get('123')).status, 504);
+  } finally { globalThis.fetch = oldFetch; }
+});
 
 test('parse request is explicit, validates input, handles upstream failure and never claims parsed data', async () => {
   const oldFetch = globalThis.fetch;

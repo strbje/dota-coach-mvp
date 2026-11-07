@@ -26,6 +26,19 @@
 .factorLink { justify-self: start; }
 .factorKind, .note { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .note { display: block; }
+.earlyDamage { display: grid; gap: var(--space-3); }
+.damagePlayers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.damageIdentity { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.damageTotal { margin-left: auto; font-variant-numeric: tabular-nums; }
+.damageBar { display: flex; height: var(--space-2); margin: var(--space-2) 0; background: var(--color-background); }
+.damageBar span, .damageLegend span::before { background: var(--color-info); }
+.damageBar span:nth-child(2), .damageLegend span:nth-child(2)::before { background: var(--color-radiant); }
+.damageBar .damageUnsplit { background: var(--color-text-secondary); }
+.damageLegend { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: var(--font-size-sm); }
+.damageLegend span::before { content: ''; display: inline-block; width: var(--space-3); height: var(--space-3); margin-right: var(--space-2); }
+.deathPortrait { position: relative; display: inline-flex; }
+.deathPortrait > span:first-child { width: 100%; min-width: 0; }
+.deathPortrait > span:last-child { position: absolute; right: 0; bottom: 0; line-height: 1; background: var(--color-background); color: var(--color-text); }
 .planPanel { display: grid; gap: var(--space-4); }
 .priority { display: grid; gap: var(--space-3); }
 .priority + .priority { border-top: var(--border-width) solid var(--color-border); padding-top: var(--space-4); }
@@ -168,3 +181,5 @@
 .priority summary, .challenge > details > summary { min-height: var(--control-size); padding-block: var(--space-2); cursor: pointer; color: var(--color-text-secondary); }
 
 .rosterStats { margin-left: auto; font-size: var(--font-size-sm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 700px) { .damagePlayers { grid-template-columns: minmax(0, 1fr); } }
