@@ -64,8 +64,8 @@ export function PostMatchReport({ analysis, onRefresh, refreshing = false }: { a
       {!analysis.priorities.length && !analysis.training.goal && !fallbackEpisode ? <p className={styles.note}>Данных для личного шага пока недостаточно. Попробуй другой матч.</p> : null}
       <TrainingChallengeCard key={`${analysis.matchId}:${analysis.training.observation.accountId ?? 'anonymous'}:${analysis.training.observation.heroId}`} analysis={analysis} onEvidence={() => showEvidence('lane-at-ten', 600)} />
     </aside>
+    <GradesGrid className={styles.overviewMetrics} benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} grades={analysis.grades} categories={['fights', 'map']} />
     <div className={styles.main}>
-      <GradesGrid benchmarkSummary={analysis.benchmarkSummary} hero={analysis.hero} grades={analysis.grades} categories={['fights', 'map']} />
       <EarlyHeroDamage report={analysis.earlyHeroDamage} onEvidence={() => showEvidence('early-damage', 0, 600)} />
       <FarmIntervals report={analysis.farmIntervals} onEvidence={(from, to, endExclusive) => showEvidence(`farm-${from}`, from, to, endExclusive)} />
       {analysis.itemTimings.length ? <ItemTimeline items={analysis.itemTimings} grade={analysis.grades.items} title="Твои ключевые покупки" /> : <p className={styles.note}>Время ключевых покупок недоступно.</p>}

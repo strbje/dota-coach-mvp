@@ -27,10 +27,10 @@ export function getGradeLevel(score: number): GradeLevel {
   return { label: 'Отлично', className: 'grade-excellent', tone: 'excellent', description: 'Сильное исполнение' };
 }
 
-export function GradesGrid({ grades, benchmarkSummary, hero, categories = ['fights', 'map'] }: Pick<PostMatchAnalysis, 'grades' | 'benchmarkSummary' | 'hero'> & { categories?: Array<'fights' | 'map'> }) {
+export function GradesGrid({ grades, benchmarkSummary, hero, categories = ['fights', 'map'], className = '' }: Pick<PostMatchAnalysis, 'grades' | 'benchmarkSummary' | 'hero'> & { categories?: Array<'fights' | 'map'>; className?: string }) {
   const visible = Object.entries(grades).filter(([key, grade]) => categories.includes(key as 'fights' | 'map') && grade.score !== undefined);
   if (!visible.length) return null;
-  return <section aria-label="Оценки" className={`grid grid-2 ${styles.grades}`}>
+  return <section aria-label="Оценки" className={`grid grid-2 ${styles.grades} ${className}`}>
     {visible.map(([key, grade]) => {
       const keys = key === 'fights' ? ['heroDamagePerMin'] as const : key === 'map' ? ['gpm', 'lhPerMin'] as const : [];
       const labels = { heroDamagePerMin: 'урона в минуту', gpm: 'золота в минуту', lhPerMin: 'добиваний в минуту' };

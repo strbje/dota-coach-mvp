@@ -35,6 +35,8 @@ try {
     productPartial: await syntheticPostMatch({ product: true, farm: 'partialOnly', partial: true }),
     xpOnly: await syntheticPostMatch({ resources: 'xp' }), goldOnly: await syntheticPostMatch({ resources: 'gold' }),
     earlyDamage: await syntheticPostMatch({ earlyDamage: true }),
+    layoutOverview: await syntheticPostMatch({ earlyDamage: true, benchmarks: true, farm: 'complete', won: true }),
+    layoutPriority: await syntheticPostMatch({ earlyDamage: true, product: true, farm: 'complete', partial: true }),
     ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
     farmComplete: await syntheticPostMatch({ farm: 'complete' }), farmPartial: await syntheticPostMatch({ farm: 'partial' }),
@@ -67,6 +69,8 @@ fixtures.noDeaths = structuredClone(fixtures.ready);
 delete fixtures.noDeaths.analysis.laneFacts.deathsAt10;
 fixtures.rescored = structuredClone(fixtures.ready);
 fixtures.rescored.analysis.grades.fights.score = 77; fixtures.rescored.analysis.grades.map.score = 65;
+fixtures.layoutSingleMetric = structuredClone(fixtures.layoutOverview);
+delete fixtures.layoutSingleMetric.analysis.grades.fights.score;
 
 const server = process.env.START_SERVER === '1'
   ? spawn(process.execPath, [join(root, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' } }) : null;
@@ -133,7 +137,7 @@ async function load(name, matchId = 9000066) {
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
 }
 async function reportReady() { await page.getByRole('heading', { name: 'Личный план', exact: true }).waitFor(); }
-async function snapshot(name, section) {
+async function snapshot(name, section, fullPage = true) {
   if (section) {
     await section.evaluate((element) => {
       const note = document.createElement('p'); note.dataset.synthetic = 'early-damage';
@@ -161,7 +165,7 @@ async function snapshot(name, section) {
     }, isFarm);
     await panel.screenshot({ path: join(output, `${name}.png`) });
     await panel.locator('[data-synthetic="gold"]').evaluate((element) => element.remove());
-  } else await page.screenshot({ path: join(output, `${name}.png`), fullPage: true });
+  } else await page.screenshot({ path: join(output, `${name}.png`), fullPage });
 }
 const results = { synthetic: true, widths: [], checks: [] };
 try {
@@ -605,6 +609,55 @@ try {
   assert.match(await damagePanel.innerText(), /Разбивка по пятиминуткам недоступна/);
   assert.match(await damagePanel.innerText(), /Нет замера к 10:00/);
   results.checks.push('early damage comparison and zero preserved; same-lane context with explicit limits; four widths; keyboard jump; hero portraits on death markers');
+
+  // The short plan must not reserve an empty column beside the rest of the report.
+  await page.evaluate(() => localStorage.clear());
+  await load('layoutOverview'); await reportReady();
+  assert.equal(fixtures.layoutOverview.analysis.priorities.length, 0);
+  const plan = page.getByRole('complementary', { name: 'План на следующие игры' });
+  const metrics = page.getByRole('region', { name: 'Оценки', exact: true });
+  assert.equal(await plan.getByRole('button', { name: 'Принять челлендж', exact: true }).count(), 1);
+  assert.equal(await plan.getByText('Почему этот шаг', { exact: true }).count(), 0, 'no invented advice to fill the sidebar');
+  async function checkReportLayout(width) {
+    const [boardBox, planBox, metricsBox, damageBox] = await Promise.all([
+      plan.locator('..').boundingBox(), plan.boundingBox(), metrics.boundingBox(), damagePanel.boundingBox()
+    ]);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `layout overflow at ${width}`);
+    assert.ok(Math.abs(damageBox.width - boardBox.width) < 1, `full-width charts at ${width}`);
+    assert.ok(Math.abs(damageBox.x - boardBox.x) < 1, `aligned chart left edge at ${width}`);
+    const overviewBottom = Math.max(planBox.y + planBox.height, metricsBox.y + metricsBox.height);
+    assert.ok(damageBox.y >= overviewBottom && damageBox.y - overviewBottom <= 25, `no overlap or reserved column below overview at ${width}`);
+    if (width <= 1050) assert.ok(metricsBox.y >= planBox.y + planBox.height, `mobile plan precedes metrics at ${width}`);
+    else assert.ok(planBox.x >= metricsBox.x + metricsBox.width, `desktop plan remains beside overview at ${width}`);
+    const cards = await metrics.locator('article').all();
+    if (width > 700 && cards.length === 2) {
+      const [left, right] = await Promise.all(cards.map((card) => card.boundingBox()));
+      assert.ok(Math.abs(left.y + left.height - right.y - right.height) < 1, `metric card bottoms at ${width}`);
+    }
+  }
+  for (const width of [320, 390, 768, 1050, 1051, 1440, 1920, 2560]) {
+    await page.setViewportSize({ width, height: 1200 });
+    await checkReportLayout(width);
+    if (width === 390 || width === 1440) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await snapshot(`layout-overview-${width}`, undefined, width === 390);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await metrics.getByText('Как сравниваем', { exact: true }).first().click();
+  await checkReportLayout(1440);
+  await metrics.getByText('Как сравниваем', { exact: true }).first().click();
+  await plan.getByText('Как проверяем цель', { exact: true }).click();
+  await checkReportLayout(1440);
+  await plan.getByText('Как проверяем цель', { exact: true }).click();
+  await load('layoutPriority'); await reportReady();
+  assert.ok(await plan.getByText('Почему этот шаг', { exact: true }).count() > 0, 'existing advice is still rendered');
+  for (const width of [390, 768, 1440]) { await page.setViewportSize({ width, height: 1200 }); await checkReportLayout(width); }
+  await load('layoutSingleMetric'); await reportReady();
+  assert.equal(await metrics.locator('article').count(), 1);
+  assert.ok(Math.abs((await metrics.locator('article').boundingBox()).width - (await metrics.boundingBox()).width) < 1, 'one metric fills its area');
+  await checkReportLayout(1440);
+  results.checks.push('overview-only sidebar; full-width lower charts; equal metric cards and single-card width; mobile plan-first order; no extra advice without a priority; long plan and expanded metrics; eight viewport widths');
 
   // Synthetic queue responses. Virtual browser time verifies the bounded wait without a real minute-long pause.
   await page.clock.install();

@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1440,
+    1920,
+    2560
+  ],
+  "checks": [
+    "Russian role failure messages; selection preserved and successful keyboard retry; entry <=1120 and report <=1440; six viewport widths; local decorative background loads without intercepting input",
+    "gold: independent income/loss/unknown, unknown-only net zero, confirmed zero, invalid/missing values, keyboard disclosure; 320/390/768/1440",
+    "other targets: separate from unknown, exact groups/names/counts, keyboard disclosure, zero categories hidden, partial stream stays in details; 320/390/768/1440",
+    "farm numbers inspect in place by click/keyboard; category counts visible; selection distinct from recommendation; no automatic page jump",
+    "farm: largest comparable drop; category/unknown breakdown; confirmed zero vs missing; partial events and no-series fallback; gaps/truncated end; keyboard filters/focus and selected-window navigation; 320/390/768/1440",
+    "keyboard resource slider exposes exact timestamps and independent gold/XP values",
+    "complete STRATZ events supply and accept the LH10 goal; partial events remain unknown; events-only timeline has no dead metric/event controls; one real metric remains visible; explicit parse rate limit/retry, queued is not parsed, failed refresh retains report, successful refresh restores working gold/XP switches",
+    "item images recover on secondary CDN; if both fail item names and times remain visible",
+    "unified time domain; pregame and post-telemetry events; independent filters; hidden evidence revealed with focus; clustered collision-free markers; keyboard exact-event selection; independent gold/XP gaps; unknown deaths; preserved fight/economy grades",
+    "home restores recent match/player and active goal; mobile/desktop; no automatic role bypass or background match discovery",
+    "PR #68: reloading a completed challenge match without new last-hit data preserves 3/3",
+    "accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation",
+    "early damage comparison and zero preserved; same-lane context with explicit limits; four widths; keyboard jump; hero portraits on death markers",
+    "overview-only sidebar; full-width lower charts; equal metric cards and single-card width; mobile plan-first order; no extra advice without a priority; long plan and expanded metrics; eight viewport widths",
+    "parse polling pauses on budget/error, does not equate absent job with success, automatically refreshes complete data, never duplicates POST, cancels on navigation",
+    "unavailable item images keep names, times and fallback",
+    "initial/error/empty/partial/unsupported role; malformed success controlled",
+    "late roster and analysis responses discarded after match/player changes",
+    "blocked storage never reports accepted progress; focus and evidence navigation"
+  ],
+  "consoleErrors": []
+}
