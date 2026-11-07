@@ -34,6 +34,7 @@ try {
     product: await syntheticPostMatch({ product: true, farm: 'complete', partial: true }),
     productPartial: await syntheticPostMatch({ product: true, farm: 'partialOnly', partial: true }),
     xpOnly: await syntheticPostMatch({ resources: 'xp' }), goldOnly: await syntheticPostMatch({ resources: 'gold' }),
+    earlyDamage: await syntheticPostMatch({ earlyDamage: true }),
     ready: await syntheticPostMatch(), temporal: await syntheticPostMatch({ temporal: true }), low: await syntheticPostMatch({ lowLane: true }),
     partial: await syntheticPostMatch({ partial: true }), empty: await syntheticPostMatch({ empty: true }),
     farmComplete: await syntheticPostMatch({ farm: 'complete' }), farmPartial: await syntheticPostMatch({ farm: 'partial' }),
@@ -58,6 +59,10 @@ try {
 fixtures.fourthMissing = structuredClone(fixtures.fourth);
 delete fixtures.fourthMissing.analysis.training.observation.lastHitsAt10;
 delete fixtures.fourthMissing.analysis.training.goal;
+fixtures.earlyPartial = structuredClone(fixtures.earlyDamage);
+delete fixtures.earlyPartial.analysis.earlyHeroDamage.players[0].firstFive;
+delete fixtures.earlyPartial.analysis.earlyHeroDamage.players[0].nextFive;
+for (const key of ['damage', 'firstFive', 'nextFive']) delete fixtures.earlyPartial.analysis.earlyHeroDamage.players[1][key];
 fixtures.noDeaths = structuredClone(fixtures.ready);
 delete fixtures.noDeaths.analysis.laneFacts.deathsAt10;
 fixtures.rescored = structuredClone(fixtures.ready);
@@ -90,6 +95,9 @@ let scenario = 'ready';
 let delay = 0;
 let parseCalls = 0;
 let parseFails = false;
+let parseQueued = true;
+let statusCalls = 0;
+let statusFails = false;
 const roleErrors = {
   STRATZ_NOT_CONFIGURED: /подключение к STRATZ не настроено/,
   STRATZ_AUTH_FAILED: /отклонил авторизацию/,
@@ -103,7 +111,8 @@ const players = Array.from({ length: 10 }, (_, index) => ({ playerSlot: index < 
 await page.route('**/api/post-match/**', async (route) => {
   const selectedScenario = scenario;
   const path = new URL(route.request().url()).pathname;
-  if (path.endsWith('/parse')) { parseCalls++; return route.fulfill({ status: parseFails ? 429 : 200, json: parseFails ? { error: 'rate_limit' } : { jobId: 'synthetic-parse-job' } }); }
+  if (path.endsWith('/parse') && route.request().method() === 'GET') { statusCalls++; return route.fulfill({ status: statusFails ? 503 : 200, json: statusFails ? { error: 'unavailable' } : { queued: parseQueued } }); }
+  if (path.endsWith('/parse')) { parseCalls++; return route.fulfill({ status: parseFails ? 429 : 200, json: parseFails ? { error: 'rate_limit' } : { jobId: '9000081' } }); }
   if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
   if (selectedScenario === 'network-error') return route.fulfill({ status: 503, json: { errorCode: 'OPENDOTA_UNAVAILABLE' } });
   if (path.endsWith('/players')) return route.fulfill({ json: { players: selectedScenario === 'empty-roster' ? [] : selectedScenario === 'partial' ? players.slice(0, 7) : players } });
@@ -124,7 +133,17 @@ async function load(name, matchId = 9000066) {
   await page.getByRole('button', { name: 'Разобрать матч', exact: true }).click();
 }
 async function reportReady() { await page.getByRole('heading', { name: 'Личный план', exact: true }).waitFor(); }
-async function snapshot(name) {
+async function snapshot(name, section) {
+  if (section) {
+    await section.evaluate((element) => {
+      const note = document.createElement('p'); note.dataset.synthetic = 'early-damage';
+      note.textContent = 'СИНТЕТИЧЕСКИЕ ДАННЫЕ · проверка интерфейса · не реальный матч';
+      element.prepend(note);
+    });
+    await section.screenshot({ path: join(output, `${name}.png`) });
+    await section.locator('[data-synthetic="early-damage"]').evaluate((element) => element.remove());
+    return;
+  }
   await page.evaluate(() => {
     if (document.getElementById('synthetic-evidence')) return;
     const note = document.createElement('div'); note.id = 'synthetic-evidence';
@@ -473,7 +492,7 @@ try {
   await page.getByRole('button', { name: 'Обновить разбор', exact: true }).click();
   await page.getByText(/Не удалось обновить разбор/).waitFor({ state: 'hidden' });
   assert.equal(await chart.locator('svg').count(), 0, 'queue acceptance does not invent parsed data');
-  assert.equal(await page.getByText(/Запрос отправлен/).count(), 1);
+  assert.equal(await page.getByText(/Автопроверка на паузе/).count(), 1);
   scenario = 'ready';
   await page.getByRole('button', { name: 'Обновить разбор', exact: true }).click();
   await chart.getByRole('heading', { name: 'Как менялась игра', exact: true }).waitFor();
@@ -560,8 +579,77 @@ try {
   assert.equal(await page.getByText('Цикл завершён · проверено 3/3').count(), 0);
   results.checks.push('accept with keyboard; persistence/reload; deduplication; no-data pending; 3-game completion; player isolation');
 
+  await page.unroute('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/**');
+  await page.unroute('https://cdn.steamstatic.com/apps/dota2/images/dota_react/items/**');
+  await page.goto('about:blank');
+  await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/post-match`);
+  await load('earlyDamage'); await reportReady();
+  const damagePanel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Урон по героям до 10:00', exact: true }) });
+  assert.equal(await damagePanel.getByRole('listitem').count(), 4);
+  assert.match(await damagePanel.innerText(), /4\s?500/);
+  assert.match(await damagePanel.innerText(), /Сложность матчапа пока не оценена/);
+  const damageRows = damagePanel.getByRole('listitem');
+  assert.match(await damageRows.last().innerText(), /0:00–5:00: 0 · 5:00–10:00: 0/);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `early damage ${width}`);
+    if (width === 390 || width === 1440) await snapshot(`early-damage-${width}`, damagePanel);
+  }
+  const earlyButton = damagePanel.getByRole('button', { name: 'Посмотреть события первых 10 минут' });
+  await earlyButton.focus(); await page.keyboard.press('Enter');
+  await chart.getByRole('heading', { name: /0:00–10:00/ }).waitFor();
+  assert.ok(await chart.getByRole('region', { name: 'Выбранный отрезок' }).locator('img').count() > 0);
+  for (const name of ['Покупки', 'Объекты', 'Линия к 10:00']) await chart.getByLabel(name, { exact: true }).uncheck();
+  assert.ok(await chart.getByRole('group', { name: 'Отметки событий' }).locator('img').count() > 0);
+  await load('earlyPartial'); await reportReady();
+  assert.match(await damagePanel.innerText(), /Разбивка по пятиминуткам недоступна/);
+  assert.match(await damagePanel.innerText(), /Нет замера к 10:00/);
+  results.checks.push('early damage comparison and zero preserved; same-lane context with explicit limits; four widths; keyboard jump; hero portraits on death markers');
+
+  // Synthetic queue responses. Virtual browser time verifies the bounded wait without a real minute-long pause.
+  await page.clock.install();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
+  await load('product'); await reportReady();
+  parseQueued = true;
+  const parsesBefore = parseCalls;
+  await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).click();
+  await page.getByText(/Запрос отправлен/).waitFor();
+  await page.clock.fastForward(65000);
+  await page.getByText(/Автопроверка на паузе/).waitFor();
+  assert.equal(parseCalls, parsesBefore + 1);
+  assert.equal(await chart.locator('svg').count(), 0);
+  statusFails = true;
+  await page.getByRole('button', { name: 'Проверить обработку ещё раз' }).click();
+  await page.clock.fastForward(5000);
+  await page.getByText(/Не удалось проверить обработку/).waitFor();
+  assert.equal(await farmPanel.isVisible(), true);
+  statusFails = false; parseQueued = false;
+  await page.getByRole('button', { name: 'Проверить обработку ещё раз' }).click();
+  await page.clock.fastForward(5000);
+  await page.getByText(/Проверка завершена/).waitFor();
+  assert.equal(await chart.locator('svg').count(), 0, 'absent job with still unparsed match must not fabricate data');
+  scenario = 'earlyDamage';
+  await page.getByRole('button', { name: 'Проверить обработку ещё раз' }).click();
+  await page.clock.fastForward(5000);
+  await chart.getByRole('heading', { name: 'Как менялась игра', exact: true }).waitFor();
+  await damagePanel.waitFor();
+  assert.equal(await page.getByLabel('Подробные данные матча').count(), 0);
+  assert.equal(parseCalls, parsesBefore + 1, 'retry status never enqueues another parse');
+  assert.ok(statusCalls >= 3);
+  assert.ok(await chart.locator('img').count() > 0, 'purchase/death images appear when events are available');
+  await load('product'); await reportReady();
+  parseQueued = true;
+  await page.getByRole('button', { name: 'Запросить подробные данные', exact: true }).click();
+  await page.getByText(/Запрос отправлен/).waitFor();
+  await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/`);
+  const statusBeforeLeaving = statusCalls;
+  await page.clock.fastForward(65000);
+  assert.equal(statusCalls, statusBeforeLeaving, 'leaving the report cancels status requests');
+  await page.clock.resume();
+  results.checks.push('parse polling pauses on budget/error, does not equate absent job with success, automatically refreshes complete data, never duplicates POST, cancels on navigation');
+
   await page.route('**/apps/dota2/images/**', (route) => route.abort());
-  await page.reload(); await load('ready'); await reportReady();
+  await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:3000'}/post-match`); await load('ready'); await reportReady();
   await page.waitForTimeout(300);
   assert.ok(await page.locator('.item-fallback').count() > 0);
   results.checks.push('unavailable item images keep names, times and fallback');

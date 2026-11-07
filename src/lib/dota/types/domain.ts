@@ -136,6 +136,7 @@ export type PreGameAnalysis = {
 };
 
 export type NormalizedOpenDotaMatch = {
+  earlyHeroDamage?: import('../normalize/earlyHeroDamage').EarlyHeroDamage;
   openDotaParsed?: boolean;
   matchId: number;
   didRadiantWin: boolean;
@@ -289,6 +290,7 @@ export type StratzEventCoverage = {
 };
 
 export type PostMatchAnalysis = {
+  earlyHeroDamage?: import('../normalize/earlyHeroDamage').EarlyHeroDamage;
   matchId: number;
   hero: HeroName;
   role: RoleName;

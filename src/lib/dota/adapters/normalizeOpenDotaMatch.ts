@@ -10,6 +10,7 @@ import type { PlayerSelector } from '@/lib/dota/selection/playerSelector';
 import { getOpenDotaSelectedPlayerMetadata, selectOpenDotaPlayer } from './selectOpenDotaPlayer';
 import { normalizeEconomyTimeline, normalizeLaneEconomyAt10 } from '@/lib/dota/normalize/economyByPhase';
 import { alignMinuteSeries, normalizeObjectiveTimeline, normalizeTeamAdvantage } from '@/lib/dota/normalize/matchContext';
+import { normalizeEarlyHeroDamage } from '@/lib/dota/normalize/earlyHeroDamage';
 
 const TRACKED_ITEM_KEYS = new Set([
   'phase_boots', 'armlet', 'desolator', 'basher', 'black_king_bar', 'sange_and_yasha', 'assault', 'abyssal_blade', 'satanic',
@@ -139,6 +140,7 @@ export async function normalizeOpenDotaMatch(payload: OpenDotaMatchResponse, sel
     openDotaParsed: typeof (payload.od_data as { has_parsed?: unknown } | undefined)?.has_parsed === 'boolean'
       ? (payload.od_data as { has_parsed: boolean }).has_parsed : undefined,
     teamAdvantage: normalizeTeamAdvantage(payload, isRadiant, durationSeconds),
+    earlyHeroDamage: normalizeEarlyHeroDamage(players, playerRaw, durationSeconds),
     objectiveTimeline: normalizeObjectiveTimeline(payload.objectives, durationSeconds),
     selectedPlayer, player: {
     heroName, isRadiant, durationMinutes, kills, deaths, assists, lastHits,

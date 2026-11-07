@@ -31,6 +31,7 @@ const tests = [
   'lib/dota/winrates/source.test.js',
   'lib/dota/selection/matchPlayers.test.js',
   'lib/dota/normalize/matchContext.test.js',
+  'lib/dota/normalize/earlyHeroDamage.test.js',
   'lib/dota/analyze/trainingChallenge.test.js',
   'lib/dota/research/coordinateReview.test.js',
   'lib/dota/analyze/timelinePresentation.test.js',
