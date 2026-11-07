@@ -14,7 +14,10 @@ const BASE_FIELDS = {
   MatchPlayerStatsType: ['heroDamagePerMinute', 'heroDamageReceivedPerMinute', 'lastHitsPerMinute', 'denyCountPerMinute', 'networthPerMinute', 'experiencePerMinute'],
 };
 const STREAMS = ['heroDamageEvents', 'playerUpdatePositionEvents', 'csEvents'];
-const EVENT_FIELDS = ['time', 'heroId', 'targetHeroId', 'attackerHeroId', 'npcId', 'targetNpcId', 'attackerNpcId', 'playerSlot', 'targetPlayerSlot', 'attackerPlayerSlot', 'damage', 'heroDamage', 'physicalDamage', 'magicalDamage', 'pureDamage', 'amount', 'value', 'damageType', 'abilityId', 'itemId', 'isIllusion', 'isTargetIllusion', 'isAttackerIllusion', 'isCreep', 'isNeutral', 'isAncient', 'x', 'y', 'positionX', 'positionY'];
+const EVENT_FIELDS = ['time', 'heroId', 'targetHeroId', 'attackerHeroId', 'npcId', 'targetNpcId', 'attackerNpcId', 'playerSlot', 'targetPlayerSlot', 'attackerPlayerSlot', 'damage', 'heroDamage', 'physicalDamage', 'magicalDamage', 'pureDamage', 'amount', 'value', 'damageType', 'abilityId', 'itemId', 'isIllusion', 'isTargetIllusion', 'isAttackerIllusion', 'isCreep', 'isNeutral', 'isAncient', 'x', 'y', 'positionX', 'positionY',
+  // Confirmed HeroDamageDetailType names in the owner's 2026-11-07 schema.
+  // Preserve raw Short IDs and flags; their meaning is not inferred here.
+  'attacker', 'target', 'byAbility', 'byItem', 'fromNpc', 'toNpc', 'fromIllusion', 'toIllusion', 'isPhysicalAttack', 'isSourceMainHero', 'isTargetMainHero'];
 const AGG_FIELDS = ['heroId1', 'heroId2', 'week', 'bracketBasicIds', 'position', 'matchCount', 'drawCount', 'winCount', 'lossCount', 'stompWinCount', 'stompLossCount', 'matchWinCount', 'csCount'];
 const RATE_HEADERS = ['retry-after', ...['day', 'hour', 'minute', 'second'].flatMap((unit) => [`x-ratelimit-limit-${unit}`, `x-ratelimit-remaining-${unit}`])];
 
@@ -37,7 +40,10 @@ const leaf = (f) => queryable(f) && ['SCALAR', 'ENUM'].includes(baseType(f.type)
 
 export function parseOptions(args) {
   const options = args.filter((a) => a.startsWith('--'));
-  if (options.length !== 1 || !options[0].startsWith('--out=') || !options[0].slice(6).trim()) throw new Error('Use one to three matchId:heroId targets and --out=new-file.json');
+  const outputs = options.filter((a) => a.startsWith('--out='));
+  if (outputs.length !== 1 || !outputs[0].slice(6).trim()
+    || options.some((a) => !a.startsWith('--out=') && a !== '--damage-events-only')
+    || options.filter((a) => a === '--damage-events-only').length > 1) throw new Error('Use one to three matchId:heroId targets, --out=new-file.json and optional --damage-events-only');
   const targets = args.filter((a) => !a.startsWith('--')).map((a) => {
     if (!/^[1-9]\d*:[1-9]\d*$/.test(a)) throw new Error('Invalid matchId:heroId');
     const [matchId, heroId] = a.split(':').map(Number);
@@ -45,7 +51,7 @@ export function parseOptions(args) {
     return { matchId, heroId };
   });
   if (!targets.length || targets.length > 3 || new Set(targets.map((t) => t.matchId)).size !== targets.length) throw new Error('Choose one to three distinct matches');
-  return { targets, outputPath: resolve(options[0].slice(6)) };
+  return { targets, outputPath: resolve(outputs[0].slice(6)), damageEventsOnly: options.includes('--damage-events-only') };
 }
 
 export function schemaQuery(names) {
@@ -62,16 +68,16 @@ export function dependencyTypes(schema) {
   return [...new Set(names.filter((n) => n && !schema[n]))];
 }
 
-export function buildMatchQuery(schema) {
+export function buildMatchQuery(schema, { damageEventsOnly = false } = {}) {
   const omitted = [];
   function leaves(owner, names) { return names.filter((n) => {
     const ok = leaf(field(schema, owner, n)); if (!ok) omitted.push(`${owner}.${n}`); return ok;
   }).join(' '); }
   for (const [owner, name] of [['MatchType', 'id'], ['MatchPlayerType', 'heroId'], ['MatchPlayerType', 'playerSlot']]) if (!leaf(field(schema, owner, name))) throw new Error(`Required field missing: ${owner}.${name}`);
   if (!queryable(field(schema, 'MatchType', 'players')) || baseType(field(schema, 'MatchType', 'players').type)?.name !== 'MatchPlayerType') throw new Error('Player relation unavailable');
-  const statsFields = leaves('MatchPlayerStatsType', BASE_FIELDS.MatchPlayerStatsType);
+  const statsFields = damageEventsOnly ? '' : leaves('MatchPlayerStatsType', BASE_FIELDS.MatchPlayerStatsType);
   const stats = queryable(field(schema, 'MatchPlayerType', 'stats')) && baseType(field(schema, 'MatchPlayerType', 'stats').type)?.name === 'MatchPlayerStatsType' && statsFields ? `stats { ${statsFields} }` : '';
-  const streams = STREAMS.flatMap((name) => {
+  const streams = (damageEventsOnly ? ['heroDamageEvents'] : STREAMS).flatMap((name) => {
     const f = field(schema, 'MatchPlayerPlaybackDataType', name), type = baseType(f?.type)?.name;
     if (!queryable(f) || !leaf(field(schema, type, 'time'))) { omitted.push(`MatchPlayerPlaybackDataType.${name}`); return []; }
     return [`${name} { ${leaves(type, EVENT_FIELDS)} }`];
@@ -103,7 +109,11 @@ export function cohortChecks(plan, rows) {
   if (!Array.isArray(rows)) return { status: 'unavailable', productReady: false };
   return { status: rows.length ? 'observed' : 'empty', productReady: false, rowCount: rows.length,
     mismatchedPositions: rows.filter((r) => r?.position !== plan.position).length,
-    mismatchedBrackets: rows.filter((r) => !Array.isArray(r?.bracketBasicIds) || r.bracketBasicIds.length !== 1 || r.bracketBasicIds[0] !== plan.bracket).length,
+    // The argument is a list, but HeroLaneOutcomeType.bracketBasicIds is a scalar enum.
+    // Keep support for an explicit singleton list; never coerce null/unknown labels.
+    mismatchedBrackets: rows.filter((r) => Array.isArray(r?.bracketBasicIds)
+      ? r.bracketBasicIds.length !== 1 || r.bracketBasicIds[0] !== plan.bracket
+      : r?.bracketBasicIds !== plan.bracket).length,
     unavailableCounts: rows.filter((r) => !Number.isSafeInteger(r?.matchCount) || r.matchCount < 1).length,
     missingEvidence: ['verified patch and mode', 'both lane pairs', 'period semantics', 'damage distribution', 'precision and sample-size policy', 'roaming and lane-switch context'] };
 }
@@ -120,9 +130,9 @@ export function projectMatch(value, target) {
     ...(Object.hasOwn(p, 'playbackData') ? { playbackData: p.playbackData == null ? p.playbackData : Object.fromEntries(STREAMS.filter((s) => Object.hasOwn(p.playbackData, s)).map((s) => [s, Array.isArray(p.playbackData[s]) ? p.playbackData[s].map((e) => pick(e, EVENT_FIELDS)) : safeLeaf(p.playbackData[s])])) } : {}) })) };
 }
 
-export async function runStudy(targets, token, fetchImpl = fetch) {
+export async function runStudy(targets, token, fetchImpl = fetch, { damageEventsOnly = false } = {}) {
   const result = { capturedAt: new Date().toISOString(), methodologyStatus: 'research-only', productReady: false,
-    captureStatus: 'partial', targets, schemaCaptures: [], probes: [], aggregates: [],
+    captureStatus: 'partial', captureScope: damageEventsOnly ? 'damage-events-only' : 'full', targets, schemaCaptures: [], probes: [], aggregates: [],
     limitations: ['Raw clocks and values are not normalized.', 'All ten players are needed to inspect lane membership; accounts/names are excluded.', 'Aggregates are independent diagnostic requests, not cohorts matched to these historical games.', 'Schema/HTTP success is not proof of complete events or a valid matchup model.'] };
   const root = await laneCapture(schemaQuery(ROOTS), {}, token, fetchImpl); result.schemaCaptures.push(root);
   if (root.status !== 'captured') return result;
@@ -133,7 +143,7 @@ export async function runStudy(targets, token, fetchImpl = fetch) {
     if (details.status !== 'captured') return result;
     Object.assign(schema, details.data);
   }
-  try { result.plan = buildMatchQuery(schema); } catch (error) { result.planError = error.message; return result; }
+  try { result.plan = buildMatchQuery(schema, { damageEventsOnly }); } catch (error) { result.planError = error.message; return result; }
   for (const target of targets) {
     const { data, ...request } = await laneCapture(result.plan.query, { id: target.matchId }, token, fetchImpl);
     const raw = projectMatch(data?.match, target);
@@ -141,25 +151,25 @@ export async function runStudy(targets, token, fetchImpl = fetch) {
     if (request.httpStatus === 429 || request.httpStatus === 401 || request.httpStatus === 403) return result;
   }
   // At most four extra data requests, for the first requested hero only.
-  for (const plan of buildAggregatePlans(schema, targets[0].heroId)) {
+  for (const plan of damageEventsOnly ? [] : buildAggregatePlans(schema, targets[0].heroId)) {
     const { data, ...request } = await laneCapture(plan.query, {}, token, fetchImpl);
     const raw = Array.isArray(data?.heroStats?.laneOutcome) ? data.heroStats.laneOutcome.map((r) => pick(r, AGG_FIELDS)) : safeLeaf(data?.heroStats?.laneOutcome ?? null);
     result.aggregates.push({ plan, request, raw, checks: cohortChecks(plan, raw) });
     if ([401, 403, 429].includes(request.httpStatus)) break;
   }
-  result.captureStatus = result.probes.every((p) => p.status === 'captured') && result.aggregates.length === 4 && result.aggregates.every((a) => a.request.status === 'captured') ? 'requests-complete-semantics-unverified' : 'partial';
+  result.captureStatus = result.probes.every((p) => p.status === 'captured') && result.aggregates.length === (damageEventsOnly ? 0 : 4) && result.aggregates.every((a) => a.request.status === 'captured') ? 'requests-complete-semantics-unverified' : 'partial';
   return result;
 }
 
 async function main() {
-  const { targets, outputPath } = parseOptions(process.argv.slice(2));
+  const { targets, outputPath, damageEventsOnly } = parseOptions(process.argv.slice(2));
   createRequire(import.meta.url)('@next/env').loadEnvConfig(process.cwd(), true);
   const token = process.env.STRATZ_API_TOKEN;
   if (!token?.trim()) throw new Error('STRATZ_API_TOKEN missing; load the existing local environment. Do not share the token.');
   await mkdir(dirname(outputPath), { recursive: true });
   const output = await open(outputPath, 'wx');
   try {
-    const artifact = await runStudy(targets, token);
+    const artifact = await runStudy(targets, token, fetch, { damageEventsOnly });
     artifact.scriptSha256 = createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex');
     await output.writeFile(JSON.stringify(artifact, null, 2) + '\n');
     console.log(`Saved ${artifact.captureStatus}: ${outputPath}`);

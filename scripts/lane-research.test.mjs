@@ -56,6 +56,30 @@ test('projection preserves zero/null/missing, and drops identities and unexpecte
   assert.equal(projectMatch({ ...projected, players: [...projected.players, ...projected.players] }, target), null);
 });
 
+test('actual STRATZ damage field names preserve actors, targets and illusion/NPC flags without guessing IDs', () => {
+  const schema = syntheticSchema();
+  schema.DamageEvent.fields = [
+    ...['time', 'value', 'attacker', 'target', 'byAbility', 'byItem', 'fromNpc', 'toNpc'].map((name) => scalar(name)),
+    ...['fromIllusion', 'toIllusion', 'isPhysicalAttack', 'isSourceMainHero', 'isTargetMainHero'].map((name) => scalar(name, 'Boolean')),
+    scalar('steamAccountId'), scalar('personaname', 'String'),
+  ];
+  const query = buildMatchQuery(schema).query;
+  const event = { time: 121, value: 50, attacker: 42, target: 105, byAbility: null, byItem: null, fromNpc: null, toNpc: 123,
+    fromIllusion: false, toIllusion: false, isPhysicalAttack: true, isSourceMainHero: true, isTargetMainHero: false };
+  for (const name of Object.keys(event)) assert.match(query, new RegExp(`\\b${name}\\b`));
+  assert.doesNotMatch(query, /steamAccount|personaname/);
+  const value = projectMatch({ id: 1, players: [{ heroId: 42, playerSlot: 0, playbackData: { heroDamageEvents: [{ ...event, steamAccountId: 123, personaname: 'private' }] } }] }, { matchId: 1, heroId: 42 });
+  assert.deepEqual(value.players[0].playbackData.heroDamageEvents, [event]);
+});
+
+test('a matching scalar bracket is accepted; missing/different/multiple labels remain mismatches', () => {
+  const plan = buildAggregatePlans(syntheticSchema(), 42)[0];
+  const result = cohortChecks(plan, [plan.bracket, [plan.bracket], 'UNCALIBRATED', null, [], [plan.bracket, 'ARCHON']]
+    .map((bracketBasicIds) => ({ position: plan.position, bracketBasicIds, matchCount: 10 })));
+  assert.equal(result.mismatchedBrackets, 4);
+  assert.equal(result.productReady, false);
+});
+
 test('small/large N, unknown role and inconsistent cohort labels never become a validated matchup', () => {
   const plan = buildAggregatePlans(syntheticSchema(), 42)[0];
   for (const matchCount of [1, 10000]) {
@@ -143,6 +167,26 @@ test('successful transport still leaves matchup semantics unverified', async () 
   assert.equal(result.aggregates[2].checks.mismatchedPositions, 1);
 });
 
+test('damage-only follow-up does not repeat aggregates, CS, positions or minute arrays', async () => {
+  const options = parseOptions(['1:42', '--damage-events-only', '--out=new.json']);
+  assert.equal(options.damageEventsOnly, true);
+  assert.throws(() => parseOptions(['1:42', '--damage-events-only', '--damage-events-only', '--out=new.json']));
+  let calls = 0;
+  const result = await runStudy(options.targets, 'synthetic-token', async (_url, request) => {
+    calls++;
+    if (calls === 1) return reply({ data: syntheticSchema() });
+    const query = JSON.parse(request.body).query;
+    assert.match(query, /heroDamageEvents/);
+    assert.doesNotMatch(query, /laneOutcome|csEvents|playerUpdatePositionEvents|heroDamagePerMinute/);
+    return reply({ data: { match: { id: 1, players: [{ heroId: 42, playerSlot: 0, playbackData: { heroDamageEvents: [] } }] } } });
+  }, options);
+  assert.equal(calls, 2);
+  assert.deepEqual(result.aggregates, []);
+  assert.equal(result.captureScope, 'damage-events-only');
+  assert.equal(result.captureStatus, 'requests-complete-semantics-unverified');
+  assert.equal(result.productReady, false);
+});
+
 test('cumulative damage uses exact boundaries and distinguishes unavailable, truncated and genuine zero', () => {
   assert.equal(counterWindow({}, 0, 600).damage, null);
   assert.equal(counterWindow({ times: [0, 300], hero_damage_t: [0, 50] }, 0, 600).status, 'missing-boundary');
@@ -201,4 +245,14 @@ test('committed real evidence keeps provider/replay discrepancies visible', asyn
   const boundary = artifact.matches.find((m) => m.matchId === 9019592113).counterComparisons.find((p) => p.time === 600);
   assert.deepEqual([boundary.provider, boundary.replay, boundary.equal], [4764, 4688, false]);
   assert.ok(artifact.matches.every((m) => m.productReady === false));
+  const stratz = JSON.parse(await readFile(new URL('../docs/research/lane-matchups/observations-stratz-2026-11-07.json', import.meta.url)));
+  assert.equal(stratz.source.allRequestsHttp200, true);
+  for (const match of stratz.matches) {
+    assert.equal(match.heroDamagePerMinuteFirst10.reduce((a, b) => a + b, 0), match.windows.dealt0to10);
+    assert.deepEqual(match.heroDamageReceivedPerMinuteFirst10, match.replayReceivedCumulativeAtMinuteEnd);
+    assert.equal(match.attackerTargetFieldsCaptured, false);
+  }
+  const different = stratz.matches.find((m) => m.matchId === 9003795847);
+  assert.deepEqual([different.windows.dealt0to10, different.windows.stratzPlayback0to10], [3762, 3812]);
+  assert.equal(stratz.aggregates[2].returnedPositions.POSITION_1, 122);
 });
