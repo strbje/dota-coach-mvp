@@ -1,0 +1,114 @@
+{
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "sourceFileSha256": "9a4d08b5185de0e1267111fd8cc6af95a5846375a0e0e8e320ecdf6592e6dd1b",
+  "scope": "Only captured HeroStatsQuery surface; query root and referenced stats/filter types not yet captured.",
+  "methods": [
+    {
+      "name": "stats",
+      "returnType": "[HeroPositionTimeDetailType]",
+      "arguments": {
+        "heroIds": "[Short]",
+        "week": "Long",
+        "bracketBasicIds": "[RankBracketBasicEnum]",
+        "positionIds": "[MatchPlayerPositionType]",
+        "groupByTime": "Boolean",
+        "groupByPosition": "Boolean",
+        "groupByBracket": "Boolean",
+        "minTime": "Int",
+        "maxTime": "Int"
+      }
+    },
+    {
+      "name": "matchUp",
+      "returnType": "[HeroDryadType]",
+      "arguments": {
+        "heroId": "Short",
+        "heroIds": "[Short]",
+        "week": "Long",
+        "bracketBasicIds": "[RankBracketBasicEnum]",
+        "orderBy": "Byte",
+        "matchLimit": "Int",
+        "skip": "Int",
+        "take": "Int"
+      }
+    },
+    {
+      "name": "laneOutcome",
+      "returnType": "[HeroLaneOutcomeType]",
+      "arguments": {
+        "heroId": "Short",
+        "isWith": "Boolean!",
+        "week": "Long",
+        "bracketBasicIds": "[RankBracketBasicEnum]",
+        "positionIds": "[MatchPlayerPositionType]"
+      }
+    },
+    {
+      "name": "heroVsHeroMatchup",
+      "returnType": "HeroMatchupType",
+      "arguments": {
+        "heroId": "Short!",
+        "week": "Long",
+        "bracketBasicIds": "[RankBracketBasicEnum]",
+        "matchLimit": "Int",
+        "skip": "Int",
+        "take": "Int"
+      }
+    },
+    {
+      "name": "winGameVersion",
+      "returnType": "[HeroWinGameVersionType]",
+      "arguments": {
+        "heroIds": "[Short]",
+        "take": "Int",
+        "skip": "Int",
+        "bracketIds": "[RankBracket]",
+        "positionIds": "[MatchPlayerPositionType]",
+        "regionIds": "[BasicRegionType]",
+        "gameModeIds": "[GameModeEnumType]",
+        "groupBy": "FilterHeroWinRequestGroupBy"
+      }
+    },
+    {
+      "name": "guide",
+      "returnType": "[HeroGuideListType]",
+      "arguments": {
+        "heroId": "Short",
+        "withHeroId": "Short",
+        "againstHeroId": "Short",
+        "isPro": "Boolean",
+        "positionId": "MatchPlayerPositionType",
+        "itemId": "Short",
+        "neutralItemId": "Short",
+        "take": "Int",
+        "skip": "Int"
+      }
+    }
+  ],
+  "laneOutcomeResultFields": {
+    "heroId1": "Int!",
+    "week": "Int!",
+    "bracketBasicIds": "RankBracketBasicEnum",
+    "position": "MatchPlayerPositionType",
+    "matchCount": "Long",
+    "drawCount": "Long",
+    "winCount": "Long",
+    "lossCount": "Long",
+    "stompWinCount": "Long",
+    "stompLossCount": "Long",
+    "matchWinCount": "Long",
+    "csCount": "Long",
+    "heroId2": "Short!"
+  },
+  "jointCohortAvailable": null,
+  "usableJointCohortFromThisCapture": false,
+  "missing": [
+    "joint four-hero lane relation",
+    "match IDs or joint counts",
+    "verified returned role/bracket labels",
+    "patch/game-mode eligibility for laneOutcome",
+    "damage distribution",
+    "population and period semantics"
+  ]
+}

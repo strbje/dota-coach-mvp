@@ -1,0 +1,620 @@
+{
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "heroConstantsSha256": "5fe8f41250b5f705232f58d3238eaf89720e554958191ba3f323187803b73650",
+  "parserCommit": "927adf6bbd1fd321b711f544a5d754bfe75d89a7",
+  "coreCommit": "6511b56a709351d52f43ca082a4d2a5940dff060",
+  "matches": [
+    {
+      "matchId": 9079325890,
+      "heroId": 1,
+      "playerSlot": 2,
+      "startTime": 1794010475,
+      "duration": 3011,
+      "patch": 60,
+      "gameMode": 22,
+      "lobbyType": 7,
+      "methodologyStatus": "research-only",
+      "productReady": false,
+      "confirmedPosition": null,
+      "rankCohort": null,
+      "windows": [
+        {
+          "start": 0,
+          "end": 300,
+          "status": "unavailable",
+          "damage": null
+        },
+        {
+          "start": 300,
+          "end": 600,
+          "status": "unavailable",
+          "damage": null
+        },
+        {
+          "start": 0,
+          "end": 600,
+          "status": "unavailable",
+          "damage": null
+        }
+      ],
+      "counterComparisons": [
+        {
+          "time": 0,
+          "provider": null,
+          "replay": 0,
+          "equal": null,
+          "nextSecondReplay": 0
+        },
+        {
+          "time": 60,
+          "provider": null,
+          "replay": 0,
+          "equal": null,
+          "nextSecondReplay": 0
+        },
+        {
+          "time": 120,
+          "provider": null,
+          "replay": 0,
+          "equal": null,
+          "nextSecondReplay": 0
+        },
+        {
+          "time": 180,
+          "provider": null,
+          "replay": 228,
+          "equal": null,
+          "nextSecondReplay": 228
+        },
+        {
+          "time": 240,
+          "provider": null,
+          "replay": 228,
+          "equal": null,
+          "nextSecondReplay": 228
+        },
+        {
+          "time": 300,
+          "provider": null,
+          "replay": 511,
+          "equal": null,
+          "nextSecondReplay": 511
+        },
+        {
+          "time": 360,
+          "provider": null,
+          "replay": 511,
+          "equal": null,
+          "nextSecondReplay": 511
+        },
+        {
+          "time": 420,
+          "provider": null,
+          "replay": 997,
+          "equal": null,
+          "nextSecondReplay": 997
+        },
+        {
+          "time": 480,
+          "provider": null,
+          "replay": 997,
+          "equal": null,
+          "nextSecondReplay": 997
+        },
+        {
+          "time": 540,
+          "provider": null,
+          "replay": 1091,
+          "equal": null,
+          "nextSecondReplay": 1091
+        },
+        {
+          "time": 600,
+          "provider": null,
+          "replay": 1882,
+          "equal": null,
+          "nextSecondReplay": 1882
+        }
+      ],
+      "combat": {
+        "bounds": "0 <= rounded parser time < 600; no clock shift applied",
+        "damageDealt": 1882,
+        "byActor": {
+          "npc_dota_hero_antimage": 1882
+        },
+        "targets": [
+          {
+            "heroId": 97,
+            "name": "Magnus",
+            "providerLane": null,
+            "sameProviderLaneAsSelected": null,
+            "damage": 1430,
+            "firstRoundedSecond": 130,
+            "lastRoundedSecond": 590
+          },
+          {
+            "heroId": 105,
+            "name": "Techies",
+            "providerLane": null,
+            "sameProviderLaneAsSelected": null,
+            "damage": 67,
+            "firstRoundedSecond": 282,
+            "lastRoundedSecond": 282
+          },
+          {
+            "heroId": 87,
+            "name": "Disruptor",
+            "providerLane": null,
+            "sameProviderLaneAsSelected": null,
+            "damage": 385,
+            "firstRoundedSecond": 546,
+            "lastRoundedSecond": 548
+          }
+        ],
+        "damageReceivedFromEnemyHeroOwners": 3663,
+        "receivedByOwner": {
+          "npc_dota_hero_magnataur": 2161,
+          "npc_dota_hero_techies": 1331,
+          "npc_dota_hero_disruptor": 171
+        },
+        "targetIllusionDamageExcluded": 0,
+        "attackerIllusionDamageIncluded": 0,
+        "receivedUnattributedOrNonEnemyOwnerDamageExcluded": 949
+      },
+      "roster": [
+        {
+          "heroId": 84,
+          "name": "Ogre Magi",
+          "playerSlot": 0,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 19,
+                "dire-jungle": 47,
+                "top": 219,
+                "dead-or-dying": 15
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 225,
+                "dire-jungle": 11,
+                "dead-or-dying": 21,
+                "mid": 6,
+                "bottom": 37
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 31,
+          "name": "Lich",
+          "playerSlot": 1,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 298,
+                "radiant-jungle": 2
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 134,
+                "dead-or-dying": 69,
+                "mid": 14,
+                "top": 68,
+                "dire-jungle": 12,
+                "radiant-jungle": 3
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 1,
+          "name": "Anti-Mage",
+          "playerSlot": 2,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 300
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 275,
+                "dead-or-dying": 21,
+                "mid": 4
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 60,
+          "name": "Night Stalker",
+          "playerSlot": 3,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 23,
+                "dire-jungle": 20,
+                "top": 242,
+                "dead-or-dying": 15
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 266,
+                "dire-jungle": 7,
+                "dead-or-dying": 24,
+                "mid": 3
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 38,
+          "name": "Beastmaster",
+          "playerSlot": 4,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 279,
+                "dead-or-dying": 21
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 150,
+                "dead-or-dying": 26,
+                "radiant-jungle": 79,
+                "bottom": 45
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 106,
+          "name": "Ember Spirit",
+          "playerSlot": 128,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 282,
+                "dead-or-dying": 18
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 252,
+                "dead-or-dying": 3,
+                "top": 23,
+                "dire-jungle": 22
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 63,
+          "name": "Weaver",
+          "playerSlot": 129,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 27,
+                "dire-jungle": 19,
+                "top": 254
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 215,
+                "dead-or-dying": 26,
+                "mid": 9,
+                "bottom": 41,
+                "radiant-jungle": 9
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 97,
+          "name": "Magnus",
+          "playerSlot": 130,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 15,
+                "radiant-jungle": 1,
+                "bottom": 270,
+                "dead-or-dying": 14
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dead-or-dying": 37,
+                "mid": 12,
+                "bottom": 243,
+                "radiant-jungle": 8
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 105,
+          "name": "Techies",
+          "playerSlot": 131,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 11,
+                "bottom": 272,
+                "dead-or-dying": 17
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dead-or-dying": 25,
+                "mid": 9,
+                "bottom": 202,
+                "outside": 20,
+                "top": 40,
+                "dire-jungle": 4
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 87,
+          "name": "Disruptor",
+          "playerSlot": 132,
+          "providerLane": null,
+          "providerLaneRole": null,
+          "providerRoaming": null,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 33,
+                "dire-jungle": 37,
+                "dead-or-dying": 27,
+                "top": 203
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 197,
+                "dire-jungle": 4,
+                "dead-or-dying": 67,
+                "bottom": 24,
+                "radiant-jungle": 3,
+                "mid": 5
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "No current authenticated STRATZ damage capture.",
+        "No verified hard-lane/early-jungle-exit label.",
+        "Coarse buckets count samples, not validated time on lane.",
+        "Counter and combat windows may differ at rounded boundaries.",
+        "No matchup cohort, quality score, or causal conclusion."
+      ],
+      "provenance": {
+        "endpoint": "https://api.opendota.com/api/matches/9079325890",
+        "responseDate": "Sat, 07 Nov 2026 23:45:12 GMT",
+        "responseSha256": "50f16b34b9806599a288ae666c20f4ef074ba86a357dfae48f990bfe01632d4a",
+        "projectionSha256": "c703bb1438b6feb68eb39444b8e1012a7e9a707ccd78828ed0222f20e99c2d53",
+        "replayArchiveSha256": "4489f18654ee4dfdd2db401d8efa74688bac81f877403ec3419bf3ac55f7f202",
+        "replayArchiveBytes": 63876332
+      }
+    }
+  ],
+  "contextReview": {
+    "status": "negative-control-not-a-verified-hard-lane-exit",
+    "confirmedRole": null,
+    "laneDifficulty": null,
+    "sustainedJungleExit": null,
+    "clock": "0 <= rounded parser seconds < 600; no shift",
+    "checkpoints": [
+      {
+        "time": 300,
+        "lh": 23,
+        "denies": 7,
+        "networth": 2036,
+        "xp": 1417,
+        "hero_damage": 511,
+        "kills": 0,
+        "deaths": 0
+      },
+      {
+        "time": 600,
+        "lh": 41,
+        "denies": 10,
+        "networth": 3859,
+        "xp": 3213,
+        "hero_damage": 1882,
+        "kills": 2,
+        "deaths": 1
+      }
+    ],
+    "lastHitTargets": {
+      "enemyLaneCreeps": 38,
+      "neutrals": 3,
+      "alliedLaneDenies": 10
+    },
+    "neutralKillEvents": [
+      {
+        "time": 451,
+        "actor": "npc_dota_hero_antimage",
+        "target": "npc_dota_neutral_forest_troll_berserker"
+      },
+      {
+        "time": 461,
+        "actor": "npc_dota_hero_antimage",
+        "target": "npc_dota_neutral_forest_troll_berserker"
+      },
+      {
+        "time": 476,
+        "actor": "npc_dota_hero_antimage",
+        "target": "npc_dota_neutral_forest_troll_high_priest"
+      }
+    ],
+    "subsequentEnemyLaneKillSeconds": [
+      491,
+      502,
+      549,
+      567,
+      575,
+      578,
+      593
+    ],
+    "heroDeathEvents": [
+      {
+        "time": 374,
+        "target": "npc_dota_hero_antimage",
+        "attacker": "npc_dota_hero_magnataur"
+      },
+      {
+        "time": 521,
+        "target": "npc_dota_hero_magnataur",
+        "attacker": "npc_dota_hero_antimage"
+      },
+      {
+        "time": 590,
+        "target": "npc_dota_hero_magnataur",
+        "attacker": "npc_dota_hero_antimage"
+      }
+    ],
+    "findings": [
+      "Neutral kills alone do not establish lane abandonment.",
+      "A death followed by neutral kills does not establish a lost lane or the cause of movement.",
+      "OpenDota had no parsed minute/lane fields; replay evidence is not injected into the product."
+    ],
+    "realAssertions": {
+      "completeProjection": true,
+      "tenPlayers": true,
+      "lastHitsCounterMatchesClassifiedDeaths": true,
+      "deniesCounterMatchesAlliedDeaths": true,
+      "heroDamageCounterMatchesCombatTotal": true
+    },
+    "ownerReviewNeeded": "A different match with confirmed early lane abandonment; not a label inferred from this counterexample."
+  }
+}

@@ -8,10 +8,11 @@ import { capture } from './probe-stratz-coordinates.mjs';
 
 const ROOTS = ['MatchType', 'MatchPlayerType', 'MatchPlayerStatsType', 'MatchPlayerPlaybackDataType', 'HeroStatsQuery', 'RankBracketBasicEnum', 'MatchPlayerPositionType', 'LaneOutcomeEnums'];
 const REF = 'kind name ofType { kind name ofType { kind name ofType { kind name } } }';
+const TYPE_FIELDS = `name description fields { name description type { ${REF} } args { name description defaultValue type { ${REF} } } } inputFields { name description defaultValue type { ${REF} } } enumValues { name description }`;
 const BASE_FIELDS = {
   MatchType: ['id', 'startDateTime', 'durationSeconds', 'gameVersionId', 'gameMode', 'lobbyType', 'rank', 'bracket', 'actualRank', 'averageRank', 'isStats', 'bottomLaneOutcome', 'midLaneOutcome', 'topLaneOutcome'],
   MatchPlayerType: ['playerSlot', 'heroId', 'isRadiant', 'position', 'role', 'roleBasic', 'lane', 'heroDamage', 'numLastHits', 'numDenies', 'deaths', 'networth'],
-  MatchPlayerStatsType: ['heroDamagePerMinute', 'heroDamageReceivedPerMinute', 'lastHitsPerMinute', 'denyCountPerMinute', 'networthPerMinute', 'experiencePerMinute'],
+  MatchPlayerStatsType: ['heroDamagePerMinute', 'heroDamageReceivedPerMinute', 'lastHitsPerMinute', 'deniesPerMinute', 'networthPerMinute', 'experiencePerMinute'],
 };
 const STREAMS = ['heroDamageEvents', 'playerUpdatePositionEvents', 'csEvents'];
 const EVENT_FIELDS = ['time', 'heroId', 'targetHeroId', 'attackerHeroId', 'npcId', 'targetNpcId', 'attackerNpcId', 'playerSlot', 'targetPlayerSlot', 'attackerPlayerSlot', 'damage', 'heroDamage', 'physicalDamage', 'magicalDamage', 'pureDamage', 'amount', 'value', 'damageType', 'abilityId', 'itemId', 'isIllusion', 'isTargetIllusion', 'isAttackerIllusion', 'isCreep', 'isNeutral', 'isAncient', 'x', 'y', 'positionX', 'positionY',
@@ -42,21 +43,78 @@ export function parseOptions(args) {
   const options = args.filter((a) => a.startsWith('--'));
   const outputs = options.filter((a) => a.startsWith('--out='));
   if (outputs.length !== 1 || !outputs[0].slice(6).trim()
-    || options.some((a) => !a.startsWith('--out=') && a !== '--damage-events-only')
-    || options.filter((a) => a === '--damage-events-only').length > 1) throw new Error('Use one to three matchId:heroId targets, --out=new-file.json and optional --damage-events-only');
+    || options.some((a) => !a.startsWith('--out=') && a !== '--damage-events-only' && a !== '--cohort-schema-only')
+    || options.filter((a) => a === '--damage-events-only' || a === '--cohort-schema-only').length > 1) throw new Error('Use targets and optional --damage-events-only, or --cohort-schema-only without targets; always --out=new-file.json');
   const targets = args.filter((a) => !a.startsWith('--')).map((a) => {
     if (!/^[1-9]\d*:[1-9]\d*$/.test(a)) throw new Error('Invalid matchId:heroId');
     const [matchId, heroId] = a.split(':').map(Number);
     if (!Number.isSafeInteger(matchId) || !Number.isSafeInteger(heroId) || heroId > 32767) throw new Error('Unsafe identifier');
     return { matchId, heroId };
   });
-  if (!targets.length || targets.length > 3 || new Set(targets.map((t) => t.matchId)).size !== targets.length) throw new Error('Choose one to three distinct matches');
-  return { targets, outputPath: resolve(outputs[0].slice(6)), damageEventsOnly: options.includes('--damage-events-only') };
+  const cohortSchemaOnly = options.includes('--cohort-schema-only');
+  if (cohortSchemaOnly ? targets.length !== 0 : !targets.length || targets.length > 3 || new Set(targets.map((t) => t.matchId)).size !== targets.length) throw new Error('Choose one to three distinct matches, or no targets for --cohort-schema-only');
+  return { targets, outputPath: resolve(outputs[0].slice(6)), damageEventsOnly: options.includes('--damage-events-only'), cohortSchemaOnly };
 }
 
-export function schemaQuery(names) {
+export function schemaQuery(names, { queryRoot = false } = {}) {
   if (names.some((n) => !/^[_A-Za-z][_0-9A-Za-z]*$/.test(n))) throw new Error('Invalid schema name');
-  return `query LaneResearchSchema { ${names.map((n) => `${n}: __type(name: "${n}") { name description fields { name description type { ${REF} } args { name description defaultValue type { ${REF} } } } inputFields { name description defaultValue type { ${REF} } } enumValues { name description } }`).join('\n')} }`;
+  return `query LaneResearchSchema { ${queryRoot ? `__schema { queryType { ${TYPE_FIELDS} } }` : ''} ${names.map((n) => `${n}: __type(name: "${n}") { ${TYPE_FIELDS} }`).join('\n')} }`;
+}
+
+// Metadata discovery only: no player history, match payload or aggregate is requested.
+// The existing capture does not include the query root or the stats/filter result types.
+export async function runCohortSchemaStudy(token, fetchImpl = fetch) {
+  const result = { capturedAt: new Date().toISOString(), methodologyStatus: 'research-only', productReady: false,
+    captureStatus: 'partial', captureScope: 'cohort-schema-only', schemaCaptures: [],
+    unavailableTypes: [], unfetchedTypes: [], limits: { maxRequests: 3, maxTypesPerFollowup: 24 },
+    limitations: ['Only schema metadata; no cohort, sample size, filter correctness or matchup quality is established.',
+      'Dependency traversal is bounded. Unfetched types are not evidence that an API capability is absent.'] };
+  const seen = new Set(['HeroStatsQuery', 'MatchStatsLaneReportType']);
+  const pending = new Set();
+  const selectedFields = new Map([
+    ['HeroStatsQuery', new Set(['stats', 'laneOutcome', 'matchUp', 'heroVsHeroMatchup', 'guide'])],
+    ['MatchType', new Set(['laneReport'])],
+  ]);
+  function discover(type, root = false) {
+    // A player object's match-filter definition is relevant; its social, inventory
+    // and achievement relations are not. Constants would consume the type budget.
+    if (root) for (const f of type?.fields ?? []) if (f.name === 'player') {
+      const name = baseType(f.type)?.name;
+      if (name) selectedFields.set(name, new Set(['matches']));
+    }
+    const selected = selectedFields.get(type?.name);
+    const fields = root ? (type?.fields ?? []).filter((f) => /match|heroStats|player|search/i.test(f.name))
+      : selected ? (type.fields ?? []).filter((f) => selected.has(f.name))
+        : [...(type?.fields ?? []), ...(type?.inputFields ?? [])];
+    for (const f of fields) for (const entry of [f, ...(f.args ?? [])]) {
+      const ref = baseType(entry.type);
+      if (ref?.name && ref.kind !== 'SCALAR' && /^[_A-Za-z][_0-9A-Za-z]*$/.test(ref.name) && !seen.has(ref.name)) pending.add(ref.name);
+    }
+  }
+  let names = [...seen];
+  for (let pass = 0; pass < result.limits.maxRequests; pass++) {
+    const response = await laneCapture(schemaQuery(names, { queryRoot: pass === 0 }), {}, token, fetchImpl);
+    // Retain only requested schema entries, never unexpected player/match response data.
+    const root = pass === 0 ? response.data?.__schema?.queryType : undefined;
+    const data = Object.fromEntries(names.map((name) => [name, response.data?.[name] ?? null]));
+    if (pass === 0) data.__schema = { queryType: root ?? null };
+    result.schemaCaptures.push({ ...response, data });
+    for (const name of names) {
+      if (data[name]?.name !== name) result.unavailableTypes.push(name);
+      else discover(data[name]);
+    }
+    if (pass === 0) {
+      if (!root?.name || !Array.isArray(root.fields)) return result;
+      seen.add(root.name); discover(root, true);
+    }
+    result.unfetchedTypes = [...pending].filter((name) => !seen.has(name)).sort();
+    if (response.status !== 'captured') return result;
+    if (!result.unfetchedTypes.length || pass === result.limits.maxRequests - 1) break;
+    names = result.unfetchedTypes.slice(0, result.limits.maxTypesPerFollowup);
+    for (const name of names) { seen.add(name); pending.delete(name); }
+  }
+  if (!result.unavailableTypes.length) result.captureStatus = 'schema-captured-semantics-unverified';
+  return result;
 }
 
 export function dependencyTypes(schema) {
@@ -162,14 +220,14 @@ export async function runStudy(targets, token, fetchImpl = fetch, { damageEvents
 }
 
 async function main() {
-  const { targets, outputPath, damageEventsOnly } = parseOptions(process.argv.slice(2));
+  const { targets, outputPath, damageEventsOnly, cohortSchemaOnly } = parseOptions(process.argv.slice(2));
   createRequire(import.meta.url)('@next/env').loadEnvConfig(process.cwd(), true);
   const token = process.env.STRATZ_API_TOKEN;
   if (!token?.trim()) throw new Error('STRATZ_API_TOKEN missing; load the existing local environment. Do not share the token.');
   await mkdir(dirname(outputPath), { recursive: true });
   const output = await open(outputPath, 'wx');
   try {
-    const artifact = await runStudy(targets, token, fetch, { damageEventsOnly });
+    const artifact = cohortSchemaOnly ? await runCohortSchemaStudy(token) : await runStudy(targets, token, fetch, { damageEventsOnly });
     artifact.scriptSha256 = createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex');
     await output.writeFile(JSON.stringify(artifact, null, 2) + '\n');
     console.log(`Saved ${artifact.captureStatus}: ${outputPath}`);
