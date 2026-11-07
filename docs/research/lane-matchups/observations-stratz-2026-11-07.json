@@ -1,0 +1,729 @@
+{
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "source": {
+    "file": "dota81-lanes-20261107-235029.json",
+    "sha256": "9a4d08b5185de0e1267111fd8cc6af95a5846375a0e0e8e320ecdf6592e6dd1b",
+    "bytes": 10020371,
+    "capturedAt": "2026-11-07T20:50:29.683Z",
+    "captureStatus": "requests-complete-semantics-unverified",
+    "scriptSha256": "8defaf967fab77f225eb14c3231c586fbeb8d274a12dc3ff90cdd3b7fb0052a2",
+    "scriptMatchesCommitWithCrLf": "32827631740eadb86a395299346c86f4fb3ef606",
+    "allRequestsHttp200": true,
+    "rateLimitHeadersObserved": {
+      "x-ratelimit-limit-day": "15000",
+      "x-ratelimit-remaining-day": "14987",
+      "x-ratelimit-limit-hour": "1500",
+      "x-ratelimit-remaining-hour": "1499",
+      "x-ratelimit-limit-minute": "150",
+      "x-ratelimit-remaining-minute": "149",
+      "x-ratelimit-limit-second": "8",
+      "x-ratelimit-remaining-second": "7"
+    }
+  },
+  "damageSchema": {
+    "name": "HeroDamageDetailType",
+    "description": null,
+    "fields": [
+      {
+        "name": "time",
+        "description": null,
+        "type": {
+          "kind": "NON_NULL",
+          "name": null,
+          "ofType": {
+            "kind": "SCALAR",
+            "name": "Int",
+            "ofType": null
+          }
+        },
+        "args": []
+      },
+      {
+        "name": "attacker",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "target",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "value",
+        "description": null,
+        "type": {
+          "kind": "NON_NULL",
+          "name": null,
+          "ofType": {
+            "kind": "SCALAR",
+            "name": "Int",
+            "ofType": null
+          }
+        },
+        "args": []
+      },
+      {
+        "name": "byAbility",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "byItem",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "damageType",
+        "description": null,
+        "type": {
+          "kind": "ENUM",
+          "name": "Damage",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "fromNpc",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "toNpc",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Short",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "fromIllusion",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Boolean",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "toIllusion",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Boolean",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "isPhysicalAttack",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Boolean",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "isSourceMainHero",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Boolean",
+          "ofType": null
+        },
+        "args": []
+      },
+      {
+        "name": "isTargetMainHero",
+        "description": null,
+        "type": {
+          "kind": "SCALAR",
+          "name": "Boolean",
+          "ofType": null
+        },
+        "args": []
+      }
+    ],
+    "inputFields": null,
+    "enumValues": null
+  },
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "playerSlot": 129,
+      "position": "POSITION_1",
+      "role": "CORE",
+      "lane": "SAFE_LANE",
+      "isStats": true,
+      "durationSeconds": 2278,
+      "gameVersionId": 190,
+      "gameMode": "ALL_PICK_RANKED",
+      "lobbyType": "RANKED",
+      "rank": 80,
+      "actualRank": 80,
+      "rawResponseSha256": "24462e448c845f3413abdf1e4dfe880bf01b7eaafc575904703aaa0979241c07",
+      "seriesLengths": {
+        "heroDamagePerMinute": 37,
+        "heroDamageReceivedPerMinute": 37,
+        "lastHitsPerMinute": 37,
+        "networthPerMinute": 38,
+        "experiencePerMinute": 37
+      },
+      "heroDamagePerMinuteFirst10": [
+        381,
+        145,
+        329,
+        343,
+        357,
+        0,
+        1335,
+        298,
+        1001,
+        499
+      ],
+      "heroDamageReceivedPerMinuteFirst10": [
+        726,
+        1016,
+        1356,
+        1466,
+        1466,
+        1576,
+        2651,
+        2764,
+        3094,
+        4154
+      ],
+      "replayDamageByMinute": [
+        381,
+        145,
+        329,
+        343,
+        357,
+        0,
+        1335,
+        283,
+        1016,
+        499
+      ],
+      "replayReceivedCumulativeAtMinuteEnd": [
+        726,
+        1016,
+        1356,
+        1466,
+        1466,
+        1576,
+        2651,
+        2764,
+        3094,
+        4154
+      ],
+      "stratzPlaybackValueByMinute": [
+        381,
+        145,
+        329,
+        343,
+        357,
+        0,
+        1335,
+        298,
+        1001,
+        499
+      ],
+      "windows": {
+        "dealt0to5": 1555,
+        "dealt5to10": 3133,
+        "dealt0to10": 4688,
+        "received0to10CandidateIndex9": 4154,
+        "receivedMatchesReplayAll10Boundaries": true,
+        "dealtMatchesReplay0to10": true,
+        "stratzPlayback0to10": 4688,
+        "openDotaCounter0to10": 4764
+      },
+      "capturedDamageEventFields": [
+        "damageType",
+        "time",
+        "value"
+      ],
+      "attackerTargetFieldsCaptured": false
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "playerSlot": 1,
+      "position": "POSITION_1",
+      "role": "CORE",
+      "lane": "SAFE_LANE",
+      "isStats": false,
+      "durationSeconds": 1793,
+      "gameVersionId": 190,
+      "gameMode": "ALL_PICK_RANKED",
+      "lobbyType": "RANKED",
+      "rank": 80,
+      "actualRank": 80,
+      "rawResponseSha256": "f07bd3c665b943522e2b63669c4f78995513aa94ddde2ef8e9dffca1a3c3bc27",
+      "seriesLengths": {
+        "heroDamagePerMinute": 29,
+        "heroDamageReceivedPerMinute": 29,
+        "lastHitsPerMinute": 29,
+        "networthPerMinute": 30,
+        "experiencePerMinute": 29
+      },
+      "heroDamagePerMinuteFirst10": [
+        193,
+        0,
+        436,
+        565,
+        337,
+        740,
+        770,
+        210,
+        511,
+        0
+      ],
+      "heroDamageReceivedPerMinuteFirst10": [
+        488,
+        829,
+        1838,
+        2054,
+        2154,
+        2477,
+        2695,
+        2961,
+        3421,
+        3421
+      ],
+      "replayDamageByMinute": [
+        193,
+        0,
+        436,
+        529,
+        373,
+        740,
+        770,
+        210,
+        511,
+        0
+      ],
+      "replayReceivedCumulativeAtMinuteEnd": [
+        488,
+        829,
+        1838,
+        2054,
+        2154,
+        2477,
+        2695,
+        2961,
+        3421,
+        3421
+      ],
+      "stratzPlaybackValueByMinute": [
+        193,
+        0,
+        486,
+        565,
+        337,
+        740,
+        770,
+        210,
+        511,
+        0
+      ],
+      "windows": {
+        "dealt0to5": 1531,
+        "dealt5to10": 2231,
+        "dealt0to10": 3762,
+        "received0to10CandidateIndex9": 3421,
+        "receivedMatchesReplayAll10Boundaries": true,
+        "dealtMatchesReplay0to10": true,
+        "stratzPlayback0to10": 3812,
+        "openDotaCounter0to10": 3762
+      },
+      "capturedDamageEventFields": [
+        "damageType",
+        "time",
+        "value"
+      ],
+      "attackerTargetFieldsCaptured": false
+    },
+    {
+      "matchId": 9078566584,
+      "heroId": 42,
+      "playerSlot": 130,
+      "position": "POSITION_1",
+      "role": "CORE",
+      "lane": "SAFE_LANE",
+      "isStats": false,
+      "durationSeconds": 2227,
+      "gameVersionId": 190,
+      "gameMode": "ALL_PICK_RANKED",
+      "lobbyType": "RANKED",
+      "rank": 80,
+      "actualRank": 80,
+      "rawResponseSha256": "00557ccc2b7f59e1cf8bb8306b5d05fd7205dc38188aa7b1cb7d0a74f49b6e28",
+      "seriesLengths": {
+        "heroDamagePerMinute": 37,
+        "heroDamageReceivedPerMinute": 37,
+        "lastHitsPerMinute": 37,
+        "networthPerMinute": 38,
+        "experiencePerMinute": 37
+      },
+      "heroDamagePerMinuteFirst10": [
+        211,
+        424,
+        379,
+        916,
+        108,
+        905,
+        508,
+        102,
+        1549,
+        1233
+      ],
+      "heroDamageReceivedPerMinuteFirst10": [
+        0,
+        284,
+        717,
+        1812,
+        1812,
+        2579,
+        3586,
+        3586,
+        4206,
+        6539
+      ],
+      "replayDamageByMinute": [
+        211,
+        424,
+        379,
+        916,
+        108,
+        905,
+        508,
+        102,
+        1549,
+        1233
+      ],
+      "replayReceivedCumulativeAtMinuteEnd": [
+        0,
+        284,
+        717,
+        1812,
+        1812,
+        2579,
+        3586,
+        3586,
+        4206,
+        6539
+      ],
+      "stratzPlaybackValueByMinute": [
+        211,
+        424,
+        379,
+        916,
+        108,
+        905,
+        508,
+        102,
+        1549,
+        1233
+      ],
+      "windows": {
+        "dealt0to5": 2038,
+        "dealt5to10": 4297,
+        "dealt0to10": 6335,
+        "received0to10CandidateIndex9": 6539,
+        "receivedMatchesReplayAll10Boundaries": true,
+        "dealtMatchesReplay0to10": true,
+        "stratzPlayback0to10": 6335,
+        "openDotaCounter0to10": 6335
+      },
+      "capturedDamageEventFields": [
+        "damageType",
+        "time",
+        "value"
+      ],
+      "attackerTargetFieldsCaptured": false
+    }
+  ],
+  "aggregates": [
+    {
+      "requested": {
+        "heroId": 42,
+        "position": "POSITION_1",
+        "bracket": "DIVINE_IMMORTAL",
+        "isWith": false,
+        "period": "provider-default-unverified"
+      },
+      "rawResponseSha256": "ba7b5f978009ddd0cccc9a914fad02fbf419c640e9a929ff2be7b8c661bc59bd",
+      "rows": 118,
+      "returnedPositions": {
+        "POSITION_1": 118
+      },
+      "returnedBrackets": {
+        "UNCALIBRATED": 118
+      },
+      "returnedWeeks": [
+        2966
+      ],
+      "matchCountMin": 1,
+      "matchCountMax": 312,
+      "fiveOutcomeCountsSumToMatchCount": true,
+      "sampleRows": [
+        {
+          "heroId1": 42,
+          "heroId2": 131,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 33,
+          "drawCount": 9,
+          "winCount": 12,
+          "lossCount": 10,
+          "stompWinCount": 1,
+          "stompLossCount": 1,
+          "matchWinCount": 19,
+          "csCount": 1654
+        },
+        {
+          "heroId1": 42,
+          "heroId2": 76,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 6,
+          "drawCount": 2,
+          "winCount": 2,
+          "lossCount": 1,
+          "stompWinCount": 1,
+          "stompLossCount": 0,
+          "matchWinCount": 4,
+          "csCount": 297
+        }
+      ]
+    },
+    {
+      "requested": {
+        "heroId": 42,
+        "position": "POSITION_1",
+        "bracket": "DIVINE_IMMORTAL",
+        "isWith": true,
+        "period": "provider-default-unverified"
+      },
+      "rawResponseSha256": "e59ffa7d8a24aa21258f8e7df19f37ff6effef0fbc1b04392c64e3aae5b08555",
+      "rows": 95,
+      "returnedPositions": {
+        "POSITION_1": 95
+      },
+      "returnedBrackets": {
+        "UNCALIBRATED": 95
+      },
+      "returnedWeeks": [
+        2966
+      ],
+      "matchCountMin": 1,
+      "matchCountMax": 210,
+      "fiveOutcomeCountsSumToMatchCount": true,
+      "sampleRows": [
+        {
+          "heroId1": 42,
+          "heroId2": 131,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 57,
+          "drawCount": 17,
+          "winCount": 23,
+          "lossCount": 10,
+          "stompWinCount": 4,
+          "stompLossCount": 3,
+          "matchWinCount": 32,
+          "csCount": 2907
+        },
+        {
+          "heroId1": 42,
+          "heroId2": 76,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 5,
+          "drawCount": 3,
+          "winCount": 0,
+          "lossCount": 2,
+          "stompWinCount": 0,
+          "stompLossCount": 0,
+          "matchWinCount": 2,
+          "csCount": 254
+        }
+      ]
+    },
+    {
+      "requested": {
+        "heroId": 42,
+        "position": "POSITION_3",
+        "bracket": "DIVINE_IMMORTAL",
+        "isWith": false,
+        "period": "provider-default-unverified"
+      },
+      "rawResponseSha256": "132edc0217bcdd6ffd226856454e6364c0c146b17e75cddb992f56cbb0b9da0f",
+      "rows": 122,
+      "returnedPositions": {
+        "POSITION_1": 122
+      },
+      "returnedBrackets": {
+        "UNCALIBRATED": 122
+      },
+      "returnedWeeks": [
+        2966
+      ],
+      "matchCountMin": 1,
+      "matchCountMax": 521,
+      "fiveOutcomeCountsSumToMatchCount": true,
+      "sampleRows": [
+        {
+          "heroId1": 42,
+          "heroId2": 131,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 109,
+          "drawCount": 24,
+          "winCount": 37,
+          "lossCount": 35,
+          "stompWinCount": 5,
+          "stompLossCount": 8,
+          "matchWinCount": 62,
+          "csCount": 5023
+        },
+        {
+          "heroId1": 42,
+          "heroId2": 76,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 35,
+          "drawCount": 12,
+          "winCount": 11,
+          "lossCount": 10,
+          "stompWinCount": 2,
+          "stompLossCount": 0,
+          "matchWinCount": 19,
+          "csCount": 1398
+        }
+      ]
+    },
+    {
+      "requested": {
+        "heroId": 42,
+        "position": "POSITION_3",
+        "bracket": "DIVINE_IMMORTAL",
+        "isWith": true,
+        "period": "provider-default-unverified"
+      },
+      "rawResponseSha256": "46373ac58d315aa4295e30c7c046917ddcf7de8f65f6e76d3f4c94435d19c3f8",
+      "rows": 103,
+      "returnedPositions": {
+        "POSITION_1": 103
+      },
+      "returnedBrackets": {
+        "UNCALIBRATED": 103
+      },
+      "returnedWeeks": [
+        2966
+      ],
+      "matchCountMin": 1,
+      "matchCountMax": 384,
+      "fiveOutcomeCountsSumToMatchCount": true,
+      "sampleRows": [
+        {
+          "heroId1": 42,
+          "heroId2": 131,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 58,
+          "drawCount": 11,
+          "winCount": 26,
+          "lossCount": 13,
+          "stompWinCount": 3,
+          "stompLossCount": 5,
+          "matchWinCount": 29,
+          "csCount": 2637
+        },
+        {
+          "heroId1": 42,
+          "heroId2": 76,
+          "week": 2966,
+          "bracketBasicIds": "UNCALIBRATED",
+          "position": "POSITION_1",
+          "matchCount": 2,
+          "drawCount": 0,
+          "winCount": 1,
+          "lossCount": 1,
+          "stompWinCount": 0,
+          "stompLossCount": 0,
+          "matchWinCount": 1,
+          "csCount": 100
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The upload does not contain attacker/target/NPC/illusion fields: the original query omitted them. Schema presence is not data capture.",
+    "Game version identifiers differ between providers; 190 and 60 are not compared as a common patch ID.",
+    "No validated joint 2v2 cohort, sample size threshold, map geometry or pressure score."
+  ],
+  "wardCandidate": {
+    "matchId": 9003795847,
+    "stratzEvent": {
+      "time": 121,
+      "value": 50,
+      "damageType": "UNKNOWN"
+    },
+    "replayEvent": {
+      "time": 121,
+      "type": "DOTA_COMBATLOG_DAMAGE",
+      "value": 50,
+      "attackername": "npc_dota_hero_skeleton_king",
+      "targetname": "npc_dota_sentry_wards",
+      "sourcename": "npc_dota_hero_skeleton_king",
+      "targetsourcename": "npc_dota_hero_techies",
+      "attackerhero": true,
+      "targethero": false,
+      "attackerillusion": false,
+      "targetillusion": false,
+      "inflictor": "dota_unknown"
+    },
+    "status": "Same time/value as a ward hit; candidate explanation of extra playback value, not a confirmed STRATZ target identity"
+  }
+}
