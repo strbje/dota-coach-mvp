@@ -1,0 +1,1562 @@
+{
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "heroConstantsSha256": "5fe8f41250b5f705232f58d3238eaf89720e554958191ba3f323187803b73650",
+  "parserCommit": "927adf6bbd1fd321b711f544a5d754bfe75d89a7",
+  "coreCommit": "6511b56a709351d52f43ca082a4d2a5940dff060",
+  "matches": [
+    {
+      "matchId": 9019592113,
+      "heroId": 42,
+      "playerSlot": 129,
+      "startTime": 1790547169,
+      "duration": 2278,
+      "providerVersion": 22,
+      "patch": 60,
+      "gameMode": 22,
+      "lobbyType": 7,
+      "methodologyStatus": "research-only",
+      "productReady": false,
+      "confirmedPosition": null,
+      "rankCohort": null,
+      "windows": [
+        {
+          "start": 0,
+          "end": 300,
+          "status": "available",
+          "damage": 1555,
+          "startValue": 0,
+          "endValue": 1555
+        },
+        {
+          "start": 300,
+          "end": 600,
+          "status": "available",
+          "damage": 3209,
+          "startValue": 1555,
+          "endValue": 4764
+        },
+        {
+          "start": 0,
+          "end": 600,
+          "status": "available",
+          "damage": 4764,
+          "startValue": 0,
+          "endValue": 4764
+        }
+      ],
+      "counterComparisons": [
+        {
+          "time": 0,
+          "provider": 0,
+          "replay": 0,
+          "equal": true
+        },
+        {
+          "time": 60,
+          "provider": 381,
+          "replay": 381,
+          "equal": true
+        },
+        {
+          "time": 120,
+          "provider": 526,
+          "replay": 526,
+          "equal": true
+        },
+        {
+          "time": 180,
+          "provider": 855,
+          "replay": 855,
+          "equal": true
+        },
+        {
+          "time": 240,
+          "provider": 1198,
+          "replay": 1198,
+          "equal": true
+        },
+        {
+          "time": 300,
+          "provider": 1555,
+          "replay": 1555,
+          "equal": true
+        },
+        {
+          "time": 360,
+          "provider": 1555,
+          "replay": 1555,
+          "equal": true
+        },
+        {
+          "time": 420,
+          "provider": 2890,
+          "replay": 2890,
+          "equal": true
+        },
+        {
+          "time": 480,
+          "provider": 3322,
+          "replay": 3173,
+          "equal": false,
+          "nextSecondReplay": 3322
+        },
+        {
+          "time": 540,
+          "provider": 4189,
+          "replay": 4189,
+          "equal": true
+        },
+        {
+          "time": 600,
+          "provider": 4764,
+          "replay": 4688,
+          "equal": false,
+          "nextSecondReplay": 4764
+        }
+      ],
+      "combat": {
+        "bounds": "0 <= rounded parser time < 600; no clock shift applied",
+        "damageDealt": 4688,
+        "byActor": {
+          "npc_dota_hero_skeleton_king": 2341,
+          "npc_dota_wraith_king_skeleton_warrior": 2347
+        },
+        "targets": [
+          {
+            "heroId": 31,
+            "name": "Lich",
+            "providerLane": 3,
+            "sameProviderLaneAsSelected": true,
+            "damage": 1472,
+            "firstRoundedSecond": 38,
+            "lastRoundedSecond": 599
+          },
+          {
+            "heroId": 97,
+            "name": "Magnus",
+            "providerLane": 3,
+            "sameProviderLaneAsSelected": true,
+            "damage": 2279,
+            "firstRoundedSecond": 55,
+            "lastRoundedSecond": 599
+          },
+          {
+            "heroId": 5,
+            "name": "Crystal Maiden",
+            "providerLane": 1,
+            "sameProviderLaneAsSelected": false,
+            "damage": 746,
+            "firstRoundedSecond": 400,
+            "lastRoundedSecond": 500
+          },
+          {
+            "heroId": 49,
+            "name": "Dragon Knight",
+            "providerLane": 2,
+            "sameProviderLaneAsSelected": false,
+            "damage": 191,
+            "firstRoundedSecond": 593,
+            "lastRoundedSecond": 599
+          }
+        ],
+        "damageReceivedFromEnemyHeroOwners": 4154,
+        "receivedByOwner": {
+          "npc_dota_hero_lich": 1252,
+          "npc_dota_hero_magnataur": 2058,
+          "npc_dota_hero_crystal_maiden": 367,
+          "npc_dota_hero_dragon_knight": 477
+        },
+        "targetIllusionDamageExcluded": 0,
+        "attackerIllusionDamageIncluded": 0,
+        "receivedUnattributedOrNonEnemyOwnerDamageExcluded": 1306
+      },
+      "roster": [
+        {
+          "heroId": 97,
+          "name": "Magnus",
+          "playerSlot": 0,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 26,
+                "top": 253,
+                "dead-or-dying": 18,
+                "mid": 3
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 270,
+                "dead-or-dying": 24,
+                "mid": 5,
+                "dire-jungle": 1
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 5,
+          "name": "Crystal Maiden",
+          "playerSlot": 1,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 21,
+                "dire-jungle": 5,
+                "bottom": 230,
+                "dead-or-dying": 31,
+                "top": 4,
+                "radiant-jungle": 9
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 65,
+                "dead-or-dying": 18,
+                "mid": 114,
+                "top": 72,
+                "dire-jungle": 16,
+                "radiant-jungle": 15
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 54,
+          "name": "Lifestealer",
+          "playerSlot": 2,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "radiant-jungle": 5,
+                "bottom": 295
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 232,
+                "outside": 7,
+                "dead-or-dying": 54,
+                "mid": 7
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 31,
+          "name": "Lich",
+          "playerSlot": 3,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 58,
+                "top": 218,
+                "dead-or-dying": 12,
+                "mid": 12
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 214,
+                "dire-jungle": 24,
+                "mid": 62
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 49,
+          "name": "Dragon Knight",
+          "playerSlot": 4,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 300
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 193,
+                "dire-jungle": 21,
+                "bottom": 27,
+                "radiant-jungle": 13,
+                "top": 40,
+                "outside": 6
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 121,
+          "name": "Grimstroke",
+          "playerSlot": 128,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 18,
+                "dire-jungle": 40,
+                "top": 224,
+                "dead-or-dying": 18
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 163,
+                "dire-jungle": 49,
+                "mid": 16,
+                "dead-or-dying": 57,
+                "bottom": 10,
+                "outside": 5
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 42,
+          "name": "Wraith King",
+          "playerSlot": 129,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 7,
+                "dire-jungle": 20,
+                "top": 273
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 273,
+                "dead-or-dying": 24,
+                "mid": 3
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 14,
+          "name": "Pudge",
+          "playerSlot": 130,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 10,
+                "radiant-jungle": 12,
+                "bottom": 263,
+                "dead-or-dying": 15
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 246,
+                "dead-or-dying": 21,
+                "mid": 5,
+                "top": 28
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 105,
+          "name": "Techies",
+          "playerSlot": 131,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 1,
+                "radiant-jungle": 18,
+                "bottom": 281
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 102,
+                "radiant-jungle": 44,
+                "dead-or-dying": 24,
+                "mid": 86,
+                "dire-jungle": 24,
+                "top": 20
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 106,
+          "name": "Ember Spirit",
+          "playerSlot": 132,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 284,
+                "dead-or-dying": 16
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 122,
+                "dire-jungle": 98,
+                "top": 3,
+                "bottom": 64,
+                "outside": 13
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "No current authenticated STRATZ damage capture.",
+        "No verified hard-lane/early-jungle-exit label.",
+        "Coarse buckets count samples, not validated time on lane.",
+        "Counter and combat windows may differ at rounded boundaries.",
+        "No matchup cohort, quality score, or causal conclusion."
+      ],
+      "provenance": {
+        "endpoint": "https://api.opendota.com/api/matches/9019592113",
+        "responseDate": "Sat, 07 Nov 2026 11:23:54 GMT",
+        "responseSha256": "9249dbceff16204ce03ec5b8126849f43eacc8903411a50d23c1300fb0acea34",
+        "projectionSha256": "b78b6b03e2a0d5994180447b848d168245895385c24b5395604b76d177784332",
+        "replayArchiveSha256": "afcd4f95af3dce38bbed613e8518fc059b2782365a65d3561799c8ebc7550b07",
+        "replayArchiveBytes": 47463072
+      }
+    },
+    {
+      "matchId": 9003795847,
+      "heroId": 42,
+      "playerSlot": 1,
+      "startTime": 1789679396,
+      "duration": 1793,
+      "providerVersion": 22,
+      "patch": 60,
+      "gameMode": 22,
+      "lobbyType": 7,
+      "methodologyStatus": "research-only",
+      "productReady": false,
+      "confirmedPosition": null,
+      "rankCohort": null,
+      "windows": [
+        {
+          "start": 0,
+          "end": 300,
+          "status": "available",
+          "damage": 1531,
+          "startValue": 0,
+          "endValue": 1531
+        },
+        {
+          "start": 300,
+          "end": 600,
+          "status": "available",
+          "damage": 2231,
+          "startValue": 1531,
+          "endValue": 3762
+        },
+        {
+          "start": 0,
+          "end": 600,
+          "status": "available",
+          "damage": 3762,
+          "startValue": 0,
+          "endValue": 3762
+        }
+      ],
+      "counterComparisons": [
+        {
+          "time": 0,
+          "provider": 0,
+          "replay": 0,
+          "equal": true
+        },
+        {
+          "time": 60,
+          "provider": 193,
+          "replay": 193,
+          "equal": true
+        },
+        {
+          "time": 120,
+          "provider": 193,
+          "replay": 193,
+          "equal": true
+        },
+        {
+          "time": 180,
+          "provider": 629,
+          "replay": 629,
+          "equal": true
+        },
+        {
+          "time": 240,
+          "provider": 1194,
+          "replay": 1158,
+          "equal": false,
+          "nextSecondReplay": 1194
+        },
+        {
+          "time": 300,
+          "provider": 1531,
+          "replay": 1531,
+          "equal": true
+        },
+        {
+          "time": 360,
+          "provider": 2271,
+          "replay": 2271,
+          "equal": true
+        },
+        {
+          "time": 420,
+          "provider": 3041,
+          "replay": 3041,
+          "equal": true
+        },
+        {
+          "time": 480,
+          "provider": 3251,
+          "replay": 3251,
+          "equal": true
+        },
+        {
+          "time": 540,
+          "provider": 3762,
+          "replay": 3762,
+          "equal": true
+        },
+        {
+          "time": 600,
+          "provider": 3762,
+          "replay": 3762,
+          "equal": true
+        }
+      ],
+      "combat": {
+        "bounds": "0 <= rounded parser time < 600; no clock shift applied",
+        "damageDealt": 3762,
+        "byActor": {
+          "npc_dota_hero_skeleton_king": 2469,
+          "npc_dota_wraith_king_skeleton_warrior": 1293
+        },
+        "targets": [
+          {
+            "heroId": 2,
+            "name": "Axe",
+            "providerLane": 1,
+            "sameProviderLaneAsSelected": true,
+            "damage": 1921,
+            "firstRoundedSecond": 35,
+            "lastRoundedSecond": 492
+          },
+          {
+            "heroId": 105,
+            "name": "Techies",
+            "providerLane": 1,
+            "sameProviderLaneAsSelected": true,
+            "damage": 1841,
+            "firstRoundedSecond": 134,
+            "lastRoundedSecond": 396
+          }
+        ],
+        "damageReceivedFromEnemyHeroOwners": 3421,
+        "receivedByOwner": {
+          "npc_dota_hero_axe": 1425,
+          "npc_dota_hero_techies": 1996
+        },
+        "targetIllusionDamageExcluded": 0,
+        "attackerIllusionDamageIncluded": 0,
+        "receivedUnattributedOrNonEnemyOwnerDamageExcluded": 1642
+      },
+      "roster": [
+        {
+          "heroId": 111,
+          "name": "Oracle",
+          "playerSlot": 0,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 294,
+                "radiant-jungle": 6
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 151,
+                "dead-or-dying": 42,
+                "mid": 36,
+                "outside": 2,
+                "top": 44,
+                "dire-jungle": 25
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 42,
+          "name": "Wraith King",
+          "playerSlot": 1,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 283,
+                "dead-or-dying": 11,
+                "mid": 4,
+                "radiant-jungle": 2
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 298,
+                "outside": 2
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 88,
+          "name": "Nyx Assassin",
+          "playerSlot": 2,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 102,
+                "top": 156,
+                "mid": 42
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 127,
+                "dire-jungle": 40,
+                "bottom": 87,
+                "outside": 19,
+                "dead-or-dying": 18,
+                "mid": 9
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 99,
+          "name": "Bristleback",
+          "playerSlot": 3,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 47,
+                "mid": 7,
+                "top": 246
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 281,
+                "dire-jungle": 19
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 17,
+          "name": "Storm Spirit",
+          "playerSlot": 4,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 300
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 159,
+                "radiant-jungle": 96,
+                "bottom": 16,
+                "top": 5,
+                "dire-jungle": 24
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 120,
+          "name": "Pangolier",
+          "playerSlot": 128,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 300
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 183,
+                "bottom": 12,
+                "radiant-jungle": 11,
+                "dire-jungle": 47,
+                "top": 19,
+                "dead-or-dying": 28
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 2,
+          "name": "Axe",
+          "playerSlot": 129,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 276,
+                "radiant-jungle": 3,
+                "dead-or-dying": 18,
+                "mid": 3
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 242,
+                "radiant-jungle": 17,
+                "outside": 12,
+                "dead-or-dying": 26,
+                "mid": 3
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 37,
+          "name": "Warlock",
+          "playerSlot": 130,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": true,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 26,
+                "radiant-jungle": 9,
+                "top": 138,
+                "dire-jungle": 94,
+                "mid": 18,
+                "dead-or-dying": 15
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 58,
+                "bottom": 75,
+                "dire-jungle": 54,
+                "mid": 83,
+                "radiant-jungle": 9,
+                "dead-or-dying": 21
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 105,
+          "name": "Techies",
+          "playerSlot": 131,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 260,
+                "dead-or-dying": 30,
+                "mid": 3,
+                "radiant-jungle": 2,
+                "top": 5
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 146,
+                "outside": 8,
+                "dead-or-dying": 39,
+                "mid": 57,
+                "radiant-jungle": 9,
+                "top": 28,
+                "dire-jungle": 13
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 56,
+          "name": "Clinkz",
+          "playerSlot": 132,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 42,
+                "top": 258
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 246,
+                "dead-or-dying": 47,
+                "mid": 4,
+                "dire-jungle": 3
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "No current authenticated STRATZ damage capture.",
+        "No verified hard-lane/early-jungle-exit label.",
+        "Coarse buckets count samples, not validated time on lane.",
+        "Counter and combat windows may differ at rounded boundaries.",
+        "No matchup cohort, quality score, or causal conclusion."
+      ],
+      "provenance": {
+        "endpoint": "https://api.opendota.com/api/matches/9003795847",
+        "responseDate": "Sat, 07 Nov 2026 11:23:56 GMT",
+        "responseSha256": "6f2a21e894ffef7deaa835b59d2ebd0e35da4b3a35a7548017f3524cba0fcfd0",
+        "projectionSha256": "c5f6e27bb5cafca8b02cd7f46c438b5b7942b7b8105d16057610915da22beef8",
+        "replayArchiveSha256": "8fb6f938727bc3cc204d10d484ce2e072664e9bb5ba8f3c9bfb526b9753a87c5",
+        "replayArchiveBytes": 35972094
+      }
+    },
+    {
+      "matchId": 9078566584,
+      "heroId": 42,
+      "playerSlot": 130,
+      "startTime": 1793974335,
+      "duration": 2227,
+      "providerVersion": 22,
+      "patch": 60,
+      "gameMode": 22,
+      "lobbyType": 7,
+      "methodologyStatus": "research-only",
+      "productReady": false,
+      "confirmedPosition": null,
+      "rankCohort": null,
+      "windows": [
+        {
+          "start": 0,
+          "end": 300,
+          "status": "available",
+          "damage": 2038,
+          "startValue": 0,
+          "endValue": 2038
+        },
+        {
+          "start": 300,
+          "end": 600,
+          "status": "available",
+          "damage": 4297,
+          "startValue": 2038,
+          "endValue": 6335
+        },
+        {
+          "start": 0,
+          "end": 600,
+          "status": "available",
+          "damage": 6335,
+          "startValue": 0,
+          "endValue": 6335
+        }
+      ],
+      "counterComparisons": [
+        {
+          "time": 0,
+          "provider": 0,
+          "replay": 0,
+          "equal": true
+        },
+        {
+          "time": 60,
+          "provider": 211,
+          "replay": 211,
+          "equal": true
+        },
+        {
+          "time": 120,
+          "provider": 635,
+          "replay": 635,
+          "equal": true
+        },
+        {
+          "time": 180,
+          "provider": 1014,
+          "replay": 1014,
+          "equal": true
+        },
+        {
+          "time": 240,
+          "provider": 1930,
+          "replay": 1930,
+          "equal": true
+        },
+        {
+          "time": 300,
+          "provider": 2038,
+          "replay": 2038,
+          "equal": true
+        },
+        {
+          "time": 360,
+          "provider": 2943,
+          "replay": 2943,
+          "equal": true
+        },
+        {
+          "time": 420,
+          "provider": 3451,
+          "replay": 3451,
+          "equal": true
+        },
+        {
+          "time": 480,
+          "provider": 3553,
+          "replay": 3553,
+          "equal": true
+        },
+        {
+          "time": 540,
+          "provider": 5102,
+          "replay": 5102,
+          "equal": true
+        },
+        {
+          "time": 600,
+          "provider": 6335,
+          "replay": 6335,
+          "equal": true
+        }
+      ],
+      "combat": {
+        "bounds": "0 <= rounded parser time < 600; no clock shift applied",
+        "damageDealt": 6335,
+        "byActor": {
+          "npc_dota_hero_skeleton_king": 2376,
+          "npc_dota_wraith_king_skeleton_warrior": 3959
+        },
+        "targets": [
+          {
+            "heroId": 60,
+            "name": "Night Stalker",
+            "providerLane": 3,
+            "sameProviderLaneAsSelected": true,
+            "damage": 3009,
+            "firstRoundedSecond": 46,
+            "lastRoundedSecond": 588
+          },
+          {
+            "heroId": 112,
+            "name": "Winter Wyvern",
+            "providerLane": 3,
+            "sameProviderLaneAsSelected": true,
+            "damage": 2281,
+            "firstRoundedSecond": 81,
+            "lastRoundedSecond": 584
+          },
+          {
+            "heroId": 57,
+            "name": "Omniknight",
+            "providerLane": 1,
+            "sameProviderLaneAsSelected": false,
+            "damage": 1045,
+            "firstRoundedSecond": 490,
+            "lastRoundedSecond": 596
+          }
+        ],
+        "damageReceivedFromEnemyHeroOwners": 6539,
+        "receivedByOwner": {
+          "npc_dota_hero_winter_wyvern": 3190,
+          "npc_dota_hero_night_stalker": 2912,
+          "npc_dota_hero_omniknight": 437
+        },
+        "targetIllusionDamageExcluded": 0,
+        "attackerIllusionDamageIncluded": 0,
+        "receivedUnattributedOrNonEnemyOwnerDamageExcluded": 1235
+      },
+      "roster": [
+        {
+          "heroId": 60,
+          "name": "Night Stalker",
+          "playerSlot": 0,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "dire-jungle": 21,
+                "top": 236,
+                "dead-or-dying": 33,
+                "mid": 10
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 281,
+                "dire-jungle": 19
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 78,
+          "name": "Brewmaster",
+          "playerSlot": 1,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 279,
+                "radiant-jungle": 20,
+                "bottom": 1
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 290,
+                "dead-or-dying": 10
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 57,
+          "name": "Omniknight",
+          "playerSlot": 2,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 295,
+                "radiant-jungle": 5
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 181,
+                "radiant-jungle": 8,
+                "top": 82,
+                "dire-jungle": 29
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 112,
+          "name": "Winter Wyvern",
+          "playerSlot": 3,
+          "providerLane": 3,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 16,
+                "dire-jungle": 13,
+                "top": 259,
+                "dead-or-dying": 12
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 242,
+                "dire-jungle": 27,
+                "dead-or-dying": 24,
+                "mid": 7
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 1,
+          "name": "Anti-Mage",
+          "playerSlot": 4,
+          "providerLane": 1,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 286,
+                "top": 2,
+                "mid": 12
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 263,
+                "radiant-jungle": 5,
+                "dead-or-dying": 26,
+                "mid": 6
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 25,
+          "name": "Lina",
+          "playerSlot": 128,
+          "providerLane": 2,
+          "providerLaneRole": 2,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "radiant-jungle": 6,
+                "mid": 294
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 206,
+                "dire-jungle": 44,
+                "dead-or-dying": 40,
+                "top": 10
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 49,
+          "name": "Dragon Knight",
+          "playerSlot": 129,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 297,
+                "radiant-jungle": 3
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 300
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 42,
+          "name": "Wraith King",
+          "playerSlot": 130,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "mid": 3,
+                "dire-jungle": 10,
+                "top": 287
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 234,
+                "dead-or-dying": 24,
+                "dire-jungle": 42
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 111,
+          "name": "Oracle",
+          "playerSlot": 131,
+          "providerLane": 3,
+          "providerLaneRole": 1,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "radiant-jungle": 17,
+                "top": 244,
+                "dire-jungle": 17,
+                "dead-or-dying": 15,
+                "mid": 7
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "top": 198,
+                "dire-jungle": 51,
+                "dead-or-dying": 21,
+                "mid": 30
+              }
+            }
+          ]
+        },
+        {
+          "heroId": 79,
+          "name": "Shadow Demon",
+          "playerSlot": 132,
+          "providerLane": 1,
+          "providerLaneRole": 3,
+          "providerRoaming": false,
+          "confirmedPosition": null,
+          "samples": [
+            {
+              "start": 0,
+              "end": 300,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 289,
+                "radiant-jungle": 11
+              }
+            },
+            {
+              "start": 300,
+              "end": 600,
+              "samples": 300,
+              "expectedOneSecondSamples": 300,
+              "buckets": {
+                "bottom": 234,
+                "dead-or-dying": 18,
+                "mid": 27,
+                "radiant-jungle": 11,
+                "outside": 3,
+                "top": 7
+              }
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "No current authenticated STRATZ damage capture.",
+        "No verified hard-lane/early-jungle-exit label.",
+        "Coarse buckets count samples, not validated time on lane.",
+        "Counter and combat windows may differ at rounded boundaries.",
+        "No matchup cohort, quality score, or causal conclusion."
+      ],
+      "provenance": {
+        "endpoint": "https://api.opendota.com/api/matches/9078566584",
+        "responseDate": "Sat, 07 Nov 2026 11:23:54 GMT",
+        "responseSha256": "89b18a2a9d2d27ce12f33b93dbd78691bf8803f55333938e6097a211390f7f44",
+        "projectionSha256": "cc887720b15e6d1ce4ff706700a6ebee779cbf9014b6cc6f6a16d37d3c26c63b",
+        "replayArchiveSha256": "e2426fd5197a2eb53aeeb73b26dee385162745d15f198597abcfb6831a0e2847",
+        "replayArchiveBytes": 45190762
+      }
+    }
+  ]
+}
