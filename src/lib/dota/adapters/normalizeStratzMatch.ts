@@ -96,7 +96,7 @@ export function normalizeStratzMatch(raw: unknown, selector: PlayerSelector) {
     && ['steamAccountId', 'playerSlot', 'heroId'].every((key) => asNumber(selected[key]) !== undefined && farmPlayers[0][key] === selected[key]) ? farmPlayers[0] : undefined;
   const farmPlayback = farmPlayer?.playbackData as UnknownRecord | undefined;
   const farmEvents = normalizeFarmEvents(playbackData.csEvents ?? farmPlayback?.csEvents,
-    selected?.numLastHits ?? farmPlayer?.numLastHits, asNumber(match?.durationSeconds));
+    selected?.numLastHits ?? farmPlayer?.numLastHits, asNumber(match?.durationSeconds), match?.gameVersionId);
   const positionRaw = asArray<UnknownRecord>(playbackData.playerUpdatePositionEvents);
 
   const positionSamples: StratzPositionSample[] = positionRaw

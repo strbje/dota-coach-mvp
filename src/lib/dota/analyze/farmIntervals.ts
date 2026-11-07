@@ -1,4 +1,5 @@
 import type { FarmCategory, FarmEvents } from '../normalize/farmEvents';
+import type { OtherFarmTarget } from '../normalize/farmTargets';
 
 export type FarmInterval = {
   from: number;
@@ -7,6 +8,7 @@ export type FarmInterval = {
   lastHits?: number;
   perMinute?: number;
   breakdown?: Record<FarmCategory, number>;
+  otherTargets?: Array<OtherFarmTarget & { count: number }>;
 };
 export type FarmIntervalReport = {
   source: 'opendota' | 'stratz' | 'unavailable';
@@ -36,8 +38,17 @@ export function buildFarmIntervals(durationSeconds: number, minutes?: Array<numb
     const events = eligibleEvents?.filter((event) => event.timeSeconds >= from
       && (event.timeSeconds < to || to === durationSeconds && event.timeSeconds === to));
     if (events?.length || completeEvents) {
-      interval.breakdown = { lane: 0, neutral: 0, ancient: 0, unclassified: 0 };
-      for (const event of events ?? []) interval.breakdown[event.category]++;
+      interval.breakdown = { lane: 0, neutral: 0, ancient: 0, other: 0, unclassified: 0 };
+      const targets = new Map<number, OtherFarmTarget & { count: number }>();
+      for (const event of events ?? []) {
+        interval.breakdown[event.category]++;
+        if (event.category === 'other' && event.target) {
+          const target = targets.get(event.target.npcId);
+          if (target) target.count++;
+          else targets.set(event.target.npcId, { ...event.target, count: 1 });
+        }
+      }
+      if (targets.size) interval.otherTargets = [...targets.values()].sort((a, b) => a.npcId - b.npcId);
     }
     if (source === 'stratz') {
       interval.lastHits = events!.length;

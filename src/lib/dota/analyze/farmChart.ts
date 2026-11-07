@@ -4,6 +4,7 @@ export const farmTypes = [
   { key: 'lane', label: 'Крипы на линии' },
   { key: 'neutral', label: 'Нейтралы' },
   { key: 'ancient', label: 'Эншенты' },
+  { key: 'other', label: 'Другие цели' },
   { key: 'unclassified', label: 'Тип не определён' }
 ] as const;
 

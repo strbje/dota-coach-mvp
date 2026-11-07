@@ -4,12 +4,13 @@ import { farmChart } from './farmChart';
 import type { FarmIntervalReport } from './farmIntervals';
 
 const report: FarmIntervalReport = { source: 'stratz', eventCoverage: 'complete', receivedEvents: 35, reportedLastHits: 35, rejectedEvents: 0,
-  intervals: [{ from: 0, to: 300, lastHits: 25, perMinute: 5, breakdown: { lane: 10, neutral: 5, ancient: 5, unclassified: 5 } },
-    { from: 300, to: 360, lastHits: 10, perMinute: 10, breakdown: { lane: 10, neutral: 0, ancient: 0, unclassified: 0 } }] };
+  intervals: [{ from: 0, to: 300, lastHits: 25, perMinute: 5, breakdown: { lane: 10, neutral: 5, ancient: 5, other: 3, unclassified: 2 } },
+    { from: 300, to: 360, lastHits: 10, perMinute: 10, breakdown: { lane: 10, neutral: 0, ancient: 0, other: 0, unclassified: 0 } }] };
 test('farm chart uses rates, including a short last window, and preserves unknown types', () => {
   const chart = farmChart(report);
   assert.equal(chart.max, 10);
-  assert.deepEqual(chart.bars[0].segments?.map((part) => part.rate), [2, 1, 1, 1]);
+  assert.deepEqual(chart.bars[0].segments?.map((part) => part.rate), [2, 1, 1, 0.6, 0.4]);
+  assert.equal(chart.bars[0].segments?.reduce((sum, part) => sum + part.rate, 0), 5);
   assert.equal(chart.bars[1].segments?.[0].rate, 10);
   assert.equal(chart.bars[1].short, true);
 });

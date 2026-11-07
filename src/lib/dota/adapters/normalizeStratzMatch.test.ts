@@ -10,11 +10,12 @@ type RawEventStats = {
 
 test('optional selected-account farm alias preserves combat/role context and rejects mismatched players', () => {
   const selected = { steamAccountId: 101, playerSlot: 0, heroId: 42, position: 'POSITION_1', stats: { deathEvents: [{ time: 200 }] } };
-  const farm = { ...selected, numLastHits: 2, playbackData: { csEvents: [{ time: 60 }, { time: 60 }] } };
-  const raw = { data: { match: { id: 123, durationSeconds: 600, players: [selected], farmPlayers: [farm] } } };
+  const farm = { ...selected, numLastHits: 2, playbackData: { csEvents: [{ time: 60 }, { time: 60, npcId: 111, isCreep: false, isNeutral: false, isAncient: false }] } };
+  const raw = { data: { match: { id: 123, durationSeconds: 600, gameVersionId: 190, players: [selected], farmPlayers: [farm] } } };
   const normalized = normalizeStratzMatch(raw, { accountId: 101 });
   assert.equal(normalized.normalized.selectedPlayer?.farmEvents?.coverage, 'complete');
   assert.equal(normalized.normalized.selectedPlayer?.farmEvents?.events.length, 2);
+  assert.equal(normalized.normalized.selectedPlayer?.farmEvents?.events[1].target?.label, 'Сентри');
   assert.equal(normalized.normalized.selectedPlayer?.position, 'POSITION_1');
   assert.equal(normalized.deathTimings?.[0].timeSeconds, 200);
   for (const farmPlayers of [[], [null], [farm, farm], [{ ...farm, steamAccountId: 202 }], [{ ...farm, heroId: 54 }], [{ ...farm, playerSlot: 128 }]]) {

@@ -1,5 +1,6 @@
 import type { PostMatchAnalysis } from '../types/domain';
 import type { FarmIntervalReport } from '../analyze/farmIntervals';
+import { otherTargetKinds } from '../normalize/farmTargets';
 
 function isFarmReport(value: unknown): value is FarmIntervalReport {
   if (!value || typeof value !== 'object') return false;
@@ -16,8 +17,13 @@ function isFarmReport(value: unknown): value is FarmIntervalReport {
       && (interval.lastHits === undefined ? interval.perMinute === undefined && interval.coveredTo === undefined
         : count(interval.lastHits) && typeof interval.perMinute === 'number' && Number.isFinite(interval.perMinute) && interval.perMinute >= 0
           && typeof interval.coveredTo === 'number' && interval.coveredTo > interval.from && interval.coveredTo <= interval.to)
-      && (interval.breakdown === undefined || Boolean(interval.breakdown && ['lane', 'neutral', 'ancient', 'unclassified']
-        .every((key) => count(interval.breakdown![key as keyof typeof interval.breakdown])))))
+      && (interval.breakdown === undefined || Boolean(interval.breakdown && ['lane', 'neutral', 'ancient', 'other', 'unclassified']
+        .every((key) => count(interval.breakdown![key as keyof typeof interval.breakdown]))))
+      && (interval.otherTargets === undefined || Array.isArray(interval.otherTargets)
+        && interval.otherTargets.every((target) => target && count(target.npcId) && count(target.count) && target.count > 0
+          && otherTargetKinds.includes(target.kind) && typeof target.label === 'string' && target.label.trim().length > 0)
+        && new Set(interval.otherTargets.map((target) => target.npcId)).size === interval.otherTargets.length
+        && interval.otherTargets.reduce((sum, target) => sum + target.count, 0) <= (interval.breakdown?.other ?? 0)))
     && (report.highlightIndex === undefined || Number.isInteger(report.highlightIndex) && report.highlightIndex > 0
       && report.highlightIndex < report.intervals.length
       && [report.intervals[report.highlightIndex - 1], report.intervals[report.highlightIndex]]

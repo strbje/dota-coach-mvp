@@ -4,6 +4,7 @@ import { Button, Panel } from '@/components/ui';
 import { farmChart, farmTypes } from '@/lib/dota/analyze/farmChart';
 import type { FarmIntervalReport } from '@/lib/dota/analyze/farmIntervals';
 import { formatGameTime } from '@/lib/dota/utils/time';
+import { FarmBreakdown, otherTargetsHint } from './FarmBreakdown';
 import styles from './postMatch.module.css';
 
 const pace = (value: number) => value.toLocaleString('ru-RU', { maximumFractionDigits: 1 });
@@ -23,12 +24,13 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
   const activeIndex = Math.min(selectedIndex ?? highlightIndex ?? 0, intervals.length - 1);
   const inspected = chart.bars[previewIndex ?? activeIndex];
   const split = chart.bars.some((bar) => bar.segments);
+  const visibleTypes = farmTypes.filter((type) => chart.bars.some((bar) => bar.segments?.some((part) => part.key === type.key && part.rate > 0)));
   const hasPace = chart.bars.some((bar) => bar.perMinute !== undefined);
   const show = (index: number) => onEvidence(intervals[index].from, intervals[index].to, index < intervals.length - 1);
   return <Panel className={styles.chartPanel}>
     <h2>Фарм по времени</h2>
     <p className={styles.note}>{hasPace ? 'Добивания в минуту · выбери столбец, чтобы увидеть числа по типам.' : 'Полный темп недоступен. Частичная разбивка событий — в деталях.'}</p>
-    {split ? <ul className={styles.farmLegend} aria-label="Типы добиваний">{farmTypes.map((type) => <li key={type.key}><i className={styles[type.key]} aria-hidden="true" />{type.label}</li>)}</ul> : hasPace ? <p className={styles.note}>Общий темп · полной разбивки по типам нет.</p> : null}
+    {split ? <ul className={styles.farmLegend} aria-label="Типы добиваний">{visibleTypes.map((type) => <li key={type.key} title={type.key === 'other' ? otherTargetsHint : undefined}><i className={styles[type.key]} aria-hidden="true" />{type.label}</li>)}</ul> : hasPace ? <p className={styles.note}>Общий темп · полной разбивки по типам нет.</p> : null}
     {hasPace ? <div className={styles.farmChart}>
       <div className={styles.farmAxis} aria-hidden="true"><span>{pace(chart.max)}</span><span>{pace(chart.max / 2)}</span><span>0</span></div>
       <div className={styles.farmPlot}>
@@ -36,7 +38,12 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
           {chart.bars.map((bar, index) => <li key={bar.from}>
             <Button type="button" variant="ghost" className={styles.farmBar} aria-controls={detailsId} aria-pressed={index === activeIndex}
               aria-label={`Фарм ${range(bar.from, bar.to)}: ${bar.perMinute === undefined ? 'темп неизвестен' : `${pace(bar.perMinute)} добиваний в минуту`}${bar.partial ? ', неполный отрезок' : ''}${bar.short ? ', короткое окончание' : ''}`}
-              onClick={() => { setSelectedIndex(index); setPreviewIndex(undefined); }} onMouseEnter={() => setPreviewIndex(index)} onMouseLeave={() => setPreviewIndex(undefined)} onFocus={() => setPreviewIndex(index)} onBlur={() => setPreviewIndex(undefined)}>
+              onClick={() => { setSelectedIndex(index); setPreviewIndex(undefined); }} onMouseEnter={() => setPreviewIndex(index)} onMouseLeave={() => setPreviewIndex(undefined)} onFocus={() => setPreviewIndex(index)}
+              onBlur={(event) => {
+                // Keep the inspected window mounted when keyboard focus enters its disclosure.
+                if (event.relatedTarget instanceof Node && document.getElementById(detailsId)?.contains(event.relatedTarget)) setSelectedIndex(index);
+                setPreviewIndex(undefined);
+              }}>
               <span className={styles.barValue}>{bar.perMinute === undefined ? '—' : pace(bar.perMinute)}{bar.partial || bar.short ? '*' : ''}</span>
               <span className={styles.barTrack} aria-hidden="true">
                 {bar.perMinute === undefined ? <span className={styles.barMissing}>Нет данных</span> : <span className={`${styles.barStack} ${index === activeIndex ? styles.barHighlight : ''}`} style={{ height: `${bar.perMinute / chart.max * 100}%` }}>
@@ -51,10 +58,10 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
     </div> : null}
     {hasPace && inspected ? <section id={detailsId} className={styles.farmReadout} aria-label="Числа выбранного отрезка">
       <h3>{range(inspected.from, inspected.to)} · {inspected.lastHits === undefined ? 'число добиваний недоступно' : `${inspected.lastHits} добиваний`}</h3>
-      {inspected.segments && inspected.breakdown ? <dl>{farmTypes.map((type) => <div key={type.key}><dt>{type.label}</dt><dd>{inspected.breakdown![type.key]}</dd></div>)}</dl> : <p className={styles.note}>Полной разбивки по типам для этого отрезка нет.</p>}
+      {inspected.segments && inspected.breakdown ? <FarmBreakdown key={inspected.from} interval={inspected} /> : <p className={styles.note}>Полной разбивки по типам для этого отрезка нет.</p>}
       <Button type="button" variant="secondary" aria-controls="team-advantage" onClick={() => onEvidence(inspected.from, inspected.to, inspected.to !== intervals.at(-1)?.to)}>События {range(inspected.from, inspected.to)}</Button>
     </section> : null}
-    {split ? <details><summary>Что означают типы добиваний</summary><p className={styles.note}>Эншенты — древние нейтралы. «Тип не определён» уже входит в общий счёт: источник не дал однозначной категории. Это могут быть и другие юниты или объекты.</p></details> : null}
+    {split ? <details><summary>Что означают типы добиваний</summary><p className={styles.note}>Эншенты — древние нейтралы. «Другие цели» — распознанные саммоны, варды и объекты; состав можно раскрыть у выбранного столбца. «Тип не определён» — цель пока не распознана. Все категории уже входят в общий счёт. Тип относится к убитой цели: добивания твоими саммонами тоже учитываются.</p></details> : null}
     {chart.bars.some((bar) => bar.short || bar.partial) ? <p className={styles.note}>* Темп за доступную часть отрезка. Короткие и неполные отрезки не участвуют в выборе снижения.</p> : null}
     {current && previous ? <div className={styles.farmObservation}>
       <h3>{range(current.from, current.to)} · темп снизился с {pace(previous.perMinute!)} до {pace(current.perMinute!)} добиваний/мин</h3>
@@ -77,16 +84,11 @@ export function FarmIntervals({ report, onEvidence }: { report?: FarmIntervalRep
         {interval.to - interval.from < 300 ? <p className={styles.note}>Короткое окончание матча; не участвует в выборе снижения темпа.</p> : null}
         {interval.breakdown ? <details className={styles.farmTypes}>
           <summary>{report.eventCoverage === 'complete' ? 'Типы добиваний' : 'Типы в полученной части событий'} · STRATZ</summary>
-          <dl>
-            <div><dt>Крипы на линии</dt><dd>{interval.breakdown.lane}</dd></div>
-            <div><dt>Обычные нейтралы</dt><dd>{interval.breakdown.neutral}</dd></div>
-            <div><dt>Эншенты</dt><dd>{interval.breakdown.ancient}</dd></div>
-            <div><dt>Тип не определён</dt><dd>{interval.breakdown.unclassified}</dd></div>
-          </dl>
+          <FarmBreakdown interval={interval} />
         </details> : null}
       </li>)}
     </ol>
-    <p className={styles.note}>{report.eventCoverage !== 'unavailable' ? 'Категории — по признакам STRATZ; неизвестные и противоречивые признаки сохранены отдельно. ' : ''}Событие на границе пятиминуток относится к следующему отрезку. Выбор отрезка откроет его события на общей шкале ниже; соседство событий не доказывает причину.</p>
+    <p className={styles.note}>{report.eventCoverage !== 'unavailable' ? 'Категории — по признакам STRATZ и проверенным соответствиям целей для версии игры. Нераспознанные и противоречивые данные сохранены отдельно. ' : ''}Событие на границе пятиминуток относится к следующему отрезку. Выбор отрезка откроет его события на общей шкале ниже; соседство событий не доказывает причину.</p>
     </details>
   </Panel>;
 }

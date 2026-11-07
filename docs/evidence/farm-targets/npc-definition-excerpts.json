@@ -1,0 +1,47 @@
+{
+  "source": "Valve game scripts mirrored by SteamTracking/GameTracking-Dota2",
+  "url": "https://github.com/SteamTracking/GameTracking-Dota2/blob/b671cd08d5da5820ff0ad64fd26fcf32f615d197/game/dota/pak01_dir/scripts/npc/npc_units.txt",
+  "sourceSha256": "f9a4b9d946913324f4263af2d41a3be5436645fb17e411ac006350caa83e9d37",
+  "purpose": "Unit class/ancient flag cross-check only. STRATZ npcId identities come from the saved response plus replay evidence, NOT this file. This is not a historical version-wide STRATZ dictionary.",
+  "units": {
+    "npc_dota_neutral_froglet": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1"
+    },
+    "npc_dota_neutral_grown_frog": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1"
+    },
+    "npc_dota_neutral_ancient_frog": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1",
+      "IsAncient": "1"
+    },
+    "npc_dota_neutral_froglet_mage": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1"
+    },
+    "npc_dota_neutral_grown_frog_mage": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1"
+    },
+    "npc_dota_neutral_ancient_frog_mage": {
+      "BaseClass": "npc_dota_creep_neutral",
+      "IsNeutralUnitType": "1",
+      "IsAncient": "1"
+    },
+    "npc_dota_sentry_wards": {
+      "BaseClass": "npc_dota_ward_base_truesight"
+    },
+    "npc_dota_warlock_minor_imp": {
+      "BaseClass": "npc_dota_unit_warlock_imp"
+    },
+    "npc_dota_clinkz_skeleton_archer": {
+      "BaseClass": "npc_dota_clinkz_skeleton_archer"
+    },
+    "npc_dota_miniboss": {
+      "BaseClass": "npc_dota_miniboss",
+      "IsAncient": "1"
+    }
+  }
+}

@@ -18,6 +18,7 @@
   --farm-lane: var(--color-focus);
   --farm-neutral: var(--color-info);
   --farm-ancient: var(--color-warning);
+  --farm-other: #b69fd8;
   --farm-unknown: var(--color-unknown);
   --grade-critical: #e4777d;
   --grade-weak: #d99568;
