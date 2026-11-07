@@ -1,6 +1,23 @@
 import type { PostMatchAnalysis } from '../types/domain';
 import type { FarmIntervalReport } from '../analyze/farmIntervals';
 import { otherTargetKinds } from '../normalize/farmTargets';
+import type { EarlyHeroDamage } from '../normalize/earlyHeroDamage';
+
+function isEarlyDamage(value: unknown): value is EarlyHeroDamage {
+  if (!value || typeof value !== 'object') return false;
+  const report = value as EarlyHeroDamage;
+  const count = (n: unknown): n is number => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+  return report.source === 'opendota' && (report.lane === undefined || [1, 2, 3].includes(report.lane))
+    && Array.isArray(report.players) && report.players.length > 0 && report.players.length <= 10
+    && report.players.every((p) => p && count(p.playerSlot) && (p.playerSlot <= 4 || p.playerSlot >= 128 && p.playerSlot <= 132)
+      && count(p.heroId) && p.heroId > 0 && typeof p.hero === 'string'
+      && (p.heroKey === undefined || typeof p.heroKey === 'string' && /^[a-z][a-z0-9_]*$/.test(p.heroKey))
+      && typeof p.selected === 'boolean' && typeof p.ally === 'boolean' && (!p.selected || p.ally)
+      && (p.damage === undefined || count(p.damage))
+      && (p.firstFive === undefined && p.nextFive === undefined || count(p.firstFive) && count(p.nextFive) && p.firstFive + p.nextFive === p.damage))
+    && report.players.filter((p) => p.selected).length === 1
+    && new Set(report.players.map((p) => p.playerSlot)).size === report.players.length;
+}
 
 function isFarmReport(value: unknown): value is FarmIntervalReport {
   if (!value || typeof value !== 'object') return false;
@@ -52,6 +69,9 @@ export function isPostMatchSuccessPayload(value: unknown): value is PostMatchSuc
     && Number.isFinite(candidate.durationSeconds)
     && (candidate.meta?.openDotaParsed === undefined || typeof candidate.meta.openDotaParsed === 'boolean')
     && (candidate.farmIntervals === undefined || isFarmReport(candidate.farmIntervals))
+    && (candidate.earlyHeroDamage === undefined || isEarlyDamage(candidate.earlyHeroDamage)
+      && candidate.earlyHeroDamage.players.find((p) => p.selected)?.heroId === observation?.heroId
+      && (!candidate.earlyHeroDamage.players.some((p) => p.damage !== undefined) || candidate.durationSeconds! >= 600))
     && (laneFacts === undefined || Boolean(laneFacts && typeof laneFacts === 'object'
       && (laneFacts.deathsAt10 === undefined || Number.isInteger(laneFacts.deathsAt10) && laneFacts.deathsAt10 >= 0)
       && (laneFacts.efficiencyPct === undefined || Number.isFinite(laneFacts.efficiencyPct) && laneFacts.efficiencyPct >= 0)))
