@@ -1,0 +1,1274 @@
+{
+  "issue": 81,
+  "methodologyStatus": "research-only",
+  "productReady": false,
+  "captureScope": "cohort-schema-only",
+  "provenance": {
+    "file": "dota81-cohort-schema-20261108-041143.json",
+    "bytes": 188194,
+    "sha256": "1eac88047388743a3f158bb3c3f231ef24110c1465972cb23946cf8fc7bd26a8",
+    "capturedAt": "2026-11-08T01:11:43.322Z",
+    "capturedAtMsk": "2026-11-08T04:11:43.322+03:00",
+    "scriptSha256": "aaa0de826e9f722a5c68e43d38e5157009317381b4a0f7e3b354e6a5cdd76ca3",
+    "scriptCommit": "bf64f0aa337ae80119023618060afb30a98e341a",
+    "scriptLineEndings": "CRLF",
+    "requestCount": 3,
+    "requests": [
+      {
+        "startedAt": "2026-11-08T01:11:43.323Z",
+        "completedAt": "2026-11-08T01:11:43.780Z",
+        "status": "captured",
+        "httpStatus": 200,
+        "errors": [],
+        "responseBytes": 41400,
+        "responseSha256": "053abd122d5fdb9cb74c92cfc038a9c41ea560917d7c674696dc4f0b957f2a55"
+      },
+      {
+        "startedAt": "2026-11-08T01:11:43.781Z",
+        "completedAt": "2026-11-08T01:11:43.989Z",
+        "status": "captured",
+        "httpStatus": 200,
+        "errors": [],
+        "responseBytes": 28240,
+        "responseSha256": "8894a33b912f66282eaf0b18f83d2809cb23eafe2c0ed8aed206081f0b9744b3"
+      },
+      {
+        "startedAt": "2026-11-08T01:11:43.989Z",
+        "completedAt": "2026-11-08T01:11:44.192Z",
+        "status": "captured",
+        "httpStatus": 200,
+        "errors": [],
+        "responseBytes": 14404,
+        "responseSha256": "2b2c2901da8e04fbcf00e7df5835c43ad1a18a3a621a532cbf952adb41317418"
+      }
+    ]
+  },
+  "coverage": {
+    "root": "DotaQuery",
+    "rootFieldCount": 17,
+    "capturedTypes": [
+      "HeroStatsQuery",
+      "MatchStatsLaneReportType",
+      "HeroDryadType",
+      "HeroGuideListType",
+      "HeroLaneOutcomeType",
+      "HeroMatchupType",
+      "HeroPositionTimeDetailType",
+      "MatchPlayerPositionType",
+      "MatchStatsLaneReportFactionObjectType",
+      "MatchType",
+      "PlayerType",
+      "RankBracketBasicEnum",
+      "HeroGuideType",
+      "HeroStatsHeroDryadType",
+      "MatchStatsLaneReportFactionLaneObject",
+      "PlayerMatchesRequestType"
+    ],
+    "unavailableTypes": [],
+    "unfetchedTypes": [
+      "FindMatchPlayerList",
+      "FindMatchPlayerOrderBy",
+      "MatchPlayerType"
+    ],
+    "limits": {
+      "maxRequests": 3,
+      "maxTypesPerFollowup": 24
+    },
+    "untraversedCandidateRoots": [
+      {
+        "field": "stratz",
+        "type": "StratzQuery"
+      },
+      {
+        "field": "plus",
+        "type": "PlusQuery"
+      },
+      {
+        "field": "vendor",
+        "type": "VendorQuery"
+      }
+    ],
+    "otherRootDependenciesAlsoNotExhaustivelyInspected": true
+  },
+  "rootFields": [
+    {
+      "name": "match",
+      "type": "MatchType",
+      "args": [
+        {
+          "name": "id",
+          "type": "Long!",
+          "description": "The id of the Dota match to include in this query, excluding all results that do not include this id."
+        }
+      ],
+      "description": "Find match details by the match id. id is a required input field."
+    },
+    {
+      "name": "matches",
+      "type": "[MatchType]",
+      "args": [
+        {
+          "name": "ids",
+          "type": "[Long]!",
+          "description": "An array of Dota match ids to include in this query."
+        }
+      ],
+      "description": "Find match details for each match id. ids is a required input field."
+    },
+    {
+      "name": "player",
+      "type": "PlayerType",
+      "args": [
+        {
+          "name": "steamAccountId",
+          "type": "Long!",
+          "description": "The steam account id to include in this query, excluding all results that do not have this steam account id."
+        }
+      ],
+      "description": "Find player details by steam account id. id is a required input field."
+    },
+    {
+      "name": "players",
+      "type": "[PlayerType]",
+      "args": [
+        {
+          "name": "steamAccountIds",
+          "type": "[Long]!",
+          "description": "An array of steam account ids to limit the query to only return matches with these steam account ids."
+        }
+      ],
+      "description": "Find player details for each steam account id. ids is a required input field."
+    },
+    {
+      "name": "team",
+      "type": "TeamType",
+      "args": [
+        {
+          "name": "teamId",
+          "type": "Int!",
+          "description": "A team id to include in this query, excluding all results that do not have this team id."
+        }
+      ],
+      "description": "Find player details for each steam account id. ids is a required input field."
+    },
+    {
+      "name": "teams",
+      "type": "[TeamType]",
+      "args": [
+        {
+          "name": "teamIds",
+          "type": "[Int]!",
+          "description": "A team id to include in this query, excluding all results that do not have this team id."
+        }
+      ],
+      "description": "Results in a list of team objects that contain data about them and their players."
+    },
+    {
+      "name": "league",
+      "type": "LeagueType",
+      "args": [
+        {
+          "name": "id",
+          "type": "Int!",
+          "description": "A league id to include in this query, excluding all results that do not have this league id."
+        }
+      ],
+      "description": "Find league details by league Id. Id is a required field."
+    },
+    {
+      "name": "leagues",
+      "type": "[LeagueType]",
+      "args": [
+        {
+          "name": "request",
+          "type": "LeagueRequestType!"
+        }
+      ],
+      "description": "Find league details by searching for leagues using a LeagueRequest."
+    },
+    {
+      "name": "guild",
+      "type": "GuildType",
+      "args": [
+        {
+          "name": "id",
+          "type": "Int!",
+          "description": "A guild id to include in this query, excluding all results that do not have this guild id."
+        }
+      ],
+      "description": "For getting access to one specific Guild which was used at the start of TI10 Compendium."
+    },
+    {
+      "name": "yogurt",
+      "type": "YogurtQuery",
+      "description": "Queries used for Stratz Yogurt - users won't be able to access these calls until they have access to the app."
+    },
+    {
+      "name": "plus",
+      "type": "PlusQuery",
+      "description": "Queries used to populate Stratz Plus."
+    },
+    {
+      "name": "stratz",
+      "type": "StratzQuery",
+      "description": "Stratz specific queries."
+    },
+    {
+      "name": "heroStats",
+      "type": "HeroStatsQuery",
+      "description": "Queries used to gain insights into hero data and statistics."
+    },
+    {
+      "name": "constants",
+      "type": "ConstantQuery",
+      "description": "Queries used to query constants in Dota."
+    },
+    {
+      "name": "leaderboard",
+      "type": "LeaderboardQuery",
+      "description": "Queries used to get leaderboard information."
+    },
+    {
+      "name": "live",
+      "type": "LiveQuery",
+      "description": "Queries used to find live match data."
+    },
+    {
+      "name": "vendor",
+      "type": "VendorQuery",
+      "description": "Queries used by 3rd party applications."
+    }
+  ],
+  "types": {
+    "HeroStatsQuery": {
+      "name": "HeroStatsQuery",
+      "fields": [
+        {
+          "name": "stats",
+          "type": "[HeroPositionTimeDetailType]",
+          "args": [
+            {
+              "name": "heroIds",
+              "type": "[Short]",
+              "description": "An array of hero ids to include in this query, excluding all results that do not include one of these heroes."
+            },
+            {
+              "name": "week",
+              "type": "Long",
+              "description": "The week to include in this query, excluding all results that do not include this week. The value is an epoc TimeStamp of the week of data you want. Leaving null gives the current week."
+            },
+            {
+              "name": "bracketBasicIds",
+              "type": "[RankBracketBasicEnum]",
+              "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-8 with 0 being unknown MMR and 1-8 is low to high MMR brackets. Example 7 is Divine."
+            },
+            {
+              "name": "positionIds",
+              "type": "[MatchPlayerPositionType]",
+              "description": "An array of positions ids (enum MatchPlayerPositionType) to include in this query, excluding all results that do not include one of these lanes."
+            },
+            {
+              "name": "groupByTime",
+              "type": "Boolean"
+            },
+            {
+              "name": "groupByPosition",
+              "type": "Boolean"
+            },
+            {
+              "name": "groupByBracket",
+              "type": "Boolean"
+            },
+            {
+              "name": "minTime",
+              "type": "Int",
+              "description": "Integer in minutes which determines the start of the data. For example, 10 would result in every event after 10:00 mark in-game. Minimum input value is 0."
+            },
+            {
+              "name": "maxTime",
+              "type": "Int",
+              "description": "Integer in minutes which determines the start of the data. For example, 10 would result in every event before 10:00 mark in-game Maximum input value is 75."
+            }
+          ],
+          "description": "Detailed output of data per minute for each hero."
+        },
+        {
+          "name": "matchUp",
+          "type": "[HeroDryadType]",
+          "args": [
+            {
+              "name": "heroId",
+              "type": "Short",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "heroIds",
+              "type": "[Short]",
+              "description": "An array of hero ids to include in this query, excluding all results that do not include one of these heroes."
+            },
+            {
+              "name": "week",
+              "type": "Long",
+              "description": "The week to include in this query, excluding all results that do not include this week. The value is an epoc TimeStamp of the week of data you want. Leaving null gives the current week."
+            },
+            {
+              "name": "bracketBasicIds",
+              "type": "[RankBracketBasicEnum]",
+              "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-8 with 0 being unknown MMR and 1-8 is low to high MMR brackets. Example 7 is Divine."
+            },
+            {
+              "name": "orderBy",
+              "type": "Byte",
+              "description": "Id representing how to order dryads and triads. Synergy is STRATZ formula to help determine the best outcome of wins and picks in one. Accepted Inputs : Synergy = 0, Pick = 1, Win = 2, Loss = 3, Disadvantage = 4, Advantage = 5"
+            },
+            {
+              "name": "matchLimit",
+              "type": "Int",
+              "description": "Minimum amount of MatchCount required for a Duo to qualify"
+            },
+            {
+              "name": "skip",
+              "type": "Int",
+              "description": "The amount of data to skip before collecting your query. This is useful for Paging."
+            },
+            {
+              "name": "take",
+              "type": "Int",
+              "description": "The amount to have returned in your query. The maximum of this is always dynamic. Limit : "
+            }
+          ],
+          "description": "Returns back a list of the hero matchups, showing how that hero's win rate is affected with or against other heroes."
+        },
+        {
+          "name": "laneOutcome",
+          "type": "[HeroLaneOutcomeType]",
+          "args": [
+            {
+              "name": "heroId",
+              "type": "Short",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "isWith",
+              "type": "Boolean!",
+              "description": "The lane outcomes are split into with heroes and against. Send false if you want lane matchups against the heroid. Send true if you want friendly."
+            },
+            {
+              "name": "week",
+              "type": "Long",
+              "description": "The week to include in this query, excluding all results that do not include this week. The value is an epoc TimeStamp of the week of data you want. Leaving null gives the current week."
+            },
+            {
+              "name": "bracketBasicIds",
+              "type": "[RankBracketBasicEnum]",
+              "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-8 with 0 being unknown MMR and 1-8 is low to high MMR brackets. Example 7 is Divine."
+            },
+            {
+              "name": "positionIds",
+              "type": "[MatchPlayerPositionType]",
+              "description": "An array of positions ids (enum MatchPlayerPositionType) to include in this query, excluding all results that do not include one of these lanes."
+            }
+          ],
+          "description": "Using out formula for determining the outcome of lane, the overall success of that hero in that role."
+        },
+        {
+          "name": "heroVsHeroMatchup",
+          "type": "HeroMatchupType",
+          "args": [
+            {
+              "name": "heroId",
+              "type": "Short!",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "week",
+              "type": "Long",
+              "description": "The week to include in this query, excluding all results that do not include this week. The value is an epoc TimeStamp of the week of data you want. Leaving null gives the current week."
+            },
+            {
+              "name": "bracketBasicIds",
+              "type": "[RankBracketBasicEnum]",
+              "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-8 with 0 being unknown MMR and 1-8 is low to high MMR brackets. Example 7 is Divine."
+            },
+            {
+              "name": "matchLimit",
+              "type": "Int",
+              "description": "Minimum amount of MatchCount required for a Duo to qualify"
+            },
+            {
+              "name": "skip",
+              "type": "Int",
+              "description": "The amount of data to skip before collecting your query. This is useful for Paging."
+            },
+            {
+              "name": "take",
+              "type": "Int",
+              "description": "The amount to have returned in your query. The maximum of this is always dynamic. Limit : "
+            }
+          ],
+          "description": "This is used on the Hero page to show the comparison of skill with the selected hero with other heroes.  It includes our Synergy and our Advantage formulas to ensure that a hero with a high win rate isn't simply just on the top of all the fields."
+        },
+        {
+          "name": "guide",
+          "type": "[HeroGuideListType]",
+          "args": [
+            {
+              "name": "heroId",
+              "type": "Short",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "withHeroId",
+              "type": "Short",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "againstHeroId",
+              "type": "Short",
+              "description": "The hero id to include in this query, excluding all results that do not include this hero."
+            },
+            {
+              "name": "isPro",
+              "type": "Boolean",
+              "description": "Determines that the query require the results come with a player that is qualified as a Pro."
+            },
+            {
+              "name": "positionId",
+              "type": "MatchPlayerPositionType",
+              "description": "An array of positions ids (enum MatchPlayerPositionType) to include in this query, excluding all results that do not include one of these lanes."
+            },
+            {
+              "name": "itemId",
+              "type": "Short",
+              "description": "The item id to include in this query, excluding all results that do not have this item."
+            },
+            {
+              "name": "neutralItemId",
+              "type": "Short",
+              "description": "The item id of the dedicated neutral item slot (7.24 and after). From game versions 7.23 to 7.24, this was the BackPack3Id (the 4th backpack slot item id)."
+            },
+            {
+              "name": "take",
+              "type": "Int",
+              "description": "The amount to have returned in your query. The maximum of this is always dynamic. Limit : "
+            },
+            {
+              "name": "skip",
+              "type": "Int",
+              "description": "The amount of data to skip before collecting your query. This is useful for Paging."
+            }
+          ]
+        }
+      ],
+      "extractionIncludesAllFields": false
+    },
+    "PlayerType": {
+      "name": "PlayerType",
+      "fields": [
+        {
+          "name": "matches",
+          "type": "[MatchType]",
+          "args": [
+            {
+              "name": "request",
+              "type": "PlayerMatchesRequestType!",
+              "description": "The request object used to filter matches returned based on input criteria."
+            }
+          ],
+          "description": "Find match details by steam account id. steamAccountId is a required input field."
+        }
+      ],
+      "extractionIncludesAllFields": false
+    },
+    "PlayerMatchesRequestType": {
+      "name": "PlayerMatchesRequestType",
+      "inputFields": [
+        {
+          "name": "matchIds",
+          "type": "[Long]",
+          "description": "An array of Dota match ids to include in this query."
+        },
+        {
+          "name": "leagueId",
+          "type": "Int",
+          "description": "A league id to include in this query, excluding all results that do not have this league id."
+        },
+        {
+          "name": "leagueIds",
+          "type": "[Int]",
+          "description": "A league id to include in this query, excluding all results that do not have this league id."
+        },
+        {
+          "name": "seriesId",
+          "type": "Long",
+          "description": "A series id to include in this query, excluding all results that do not have this series id."
+        },
+        {
+          "name": "teamId",
+          "type": "Int",
+          "description": "A team id to include in this query, excluding all results that do not have this team id."
+        },
+        {
+          "name": "teamIdSteamAccount",
+          "type": "Int",
+          "description": "When requesting matches with a primary SteamAccountId, this will ensure that player is on specific team Id being sent in."
+        },
+        {
+          "name": "isParsed",
+          "type": "Boolean",
+          "description": "Whether STRATZ has yet parsed the data of the match or not, represented in a boolean."
+        },
+        {
+          "name": "startDateTime",
+          "type": "Long",
+          "description": "The start DateTime of the Dota match(es) to include in this query, represented in unix seconds."
+        },
+        {
+          "name": "endDateTime",
+          "type": "Long",
+          "description": "The end DateTime of the Dota match(es) to include in this query, represented in unix seconds."
+        },
+        {
+          "name": "gameModeIds",
+          "type": "[Byte]",
+          "description": "An array of game mode ids to include in this query, excluding all results that do not include one of these game modes."
+        },
+        {
+          "name": "lobbyTypeIds",
+          "type": "[Byte]",
+          "description": "An array of lobby type ids to include in this query, excluding all results that do not include one of these lobby types."
+        },
+        {
+          "name": "gameVersionIds",
+          "type": "[Int]",
+          "description": "An array of game version ids to include in this query, excluding all results that do not include one of these game versions."
+        },
+        {
+          "name": "regionIds",
+          "type": "[Int]",
+          "description": "An array of region ids to include in this query, excluding all results that do not include one of these regions."
+        },
+        {
+          "name": "rankIds",
+          "type": "[Int]",
+          "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-80 with 0 being unknown MMR and 1-80 is low to high MMR brackets. Example: 74 is Divine with 4 Stars."
+        },
+        {
+          "name": "bracketIds",
+          "type": "[Int]",
+          "description": "An array of rank ids to include in this query, excluding all results that do not include one of these ranks. The value ranges from 0-8 with 0 being unknown MMR and 1-8 is low to high MMR brackets. Example 7 is Divine."
+        },
+        {
+          "name": "isStats",
+          "type": "Boolean",
+          "description": "STRATZ applys an formula to determine if a game is considered 'real'. We attempt to detect AFKers, leavers, feeders, etc. 'IsStats' will return matches that do not include any of these poor quality matches."
+        },
+        {
+          "name": "heroIds",
+          "type": "[Short]",
+          "description": "An array of hero ids to include in this query, excluding all results that do not include one of these heroes."
+        },
+        {
+          "name": "laneIds",
+          "type": "[Int]",
+          "description": "An array of lane ids (enum MatchLaneType) to include in this query, excluding all results that do not include one of these lanes. Roaming = 0, SafeLane = 1, Midlane = 2, Offlane = 3, Jungle = 4"
+        },
+        {
+          "name": "roleIds",
+          "type": "[Int]",
+          "description": "An array of role ids (enum MatchPlayerRoleType) to include in this query, excluding all results that do not include one of these roles. Core = 0, Light Support = 1, Hard Support = 2"
+        },
+        {
+          "name": "positionIds",
+          "type": "[MatchPlayerPositionType]",
+          "description": "An array of positions ids (enum MatchPlayerPositionType) to include in this query, excluding all results that do not include one of these lanes."
+        },
+        {
+          "name": "awardIds",
+          "type": "[Int]",
+          "description": "An array of award ids to include in this query, excluding all results that do not include one of these awards. The player award types include MVP (1), Top Core (2), and Top Support (3)."
+        },
+        {
+          "name": "isParty",
+          "type": "Boolean",
+          "description": "Include all matches that are party games, excluding all others."
+        },
+        {
+          "name": "hasAward",
+          "type": "Boolean",
+          "description": "STRATZ gives 3 players in each game an award for playing well. MVP, Top Core, Top Support (enum MatchPlayerAwardType). If you include a query of 'steamAccountId' then it will require that player to have gotten at least 1 of these awards for each match result."
+        },
+        {
+          "name": "withFriendSteamAccountIds",
+          "type": "[Long]",
+          "description": "An array of steam account ids found on your team to include in this query, excluding all results that do not include one of these steam accounts found on your team."
+        },
+        {
+          "name": "withEnemySteamAccountIds",
+          "type": "[Long]",
+          "description": "A steam account id found on the enemy team to include in this query, excluding all results that do not include this steam account id found on the enemy team."
+        },
+        {
+          "name": "withFriendHeroIds",
+          "type": "[Int]",
+          "description": "An array of hero ids found on your team to include in this query, excluding all results that do not include one of these heroes found on your team."
+        },
+        {
+          "name": "withEnemyHeroIds",
+          "type": "[Int]",
+          "description": "An array of hero ids found against your team to include in this query, excluding all results that do not include one of these heroes found against team."
+        },
+        {
+          "name": "isVictory",
+          "type": "Boolean",
+          "description": "Whether the match was a victory or not for the specified player."
+        },
+        {
+          "name": "isRadiant",
+          "type": "Boolean",
+          "description": "Whether the specified player was on Radiant or not."
+        },
+        {
+          "name": "minGameVersionId",
+          "type": "Int",
+          "description": "Requests matches where the match is at least than this input.  See GameVersion API call for a list of patch ids. Default is null and there is no minimum."
+        },
+        {
+          "name": "maxGameVersionId",
+          "type": "Int",
+          "description": "Requests matches where the match is lower than this input.  See GameVersion API call for a list of patch ids. Default is null and there is no maximum."
+        },
+        {
+          "name": "minImp",
+          "type": "Int",
+          "description": "Player must have at least this IMP for the Match to show."
+        },
+        {
+          "name": "maxImp",
+          "type": "Int",
+          "description": "Player must have less than this IMP for the Match to show."
+        },
+        {
+          "name": "playerList",
+          "type": "FindMatchPlayerList",
+          "description": "Determines if you want a single player returned, only the player by SteamAccountId, or if you want all 10 players in the match."
+        },
+        {
+          "name": "take",
+          "type": "Int",
+          "description": "The amount of matches to have returned in your query. Max : "
+        },
+        {
+          "name": "skip",
+          "type": "Int",
+          "description": "The amount of matches to skip before collecting your query. Hint: Paging"
+        },
+        {
+          "name": "after",
+          "type": "Long",
+          "description": "Only return matches after this match id. Can be used instead of Skip."
+        },
+        {
+          "name": "before",
+          "type": "Long",
+          "description": "Only return matches before this match id. Can be used instead of Skip."
+        },
+        {
+          "name": "orderBy",
+          "type": "FindMatchPlayerOrderBy",
+          "description": "In what order the returned data will come in."
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "MatchType": {
+      "name": "MatchType",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long"
+        },
+        {
+          "name": "durationSeconds",
+          "type": "Int"
+        },
+        {
+          "name": "startDateTime",
+          "type": "Long"
+        },
+        {
+          "name": "lobbyType",
+          "type": "LobbyTypeEnum"
+        },
+        {
+          "name": "gameMode",
+          "type": "GameModeEnumType"
+        },
+        {
+          "name": "isStats",
+          "type": "Boolean"
+        },
+        {
+          "name": "actualRank",
+          "type": "Short"
+        },
+        {
+          "name": "averageRank",
+          "type": "Short"
+        },
+        {
+          "name": "gameVersionId",
+          "type": "Short"
+        },
+        {
+          "name": "rank",
+          "type": "Int"
+        },
+        {
+          "name": "bracket",
+          "type": "Byte"
+        },
+        {
+          "name": "players",
+          "type": "[MatchPlayerType]",
+          "args": [
+            {
+              "name": "steamAccountId",
+              "type": "Long",
+              "description": "The steam account id to include in this query, excluding all results that do not have this steam account id."
+            }
+          ]
+        },
+        {
+          "name": "laneReport",
+          "type": "MatchStatsLaneReportType"
+        }
+      ],
+      "extractionIncludesAllFields": false
+    },
+    "HeroPositionTimeDetailType": {
+      "name": "HeroPositionTimeDetailType",
+      "fields": [
+        {
+          "name": "heroId",
+          "type": "Short!"
+        },
+        {
+          "name": "week",
+          "type": "Int!"
+        },
+        {
+          "name": "time",
+          "type": "Int!"
+        },
+        {
+          "name": "position",
+          "type": "MatchPlayerPositionType"
+        },
+        {
+          "name": "bracketBasicIds",
+          "type": "RankBracketBasicEnum"
+        },
+        {
+          "name": "matchCount",
+          "type": "Long"
+        },
+        {
+          "name": "remainingMatchCount",
+          "type": "Long"
+        },
+        {
+          "name": "winCount",
+          "type": "Long"
+        },
+        {
+          "name": "mvp",
+          "type": "Decimal"
+        },
+        {
+          "name": "topCore",
+          "type": "Decimal"
+        },
+        {
+          "name": "topSupport",
+          "type": "Decimal"
+        },
+        {
+          "name": "courierKills",
+          "type": "Decimal"
+        },
+        {
+          "name": "apm",
+          "type": "Decimal"
+        },
+        {
+          "name": "casts",
+          "type": "Decimal"
+        },
+        {
+          "name": "abilityCasts",
+          "type": "Decimal"
+        },
+        {
+          "name": "kills",
+          "type": "Decimal"
+        },
+        {
+          "name": "deaths",
+          "type": "Decimal"
+        },
+        {
+          "name": "assists",
+          "type": "Decimal"
+        },
+        {
+          "name": "networth",
+          "type": "Decimal"
+        },
+        {
+          "name": "xp",
+          "type": "Decimal"
+        },
+        {
+          "name": "cs",
+          "type": "Decimal"
+        },
+        {
+          "name": "dn",
+          "type": "Decimal"
+        },
+        {
+          "name": "neutrals",
+          "type": "Decimal"
+        },
+        {
+          "name": "heroDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "towerDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "physicalDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "magicalDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "physicalDamageReceived",
+          "type": "Decimal"
+        },
+        {
+          "name": "magicalDamageReceived",
+          "type": "Decimal"
+        },
+        {
+          "name": "tripleKill",
+          "type": "Decimal"
+        },
+        {
+          "name": "ultraKill",
+          "type": "Decimal"
+        },
+        {
+          "name": "rampage",
+          "type": "Decimal"
+        },
+        {
+          "name": "godLike",
+          "type": "Decimal"
+        },
+        {
+          "name": "goldPerMinute",
+          "type": "Decimal"
+        },
+        {
+          "name": "disableCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "disableDuration",
+          "type": "Decimal"
+        },
+        {
+          "name": "stunCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "stunDuration",
+          "type": "Decimal"
+        },
+        {
+          "name": "slowCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "slowDuration",
+          "type": "Decimal"
+        },
+        {
+          "name": "healingSelf",
+          "type": "Decimal"
+        },
+        {
+          "name": "healingAllies",
+          "type": "Decimal"
+        },
+        {
+          "name": "invisibleCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "runePower",
+          "type": "Decimal"
+        },
+        {
+          "name": "runeBounty",
+          "type": "Decimal"
+        },
+        {
+          "name": "level",
+          "type": "Decimal"
+        },
+        {
+          "name": "campsStacked",
+          "type": "Decimal"
+        },
+        {
+          "name": "supportGold",
+          "type": "Decimal"
+        },
+        {
+          "name": "purgeModifiers",
+          "type": "Decimal"
+        },
+        {
+          "name": "ancients",
+          "type": "Decimal"
+        },
+        {
+          "name": "teamKills",
+          "type": "Decimal"
+        },
+        {
+          "name": "goldLost",
+          "type": "Decimal"
+        },
+        {
+          "name": "goldFed",
+          "type": "Decimal"
+        },
+        {
+          "name": "buybackCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "weakenCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "weakenDuration",
+          "type": "Decimal"
+        },
+        {
+          "name": "physicalItemDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "magicalItemDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "healingItemSelf",
+          "type": "Decimal"
+        },
+        {
+          "name": "healingItemAllies",
+          "type": "Decimal"
+        },
+        {
+          "name": "xpFed",
+          "type": "Decimal"
+        },
+        {
+          "name": "pureDamageReceived",
+          "type": "Decimal"
+        },
+        {
+          "name": "attackDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "attackCount",
+          "type": "Decimal"
+        },
+        {
+          "name": "castDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "damageReceived",
+          "type": "Decimal"
+        },
+        {
+          "name": "damage",
+          "type": "Decimal"
+        },
+        {
+          "name": "pureDamage",
+          "type": "Decimal"
+        },
+        {
+          "name": "kDAAverage",
+          "type": "Decimal"
+        },
+        {
+          "name": "killContributionAverage",
+          "type": "Decimal"
+        },
+        {
+          "name": "stompWon",
+          "type": "Decimal"
+        },
+        {
+          "name": "stompLost",
+          "type": "Decimal"
+        },
+        {
+          "name": "comeBackWon",
+          "type": "Decimal"
+        },
+        {
+          "name": "comeBackLost",
+          "type": "Decimal"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "HeroLaneOutcomeType": {
+      "name": "HeroLaneOutcomeType",
+      "fields": [
+        {
+          "name": "heroId1",
+          "type": "Int!"
+        },
+        {
+          "name": "week",
+          "type": "Int!"
+        },
+        {
+          "name": "bracketBasicIds",
+          "type": "RankBracketBasicEnum"
+        },
+        {
+          "name": "position",
+          "type": "MatchPlayerPositionType"
+        },
+        {
+          "name": "matchCount",
+          "type": "Long"
+        },
+        {
+          "name": "drawCount",
+          "type": "Long"
+        },
+        {
+          "name": "winCount",
+          "type": "Long"
+        },
+        {
+          "name": "lossCount",
+          "type": "Long"
+        },
+        {
+          "name": "stompWinCount",
+          "type": "Long"
+        },
+        {
+          "name": "stompLossCount",
+          "type": "Long"
+        },
+        {
+          "name": "matchWinCount",
+          "type": "Long"
+        },
+        {
+          "name": "csCount",
+          "type": "Long"
+        },
+        {
+          "name": "heroId2",
+          "type": "Short!"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "MatchStatsLaneReportType": {
+      "name": "MatchStatsLaneReportType",
+      "fields": [
+        {
+          "name": "radiant",
+          "type": "[MatchStatsLaneReportFactionObjectType]"
+        },
+        {
+          "name": "dire",
+          "type": "[MatchStatsLaneReportFactionObjectType]"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "MatchStatsLaneReportFactionObjectType": {
+      "name": "MatchStatsLaneReportFactionObjectType",
+      "fields": [
+        {
+          "name": "midLane",
+          "type": "MatchStatsLaneReportFactionLaneObject"
+        },
+        {
+          "name": "offLane",
+          "type": "MatchStatsLaneReportFactionLaneObject"
+        },
+        {
+          "name": "safeLane",
+          "type": "MatchStatsLaneReportFactionLaneObject"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "MatchStatsLaneReportFactionLaneObject": {
+      "name": "MatchStatsLaneReportFactionLaneObject",
+      "fields": [
+        {
+          "name": "meleeCount",
+          "type": "Int!"
+        },
+        {
+          "name": "rangeCount",
+          "type": "Int!"
+        },
+        {
+          "name": "siegeCount",
+          "type": "Int!"
+        },
+        {
+          "name": "denyCount",
+          "type": "Int!"
+        },
+        {
+          "name": "neutralCount",
+          "type": "Int!"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "HeroGuideListType": {
+      "name": "HeroGuideListType",
+      "fields": [
+        {
+          "name": "heroId",
+          "type": "Short"
+        },
+        {
+          "name": "matchCount",
+          "type": "Int"
+        },
+        {
+          "name": "guides",
+          "type": "[HeroGuideType]",
+          "args": [
+            {
+              "name": "itemId",
+              "type": "Short",
+              "description": "The item id to include in this query, excluding all results that do not have this item."
+            },
+            {
+              "name": "neutralItemId",
+              "type": "Short",
+              "description": "The item id of the dedicated neutral item slot (7.24 and after). From game versions 7.23 to 7.24, this was the BackPack3Id (the 4th backpack slot item id)."
+            },
+            {
+              "name": "skip",
+              "type": "Int",
+              "description": "The amount of data to skip before collecting your query. This is useful for Paging."
+            },
+            {
+              "name": "take",
+              "type": "Int",
+              "description": "The amount to have returned in your query. The maximum of this is always dynamic. Limit : "
+            }
+          ],
+          "description": "Guides are auto-generated of games that are successful in a game."
+        }
+      ],
+      "extractionIncludesAllFields": true
+    },
+    "HeroGuideType": {
+      "name": "HeroGuideType",
+      "fields": [
+        {
+          "name": "heroId",
+          "type": "Short"
+        },
+        {
+          "name": "steamAccountId",
+          "type": "Long"
+        },
+        {
+          "name": "matchId",
+          "type": "Long"
+        },
+        {
+          "name": "match",
+          "type": "MatchType"
+        },
+        {
+          "name": "matchPlayer",
+          "type": "MatchPlayerType"
+        },
+        {
+          "name": "createdDateTime",
+          "type": "Long"
+        },
+        {
+          "name": "itemIds",
+          "type": "[Short]"
+        },
+        {
+          "name": "neutralItemIds",
+          "type": "[Short]"
+        }
+      ],
+      "extractionIncludesAllFields": true
+    }
+  },
+  "findings": {
+    "historyAnchor": "player(steamAccountId: Long!).matches(request: PlayerMatchesRequestType!)",
+    "enemyFilterDescriptionImpliesAnyOfButResolverUnverified": true,
+    "jointLaneCohortVerified": false,
+    "globalHistoricalSearchAvailability": "not-established",
+    "heroStatsDistributionSemantics": "unverified; no per-match IDs or quantile fields in captured type",
+    "laneReportObservedLeafFields": [
+      "meleeCount",
+      "rangeCount",
+      "siegeCount",
+      "denyCount",
+      "neutralCount"
+    ],
+    "guideSelection": "provider describes successful games; not an unbiased baseline",
+    "sampleSize": null,
+    "absenceOfGlobalCohortEndpointEstablished": false,
+    "dataQueriesMadeInThisCapture": 0,
+    "liveFilterBehaviorVerified": false,
+    "unverified": [
+      "AND/OR and composition of history filters",
+      "row role/rank/patch agreement with requested filters",
+      "joint 2v2 roster and time on lane",
+      "aggregate period/index/denominator and mean vs sum",
+      "quantiles and uncertainty",
+      "historical match access through other query groups"
+    ]
+  }
+}
