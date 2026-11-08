@@ -33,6 +33,8 @@ const tests = [
   'lib/dota/normalize/matchContext.test.js',
   'lib/dota/normalize/earlyHeroDamage.test.js',
   'lib/dota/analyze/trainingChallenge.test.js',
+  'lib/dota/analyze/challengeMatches.test.js',
+  'lib/dota/analyze/checkChallengeMatches.test.js',
   'lib/dota/research/coordinateReview.test.js',
   'lib/dota/analyze/timelinePresentation.test.js',
   'lib/dota/analyze/farmIntervals.test.js',

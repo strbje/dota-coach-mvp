@@ -74,6 +74,14 @@ export function challengeProgress(challenge: TrainingChallenge) {
   return { counted, successes: counted.filter((check) => check.actual! >= challenge.goal.target).length, complete: counted.length === 3 };
 }
 
+/** Merge against the latest stored progress, never a stale request's snapshot. */
+export function mergeChallengeCheck(raw: string | null, cycle: TrainingChallenge, observation: TrainingObservation): TrainingChallenge | null {
+  const saved = readChallenge(raw, { ...cycle.scope, matchId: cycle.sourceMatchId, durationSeconds: 600 });
+  if (!saved || saved.acceptedAt !== cycle.acceptedAt || saved.sourceMatchId !== cycle.sourceMatchId
+    || saved.sourceStartTime !== cycle.sourceStartTime || saved.goal.baseline !== cycle.goal.baseline) return null;
+  return checkChallenge(saved, observation);
+}
+
 /** Treat localStorage as untrusted; old/corrupt schemas cannot produce invented progress. */
 export function readChallenge(raw: string | null, observation: TrainingObservation): TrainingChallenge | null {
   if (!raw) return null;
