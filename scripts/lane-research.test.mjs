@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { parseOptions, buildMatchQuery, buildAggregatePlans, cohortChecks, projectMatch, runStudy } from './probe-stratz-lanes.mjs';
+import { parseOptions, buildMatchQuery, buildAggregatePlans, cohortChecks, projectMatch, runStudy, runCohortSchemaStudy } from './probe-stratz-lanes.mjs';
 import { counterWindow, validateProjection, sampleBuckets, inspectMatch } from './inspect-lane-replays.mjs';
 
 const scalar = (name, type = 'Int') => ({ name, type: { kind: 'SCALAR', name: type }, args: [] });
@@ -43,6 +43,107 @@ test('bounded targets reject duplicates, unsafe IDs and unknown CLI options', ()
   for (const args of [['1:42', '1:1', '--out=x'], ['9007199254740992:42', '--out=x'], ['1:42', '--token=secret', '--out=x']]) assert.throws(() => parseOptions(args));
 });
 
+test('cohort metadata capture accepts no targets and cannot be combined with data capture', () => {
+  const options = parseOptions(['--cohort-schema-only', '--out=new.json']);
+  assert.equal(options.cohortSchemaOnly, true);
+  assert.deepEqual(options.targets, []);
+  for (const args of [
+    ['1:42', '--cohort-schema-only', '--out=x'],
+    ['--cohort-schema-only', '--damage-events-only', '--out=x'],
+    ['--cohort-schema-only', '--cohort-schema-only', '--out=x'],
+    ['--out=x'],
+  ]) assert.throws(() => parseOptions(args));
+});
+
+function cohortSchemaRoot() {
+  return {
+    __schema: { queryType: { name: 'ActualQueryRoot', fields: [
+      { ...relation('matches', 'MatchList'), args: [{ name: 'request', type: { kind: 'INPUT_OBJECT', name: 'MatchFilter' } }] },
+      relation('billing', 'UnrelatedBillingType'),
+    ] } },
+    HeroStatsQuery: { name: 'HeroStatsQuery', fields: [relation('stats', 'HeroMinuteStats')] },
+    MatchStatsLaneReportType: { name: 'MatchStatsLaneReportType', fields: [relation('radiant', 'LaneFaction')] },
+  };
+}
+
+test('cohort schema discovers actual root/filter/stat types without downloading matches or histories', async () => {
+  let calls = 0;
+  const result = await runCohortSchemaStudy('synthetic-token', async (_url, request) => {
+    const query = JSON.parse(request.body).query;
+    assert.doesNotMatch(query, /\b(?:matches|player|heroStats|laneOutcome)\s*\(/);
+    calls++;
+    if (calls === 1) return reply({ data: cohortSchemaRoot() });
+    assert.match(query, /MatchFilter: __type/);
+    assert.match(query, /HeroMinuteStats: __type/);
+    assert.doesNotMatch(query, /UnrelatedBillingType/);
+    return reply({ data: { MatchFilter: { name: 'MatchFilter', inputFields: [scalar('gameVersionId')] },
+      MatchList: { name: 'MatchList', fields: [scalar('id')] },
+      HeroMinuteStats: { name: 'HeroMinuteStats', fields: [scalar('heroDamage')] },
+      LaneFaction: { name: 'LaneFaction', fields: [scalar('heroId')] }, privateAccount: 'do-not-export' } });
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.captureScope, 'cohort-schema-only');
+  assert.equal(result.captureStatus, 'schema-captured-semantics-unverified');
+  assert.equal(result.productReady, false);
+  assert.deepEqual(result.unfetchedTypes, []);
+  assert.doesNotMatch(JSON.stringify(result), /do-not-export/);
+});
+
+test('schema traversal is bounded and exposes unfetched nested types instead of declaring absence', async () => {
+  let calls = 0;
+  const result = await runCohortSchemaStudy('synthetic-token', async (_url, request) => {
+    calls++;
+    if (calls === 1) {
+      const data = cohortSchemaRoot();
+      data.HeroStatsQuery.fields = [];
+      data.MatchStatsLaneReportType.fields = [];
+      data.__schema.queryType.fields = Array.from({ length: 60 }, (_, i) => relation(`matchOption${i}`, `MatchOption${i}`));
+      return reply({ data });
+    }
+    const names = [...JSON.parse(request.body).query.matchAll(/__type\(name: "([^"]+)"\)/g)].map((m) => m[1]);
+    assert.ok(names.length <= 24);
+    return reply({ data: Object.fromEntries(names.map((name) => [name, { name, fields: [] }])) });
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.unfetchedTypes.length, 12);
+  assert.equal(result.productReady, false);
+});
+
+test('player schema discovery follows match filters without spending its budget on profile relations', async () => {
+  let calls = 0;
+  const result = await runCohortSchemaStudy('synthetic-token', async (_url, request) => {
+    const query = JSON.parse(request.body).query;
+    calls++;
+    if (calls === 1) {
+      const data = cohortSchemaRoot();
+      data.__schema.queryType.fields.push(relation('player', 'ProviderPlayer'), relation('constants', 'ConstantCatalog'));
+      return reply({ data });
+    }
+    assert.doesNotMatch(query, /ConstantCatalog|SocialProfile/);
+    const names = [...query.matchAll(/__type\(name: "([^"]+)"\)/g)].map((m) => m[1]);
+    return reply({ data: Object.fromEntries(names.map((name) => [name, name === 'ProviderPlayer'
+      ? { name, fields: [{ ...relation('matches', 'MatchList'), args: [{ name: 'request', type: { kind: 'INPUT_OBJECT', name: 'PlayerMatchFilter' } }] }, relation('friends', 'SocialProfile')] }
+      : { name, fields: [] }])) });
+  });
+  assert.equal(calls, 3);
+  assert.ok(result.schemaCaptures[2].data.PlayerMatchFilter);
+  assert.equal(result.productReady, false);
+});
+
+test('missing root, null types, auth and GraphQL failures remain partial without retries', async () => {
+  const missingRoot = await runCohortSchemaStudy('synthetic-token', async () => reply({ data: { ...cohortSchemaRoot(), __schema: { queryType: null } } }));
+  assert.equal(missingRoot.schemaCaptures.length, 1);
+  assert.equal(missingRoot.captureStatus, 'partial');
+  for (const failure of [reply({ data: null, errors: [{ message: 'synthetic-token rejected' }] }, 403), reply({ errors: [{ message: 'limited' }] }, 429), reply({ data: { MatchFilter: null } })]) {
+    let calls = 0;
+    const result = await runCohortSchemaStudy('synthetic-token', async () => ++calls === 1 ? reply({ data: cohortSchemaRoot() }) : failure);
+    assert.equal(calls, 2);
+    assert.equal(result.captureStatus, 'partial');
+    assert.equal(result.productReady, false);
+    assert.doesNotMatch(JSON.stringify(result), /synthetic-token/);
+  }
+});
+
 test('projection preserves zero/null/missing, and drops identities and unexpected nested objects', () => {
   const target = { matchId: 1, heroId: 42 };
   const projected = projectMatch({ id: 1, accountId: 123, players: [{ heroId: 42, playerSlot: 128, steamAccountId: 123, name: 'private',
@@ -54,6 +155,17 @@ test('projection preserves zero/null/missing, and drops identities and unexpecte
   assert.doesNotMatch(JSON.stringify(projected), /private|account/i);
   assert.equal(projectMatch({ ...projected, id: 2 }, target), null);
   assert.equal(projectMatch({ ...projected, players: [...projected.players, ...projected.players] }, target), null);
+});
+
+test('research capture includes the real deniesPerMinute field and preserves unknown versus zero', () => {
+  const schema = syntheticSchema();
+  schema.MatchPlayerStatsType.fields.push(scalar('deniesPerMinute'));
+  const query = buildMatchQuery(schema).query;
+  assert.match(query, /deniesPerMinute/);
+  assert.doesNotMatch(query, /denyCountPerMinute/);
+  const target = { matchId: 1, heroId: 42 };
+  const projected = projectMatch({ id: 1, players: [{ heroId: 42, playerSlot: 0, stats: { deniesPerMinute: [0, null, 2] } }] }, target);
+  assert.deepEqual(projected.players[0].stats.deniesPerMinute, [0, null, 2]);
 });
 
 test('actual STRATZ damage field names preserve actors, targets and illusion/NPC flags without guessing IDs', () => {
