@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Panel } from '@/components/ui';
-import { acceptChallenge, challengeProgress, challengeStorageKey, checkChallenge, readChallenge, type TrainingChallenge } from '@/lib/dota/analyze/trainingChallenge';
-import type { PostMatchAnalysis } from '@/lib/dota/types/domain';
+import { acceptChallenge, challengeProgress, challengeStorageKey, checkChallenge, mergeChallengeCheck, readChallenge, type TrainingChallenge } from '@/lib/dota/analyze/trainingChallenge';
+import { ChallengeCheckError } from '@/lib/dota/analyze/checkChallengeMatches';
+import type { PostMatchAnalysis, TrainingObservation } from '@/lib/dota/types/domain';
+import { ChallengeMatchCheck } from './ChallengeMatchCheck';
 import styles from './postMatch.module.css';
 
 export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: PostMatchAnalysis; onEvidence: () => void }) {
@@ -50,6 +52,17 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
     try { localStorage.removeItem(storageKey); setChallenge(null); setError(undefined); }
     catch { setError('Не удалось удалить сохранённую цель.'); }
   }
+  function saveCheck(nextObservation: TrainingObservation) {
+    if (!storageKey || !challenge) throw new ChallengeCheckError('Цель уже изменена. Проверка остановлена.');
+    let next: TrainingChallenge | null;
+    try {
+      next = mergeChallengeCheck(localStorage.getItem(storageKey), challenge, nextObservation);
+      if (next) localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch { throw new ChallengeCheckError('Браузер не разрешил сохранить новый результат. Проверка остановлена; ранее сохранённый прогресс не удалён.'); }
+    if (!next) throw new ChallengeCheckError('Цель уже изменена в другой вкладке. Проверка остановлена.');
+    setChallenge(next);
+    return next;
+  }
 
   const goal = challenge?.goal ?? proposedGoal;
   const progress = challenge ? challengeProgress(challenge) : null;
@@ -89,29 +102,25 @@ export function TrainingChallengeCard({ analysis, onEvidence }: { analysis: Post
         </div>
         {progress.complete ? <p>Цель достигнута в {progress.successes} из 3 матчей. {progress.successes === 3 ? 'Повтори тот же подход и проверь, насколько устойчив результат.' : 'Пересмотри первые волны матчей ниже цели и найди повторяющийся пропуск добивания.'}</p> : null}
         {current && current.actual === undefined ? <p>Этот матч пока без результата к 10:00. Он не засчитан ни как успех, ни как неудача.</p> : null}
-        <details className={styles.more}>
-          <summary>Какие матчи засчитаны</summary>
-          {progress.counted.length ? <ul>{progress.counted.map((entry) => <li key={entry.matchId}>Матч {entry.matchId}: {entry.actual} из {challenge.goal.target}</li>)}</ul> : <p>Пока ни одного.</p>}
-          <p className={styles.note}>Исходный результат: {challenge.goal.baseline}. Матч: {challenge.sourceMatchId}. Берём первые три проверенных матча с данными, сыгранных после принятия цели.</p>
-        </details>
       </div> : null}
     </div>
     {error ? <Alert tone="warning">{error}</Alert> : null}
     {goal && (!storageKey || !observation.startTime) ? <p className={styles.note}>Не удалось подтвердить игрока, роль, режим или время матча. Цель можно попробовать вручную; автоматическое продолжение недоступно.</p> : null}
     {!challenge && goal ? <Button type="button" disabled={!ready || !canAccept} onClick={start}>Принять челлендж</Button> : null}
     {challenge ? <>
+      <ChallengeMatchCheck key={`${storageKey}:${challenge.sourceMatchId}:${challenge.acceptedAt}:${challenge.goal.baseline}`} challenge={challenge} onSave={saveCheck} />
       {progress?.complete && canAccept ? <Button type="button" onClick={start}>Начать новый челлендж</Button> : null}
       <Button type="button" variant="ghost" onClick={clear}>Снять челлендж</Button>
     </> : null}
     {goal ? <>
-    {challenge || canAccept ? <p className={styles.note}>После принятия цели открывай разборы следующих подходящих матчей — прогресс обновится автоматически. Он хранится только в этом браузере.</p> : null}
+    {challenge || canAccept ? <p className={styles.note}>Нажми «Проверить новые матчи» или открой их разборы — прогресс обновится. Цель хранится только в этом браузере.</p> : null}
     <details className={styles.more}><summary>Как проверяем цель</summary>
     {goal && !lanePriorities.some((priority) => priority.id === 'lane-farm') ? <p className={styles.action}>{goal.action}</p> : null}
     {analysis.review.timeline.some((event) => event.id === 'lane-at-ten') ? <Button type="button" variant="ghost" className={styles.factorLink} onClick={onEvidence}>Посмотреть отрезок ↗</Button> : null}
     {efficiency !== undefined ? <details className={styles.more}><summary>Эффективность линии · {Math.round(efficiency)}%</summary><p className={styles.note}>Исходный показатель OpenDota. Это не оценка из 100 и не положение среди игроков; сопоставимого ориентира для оценки линии нет.</p></details> : null}
 
       {observation.lastHitsAt10Source === 'stratz' ? <p className={styles.note}>Текущий результат посчитан по полному ряду добиваний STRATZ до 10:00, включая нейтралов и добивания подконтрольными существами.</p> : null}
-      <p>Выполни цель в каждом из трёх следующих подходящих матчей. Открой их разборы — сравним реальные значения автоматически.</p>
+      <p>Выполни цель в трёх следующих подходящих матчах. Проверим историю по кнопке или сравним результат при открытии разбора. Между нажатиями сайт не ищет игры.</p>
       <p className={styles.note}>Область: тот же игрок, {analysis.hero}, керри, тот же режим и тип лобби. Считаются матчи, сыгранные после принятия цели. Нет данных к 10:00 — нет зачёта и нет неудачи. Это тренировка, а не норма героя или ранга; она не гарантирует победу.</p>
     </details>
     </> : null}

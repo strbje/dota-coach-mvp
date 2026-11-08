@@ -1,0 +1,33 @@
+{
+  "synthetic": false,
+  "capturedAt": "2026-11-08T21:09:40+00:00",
+  "request": {
+    "accountId": 116669872,
+    "heroId": 54,
+    "gameMode": 22,
+    "lobbyType": 7,
+    "since": 1793577600
+  },
+  "scope": "Candidate discovery only; no real STRATZ role or challenge result verified.",
+  "response": {
+    "status": 200,
+    "body": {
+      "matches": [
+        {
+          "matchId": 9075236042,
+          "startTime": 1793747411
+        },
+        {
+          "matchId": 9077846847,
+          "startTime": 1793915360
+        },
+        {
+          "matchId": 9078399043,
+          "startTime": 1793966936
+        }
+      ],
+      "partial": false,
+      "fetchedAt": 1794172180
+    }
+  }
+}

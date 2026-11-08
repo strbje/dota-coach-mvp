@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "checks": [
+    "keyboard start; per-result persistence; missing checkpoint pending; API error preserves progress; continuation; successful retry fills pending; zero is real",
+    "320/390/768/1440px; 44px controls; no overflow; completed 3/3 survives missing/failed refresh; valid correction; no duplicates; private history",
+    "missing token blocks new results; stop ignores late response; remove goal cannot resurrect; empty state; other-tab new cycle rejects old response; storage failure stops; storage recovery",
+    "pending checkpoint remains visible after page reload; fresh discovery retries it successfully"
+  ],
+  "historyCalls": 12,
+  "analysisCalls": 27,
+  "consoleErrors": []
+}
